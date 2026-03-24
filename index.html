@@ -333,48 +333,87 @@
         .design-groups {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 28px;
+            gap: 32px;
         }
         .group-card {
-            padding: 32px;
+            padding: 36px 32px;
             border-radius: var(--radius);
             border: 2px solid;
+            transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .group-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            left: 0;
+            height: 5px;
+        }
+        .group-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.12);
         }
         .group-card.control {
-            border-color: #ddd;
+            border-color: #e0e0e0;
             background: #fafafa;
+        }
+        .group-card.control::before {
+            background: linear-gradient(90deg, #9e9e9e, #bdbdbd);
+        }
+        .group-card.control:hover {
+            border-color: #bdbdbd;
         }
         .group-card.intervention {
             border-color: var(--primary);
-            background: linear-gradient(135deg, rgba(26,58,92,0.04), rgba(42,85,128,0.08));
+            background: linear-gradient(160deg, rgba(26,58,92,0.03), rgba(42,85,128,0.08));
+        }
+        .group-card.intervention::before {
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+        }
+        .group-card.intervention:hover {
+            border-color: var(--accent);
         }
         .group-card h3 {
-            font-size: 20px;
-            margin-bottom: 16px;
-            font-weight: 700;
+            font-size: 22px;
+            margin-bottom: 20px;
+            font-weight: 800;
         }
         .group-card.control h3 { color: var(--text-body); }
         .group-card.intervention h3 { color: var(--primary); }
+        .group-card .group-subtitle {
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(0,0,0,0.08);
+            color: var(--text-muted);
+        }
         .group-card ul {
             list-style: none;
             padding: 0;
         }
         .group-card li {
-            padding: 8px 0;
-            padding-right: 28px;
+            padding: 10px 0;
+            padding-right: 30px;
             position: relative;
             font-size: 15px;
+            line-height: 1.5;
         }
         .group-card li::before {
             content: '';
             position: absolute;
             right: 0;
-            top: 14px;
+            top: 16px;
             width: 10px;
             height: 10px;
             border-radius: 50%;
         }
-        .group-card.control li::before { background: #ccc; }
+        .group-card.control li::before { background: #bdbdbd; }
         .group-card.intervention li::before { background: var(--primary); }
 
         /* ===== MEASUREMENTS ===== */
@@ -798,6 +837,14 @@
                     <li>מעקב רפואי שוטף</li>
                     <li>ללא התערבות תזונתית או אימונית נוספת</li>
                 </ul>
+                <div class="group-subtitle">מדידות משותפות לשתי הקבוצות</div>
+                <ul>
+                    <li>הרכב גוף &mdash; DXA, InBody</li>
+                    <li>אולטראסאונד שריר לשריר הירך הקדמי (Rectus Femoris)</li>
+                    <li>חילוף חומרים במנוחה (RMR)</li>
+                    <li>מדידות אנתרופומטריות ותפקוד פיזי</li>
+                    <li>שאלוני תזונה והתנהגות אכילה</li>
+                </ul>
             </div>
             <div class="group-card intervention">
                 <h3>&#x1F7E2; קבוצת ההתערבות</h3>
@@ -806,6 +853,15 @@
                     <li>תוסף חלבון יומי &mdash; 25 גרם ליום</li>
                     <li>אימוני כוח 3 פעמים בשבוע</li>
                     <li>אימון מפוקח אחד בשבוע עם מאמן בזום</li>
+                    <li>מעקב רפואי שוטף</li>
+                </ul>
+                <div class="group-subtitle">מדידות משותפות לשתי הקבוצות</div>
+                <ul>
+                    <li>הרכב גוף &mdash; DXA, InBody</li>
+                    <li>אולטראסאונד שריר לשריר הירך הקדמי (Rectus Femoris)</li>
+                    <li>חילוף חומרים במנוחה (RMR)</li>
+                    <li>מדידות אנתרופומטריות ותפקוד פיזי</li>
+                    <li>שאלוני תזונה והתנהגות אכילה</li>
                 </ul>
             </div>
         </div>

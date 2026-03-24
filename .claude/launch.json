@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "prime-web",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "3000", "--directory", "G:/האחסון שלי/The_PRIME_Study/PRIMEWeb"],
+      "port": 3000
+    }
+  ]
+}

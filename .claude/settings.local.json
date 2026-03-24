@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/AMIR2022/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/dd7f35ef-3e73-47d8-a2e0-e6b80641854c/01a70748-d491-4045-b50e-fb8a3490c450/skills/pptx/**)",
+      "Bash(python -m markitdown \"C:\\\\Users\\\\AMIR2022\\\\Documents\\\\עבודה - דיאטן\\\\דוקטורט\\\\מצגת Journal Club.pptx\")",
+      "Bash(pip install:*)",
+      "Bash(cp \"slide1_תמונה_10.jpg\" logo.jpg)",
+      "Bash(cp \"slide2_תמונה_14.png\" team-shiri.png)",
+      "Bash(cp \"slide2_תמונה_32.png\" team-assaf.png)",
+      "Bash(cp \"slide2_תמונה_35.png\" team-tair.png)",
+      "Bash(cp \"slide2_תמונה_19.png\" team-amir.png)",
+      "Bash(cp \"slide2_תמונה_21.png\" team-shiran.png)",
+      "Bash(cp \"slide2_תמונה_24.png\" team-hila.png)",
+      "Bash(cp \"slide2_תמונה_38.png\" team-merav.png)",
+      "Bash(cp \"slide2_תמונה_41.png\" team-reut.png)",
+      "Bash(cp \"slide7_תמונה_1.png\" study-design.png)",
+      "Bash(cp \"slide5_תמונה_2.jpg\" team-collaboration.jpg)",
+      "Bash(python -c \":*)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(winget install:*)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" auth login --web)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" auth status)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" auth login --with-token)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" repo create PRIMEWeb --public --source=. --push)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" api repos/amirsportdiet-cmd/PRIMEWeb/pages -X POST -f build_type=legacy -f source='{\"\"branch\"\":\"\"master\"\",\"\"path\"\":\"\"/\"\"}')",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" api repos/amirsportdiet-cmd/PRIMEWeb/pages -X POST -F build_type=legacy -F source[branch]=master -F source[path]=\"/\")"
+    ]
+  }
+}

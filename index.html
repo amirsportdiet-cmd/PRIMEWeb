@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מחקר PRIME | חלבון, אימוני כוח ותרופות אינקרטין</title>
+    <meta name="description" content="מחקר PRIME - מחקר קליני רב-מרכזי הבוחן את השפעת תוספי חלבון ואימוני כוח על שימור מסת שריר בזמן טיפול בתרופות להשמנה">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --primary: #1a3a5c;
+            --primary-light: #2a5580;
+            --primary-dark: #0a1628;
+            --accent: #d4af55;
+            --accent-light: #e8c96a;
+            --bg-light: #f5f6f8;
+            --bg-white: #ffffff;
+            --text-dark: #1a1a1a;
+            --text-body: #3a3a3a;
+            --text-muted: #6b6b6b;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 20px rgba(0,0,0,0.1);
+            --shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
+            --radius: 16px;
+            --radius-sm: 10px;
+            --red-muted: #c0392b;
+            --green-muted: #27ae60;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Heebo', sans-serif;
+            background: var(--bg-light);
+            color: var(--text-body);
+            line-height: 1.7;
+            font-size: 17px;
+        }
+
+        /* ===== NAVBAR ===== */
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+            transition: box-shadow 0.3s;
+        }
+        .navbar.scrolled { box-shadow: var(--shadow-sm); }
+        .navbar-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 70px;
+            flex-direction: row-reverse;
+        }
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--primary);
+            font-weight: 800;
+            font-size: 22px;
+        }
+        .nav-logo img { height: 50px; width: auto; object-fit: contain; border-radius: 6px; }
+        .nav-links { display: flex; gap: 32px; list-style: none; }
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-body);
+            font-weight: 500;
+            font-size: 15px;
+            transition: color 0.2s;
+            position: relative;
+        }
+        .nav-links a:hover { color: var(--primary); }
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            right: 0;
+            width: 0;
+            height: 2px;
+            background: var(--primary);
+            transition: width 0.3s;
+        }
+        .nav-links a:hover::after { width: 100%; }
+
+        .mobile-toggle {
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+        }
+        .mobile-toggle span {
+            display: block;
+            width: 24px;
+            height: 2px;
+            background: var(--text-dark);
+            margin: 6px 0;
+            transition: 0.3s;
+        }
+
+        /* ===== HERO ===== */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(160deg, #0a1628 0%, #132744 30%, #1a3a5c 60%, #0f2b4a 100%);
+            color: white;
+            text-align: center;
+            padding: 120px 24px 80px;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 25% 75%, rgba(212,175,85,0.12) 0%, transparent 45%),
+                        radial-gradient(circle at 75% 25%, rgba(212,175,85,0.08) 0%, transparent 40%),
+                        radial-gradient(circle at 50% 50%, rgba(255,255,255,0.03) 0%, transparent 60%);
+            animation: float 20s ease-in-out infinite;
+        }
+        .hero::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 120px;
+            background: linear-gradient(to top, var(--bg-light), transparent);
+            z-index: 1;
+        }
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(2deg); }
+            66% { transform: translate(-20px, 20px) rotate(-1deg); }
+        }
+        .hero-content { position: relative; z-index: 2; max-width: 800px; }
+        .hero-logo {
+            width: 220px;
+            height: auto;
+            object-fit: contain;
+            margin-bottom: 32px;
+            filter: drop-shadow(0 4px 20px rgba(212,175,85,0.3));
+            border-radius: 20px;
+            mix-blend-mode: lighten;
+        }
+        .hero h1 {
+            font-size: clamp(36px, 6vw, 56px);
+            font-weight: 900;
+            margin-bottom: 8px;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, #ffffff 0%, #d4af55 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero .subtitle {
+            font-size: clamp(16px, 2.5vw, 20px);
+            font-weight: 300;
+            opacity: 0.9;
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+        .hero .full-name {
+            font-size: 14px;
+            font-weight: 400;
+            opacity: 0.55;
+            margin-bottom: 40px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+        .hero-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(135deg, #d4af55 0%, #e8c96a 100%);
+            color: #0a1628;
+            padding: 16px 36px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 17px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 24px rgba(212,175,85,0.35);
+        }
+        .hero-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(212,175,85,0.5); }
+
+        .scroll-indicator {
+            position: absolute;
+            bottom: 32px;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: bounce 2s infinite;
+            opacity: 0.6;
+            z-index: 2;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(10px); }
+        }
+
+        /* ===== SECTIONS ===== */
+        section { padding: 100px 24px; }
+        .container { max-width: 1100px; margin: 0 auto; }
+        .section-header { text-align: center; margin-bottom: 60px; }
+        .section-header h2 {
+            font-size: clamp(28px, 4vw, 40px);
+            font-weight: 800;
+            color: var(--primary-dark);
+            margin-bottom: 16px;
+        }
+        .section-header p {
+            font-size: 18px;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* ===== ABOUT ===== */
+        .about-section { background: var(--bg-white); }
+        .about-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+        }
+        .about-text h3 {
+            font-size: 24px;
+            color: var(--primary);
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+        .about-text p { margin-bottom: 16px; color: var(--text-body); }
+        .about-image img {
+            width: 100%;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* ===== STATS ===== */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+            margin-top: 48px;
+        }
+        .stat-item {
+            text-align: center;
+            padding: 28px 16px;
+            background: var(--bg-light);
+            border-radius: var(--radius-sm);
+        }
+        .stat-number {
+            font-size: 36px;
+            font-weight: 800;
+            color: var(--primary);
+            display: block;
+        }
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* ===== PROBLEM / WHY ===== */
+        .why-section { background: var(--bg-light); }
+        .why-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 28px;
+        }
+        .why-card {
+            background: var(--bg-white);
+            border-radius: var(--radius);
+            padding: 36px 28px;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.3s, box-shadow 0.3s;
+            border-top: 4px solid var(--primary);
+            text-align: center;
+        }
+        .why-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+        .why-card .card-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-light);
+            border-radius: 50%;
+        }
+        .why-card .card-icon svg { width: 44px; height: 44px; }
+        .why-card .card-icon--image {
+            width: 100%;
+            height: auto;
+            aspect-ratio: 16/9;
+            border-radius: var(--radius-sm);
+            background: none;
+            overflow: hidden;
+        }
+        .why-card .card-icon--image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .why-card h3 {
+            font-size: 20px;
+            color: var(--primary-dark);
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+        .why-card p { font-size: 15px; color: var(--text-muted); line-height: 1.7; text-align: right; }
+
+        /* ===== STUDY DESIGN ===== */
+        .design-section { background: var(--bg-white); }
+        .design-groups {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 28px;
+        }
+        .group-card {
+            padding: 32px;
+            border-radius: var(--radius);
+            border: 2px solid;
+        }
+        .group-card.control {
+            border-color: #ddd;
+            background: #fafafa;
+        }
+        .group-card.intervention {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, rgba(26,58,92,0.04), rgba(42,85,128,0.08));
+        }
+        .group-card h3 {
+            font-size: 20px;
+            margin-bottom: 16px;
+            font-weight: 700;
+        }
+        .group-card.control h3 { color: var(--text-body); }
+        .group-card.intervention h3 { color: var(--primary); }
+        .group-card ul {
+            list-style: none;
+            padding: 0;
+        }
+        .group-card li {
+            padding: 8px 0;
+            padding-right: 28px;
+            position: relative;
+            font-size: 15px;
+        }
+        .group-card li::before {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 14px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        .group-card.control li::before { background: #ccc; }
+        .group-card.intervention li::before { background: var(--primary); }
+
+        /* ===== MEASUREMENTS ===== */
+        .measurements-section { background: var(--bg-light); }
+        .measurements-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+        }
+        .measure-card {
+            background: var(--bg-white);
+            border-radius: var(--radius-sm);
+            padding: 28px;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+        .measure-card .measure-icon {
+            flex-shrink: 0;
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 22px;
+        }
+        .measure-card .measure-icon--img {
+            background: none;
+            overflow: hidden;
+            padding: 0;
+            width: 56px;
+            height: 56px;
+            border-radius: 10px;
+        }
+        .measure-card .measure-icon--img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .measure-card h4 {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 6px;
+        }
+        .measure-card p {
+            font-size: 14px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* ===== CRITERIA ===== */
+        .criteria-section { background: var(--bg-white); }
+        .criteria-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+        }
+        .criteria-box {
+            border-radius: var(--radius);
+            padding: 32px;
+        }
+        .criteria-box.inclusion {
+            background: rgba(39,174,96,0.06);
+            border: 2px solid rgba(39,174,96,0.2);
+        }
+        .criteria-box.exclusion {
+            background: rgba(192,57,43,0.04);
+            border: 2px solid rgba(192,57,43,0.15);
+        }
+        .criteria-box h3 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .criteria-box.inclusion h3 { color: var(--green-muted); }
+        .criteria-box.exclusion h3 { color: var(--red-muted); }
+        .criteria-box ul {
+            list-style: none;
+            padding: 0;
+        }
+        .criteria-box li {
+            padding: 8px 0;
+            padding-right: 28px;
+            position: relative;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+        .criteria-box li::before {
+            position: absolute;
+            right: 0;
+            top: 10px;
+            font-size: 16px;
+        }
+        .criteria-box.inclusion li::before { content: '\2705'; }
+        .criteria-box.exclusion li::before { content: '\274C'; }
+
+        /* ===== TEAM ===== */
+        .team-section { background: var(--bg-light); }
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 28px;
+        }
+        .team-card {
+            background: var(--bg-white);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.3s, box-shadow 0.3s;
+            text-align: center;
+        }
+        .team-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+        .team-card img {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            object-position: top;
+        }
+        .team-card-info { padding: 20px 16px; }
+        .team-card-info h3 {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 4px;
+        }
+        .team-card-info p {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        /* ===== APPROVALS ===== */
+        .approvals-section { background: var(--bg-white); }
+        .approvals-list {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+        .approval-item {
+            padding: 28px;
+            background: var(--bg-light);
+            border-radius: var(--radius-sm);
+            text-align: center;
+        }
+        .approval-item .label {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        .approval-item .value {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary-dark);
+            word-break: break-all;
+        }
+
+        /* ===== CONTACT ===== */
+        .contact-section {
+            background: linear-gradient(160deg, #0a1628 0%, #132744 50%, #1a3a5c 100%);
+            color: white;
+        }
+        .contact-section .section-header h2 { color: white; }
+        .contact-section .section-header p { color: rgba(255,255,255,0.7); }
+        .contact-cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .contact-card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: var(--radius);
+            padding: 36px 28px;
+            text-align: center;
+        }
+        .contact-card img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            object-position: top;
+            margin-bottom: 16px;
+            border: 3px solid rgba(255,255,255,0.3);
+        }
+        .contact-card h3 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .contact-card .role {
+            font-size: 14px;
+            opacity: 0.7;
+            margin-bottom: 20px;
+        }
+        .contact-links { display: flex; flex-direction: column; gap: 10px; }
+        .contact-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 12px 20px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 15px;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+        .contact-link:hover { transform: translateY(-1px); opacity: 0.9; }
+        .contact-link.email {
+            background: linear-gradient(135deg, #d4af55, #e8c96a);
+            color: #0a1628;
+        }
+        .contact-link.whatsapp {
+            background: #25D366;
+            color: white;
+        }
+        .contact-link svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            background: #070e1a;
+            color: rgba(255,255,255,0.5);
+            text-align: center;
+            padding: 28px 24px;
+            font-size: 14px;
+        }
+        .footer a { color: var(--accent-light); text-decoration: none; }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 900px) {
+            .about-grid { grid-template-columns: 1fr; gap: 40px; }
+            .stats-bar { grid-template-columns: repeat(2, 1fr); }
+            .why-cards { grid-template-columns: 1fr; }
+            .team-grid { grid-template-columns: repeat(2, 1fr); }
+            .design-groups { grid-template-columns: 1fr; }
+            .measurements-grid { grid-template-columns: 1fr; }
+            .criteria-columns { grid-template-columns: 1fr; }
+            .approvals-list { grid-template-columns: 1fr; }
+            .contact-cards { grid-template-columns: 1fr; max-width: 400px; }
+        }
+
+        @media (max-width: 650px) {
+            .nav-links { display: none; }
+            .nav-links.open {
+                display: flex;
+                flex-direction: column;
+                position: absolute;
+                top: 70px;
+                right: 0;
+                left: 0;
+                background: white;
+                padding: 24px;
+                gap: 20px;
+                box-shadow: var(--shadow-md);
+            }
+            .mobile-toggle { display: block; }
+            section { padding: 64px 16px; }
+            .hero { padding: 100px 16px 60px; }
+            .hero-logo { width: 150px; }
+            .stats-bar { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+            .stat-number { font-size: 28px; }
+            .measure-card { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar" id="navbar">
+    <div class="navbar-inner">
+        <ul class="nav-links" id="navLinks">
+            <li><a href="#about">על המחקר</a></li>
+            <li><a href="#why">למה זה חשוב</a></li>
+            <li><a href="#design">מבנה המחקר</a></li>
+            <li><a href="#measurements">מדידות</a></li>
+            <li><a href="#criteria">מי יכול להשתתף</a></li>
+            <li><a href="#team">צוות החוקרים</a></li>
+            <li><a href="#contact">צרו קשר</a></li>
+        </ul>
+        <a href="#" class="nav-logo">
+            <img src="images/PRIME.jpg" alt="PRIME Logo">
+            <span>PRIME</span>
+        </a>
+        <button class="mobile-toggle" id="mobileToggle" aria-label="תפריט">
+            <span></span><span></span><span></span>
+        </button>
+    </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero" id="hero">
+    <div class="hero-content">
+        <img src="images/PRIME.jpg" alt="PRIME Study Logo" class="hero-logo">
+        <h1>מחקר PRIME</h1>
+        <p class="subtitle">מחקר קליני חדשני הבוחן כיצד לשמור על מסת השריר<br>בזמן טיפול תרופתי לירידה במשקל</p>
+        <p class="full-name">Protein, Resistance, Incretin Management Effect</p>
+        <a href="#about" class="hero-cta">
+            קראו עוד על המחקר
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+        </a>
+    </div>
+    <div class="scroll-indicator">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+    </div>
+</section>
+
+<!-- About -->
+<section class="about-section" id="about">
+    <div class="container">
+        <div class="section-header">
+            <h2>על המחקר</h2>
+            <p>מחקר אקראי רב-מרכזי שבודק גישה חדשנית לשימור בריאות השרירים</p>
+        </div>
+        <div class="about-grid">
+            <div class="about-text">
+                <h3>הרקע</h3>
+                <p>
+                    תרופות חדשות ממשפחת GLP-1 (כמו ויגובי, מונג'ארו ועוד) מראות תוצאות מרשימות בירידה במשקל.
+                    אך יש בעיה: <strong>25% עד 40% מהמשקל שיורד הוא לא שומן &mdash; אלא מסת גוף רזה</strong>.
+                </p>
+                <p>
+                    אובדן מסת שריר עלול לפגוע בתפקוד היומיומי, להחליש את הגוף,
+                    ולהגדיל את הסיכון למצב הנקרא <strong>סרקופניה</strong> &mdash; ירידה מסוכנת במסת השריר ובכוח, בעיקר מגיל 45 ומעלה.
+                </p>
+                <h3>מה אנחנו בודקים?</h3>
+                <p>
+                    האם שילוב של <strong>תוסף חלבון יומי</strong> (25 גרם ליום)
+                    יחד עם <strong>אימוני כוח</strong> (3 פעמים בשבוע)
+                    יכול לשמור על מסת השריר &mdash; גם כשלוקחים תרופות לירידה במשקל?
+                </p>
+                <p>
+                    המחקר יתקיים ב<strong>מרכז הרפואי איכילוב</strong> וב<strong>מרכז הרפואי אסותא רמת החייל</strong>.
+                </p>
+            </div>
+            <div class="about-image">
+                <img src="images/team-collaboration.jpg" alt="צוות המחקר בשיתוף פעולה בינלאומי">
+            </div>
+        </div>
+        <div class="stats-bar">
+            <div class="stat-item">
+                <span class="stat-number">240</span>
+                <span class="stat-label">משתתפים</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">6</span>
+                <span class="stat-label">חודשי מחקר</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">2</span>
+                <span class="stat-label">מרכזים רפואיים</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">45+</span>
+                <span class="stat-label">גיל המשתתפים</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Why it matters -->
+<section class="why-section" id="why">
+    <div class="container">
+        <div class="section-header">
+            <h2>למה המחקר הזה חשוב?</h2>
+            <p>הבנת הבעיה והפתרון שאנחנו מציעים</p>
+        </div>
+        <div class="why-cards">
+            <div class="why-card">
+                <div class="card-icon card-icon--image">
+                    <img src="images/GLP-1.jpg" alt="תרופת GLP-1">
+                </div>
+                <h3>תרופות חדשות, אתגר חדש</h3>
+                <p>
+                    התרופות החדשות לירידה במשקל מסוג GLP-1 מאוד אפקטיביות, אבל חלק ניכר מהירידה
+                    הוא ממסת שריר ולא רק משומן. זה עלול לגרום לבעיות בריאותיות בטווח הארוך.
+                </p>
+            </div>
+            <div class="why-card">
+                <div class="card-icon card-icon--image">
+                    <img src="images/weight.jpg" alt="משקולות - שרירים">
+                </div>
+                <h3>שרירים = בריאות</h3>
+                <p>
+                    שרירים הם לא רק לחדר כושר. הם חיוניים לתנועה, ליציבות, לחילוף חומרים
+                    ולמניעת נפילות ושברים &mdash; במיוחד ככל שמתבגרים.
+                </p>
+            </div>
+            <div class="why-card">
+                <div class="card-icon card-icon--image">
+                    <img src="images/protein.jpg" alt="אבקת חלבון">
+                </div>
+                <h3>פתרון מבוסס מדע</h3>
+                <p>
+                    אנחנו בודקים האם שילוב פשוט של תוסף חלבון ואימוני כוח יכול לפתור
+                    את הבעיה &mdash; ולאפשר ירידה במשקל בריאה יותר, בלי לאבד שריר.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Study Design -->
+<section class="design-section" id="design">
+    <div class="container">
+        <div class="section-header">
+            <h2>איך המחקר עובד?</h2>
+            <p>240 משתתפים מחולקים באקראי לשתי קבוצות ונמדדים לאורך חצי שנה</p>
+        </div>
+        <div class="design-groups">
+            <div class="group-card control">
+                <h3>&#x1F539; קבוצת ביקורת</h3>
+                <ul>
+                    <li>טיפול תרופתי בלבד (תרופות מבוססות אינקרטין)</li>
+                    <li>מעקב רפואי שוטף</li>
+                    <li>ללא התערבות תזונתית או אימונית נוספת</li>
+                </ul>
+            </div>
+            <div class="group-card intervention">
+                <h3>&#x1F7E2; קבוצת ההתערבות</h3>
+                <ul>
+                    <li>טיפול תרופתי (זהה לקבוצת הביקורת)</li>
+                    <li>תוסף חלבון יומי &mdash; 25 גרם ליום</li>
+                    <li>אימוני כוח 3 פעמים בשבוע</li>
+                    <li>אימון מפוקח אחד בשבוע עם מאמן בזום</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Measurements -->
+<section class="measurements-section" id="measurements">
+    <div class="container">
+        <div class="section-header">
+            <h2>מדידות והערכות</h2>
+            <p>מגוון מדידות מתקדמות מתבצעות לאורך המחקר כדי להעריך את ההשפעה</p>
+        </div>
+        <div class="measurements-grid">
+            <div class="measure-card">
+                <div class="measure-icon measure-icon--img"><img src="images/bodycomposition.jpg" alt="הרכב גוף"></div>
+                <div>
+                    <h4>הרכב גוף</h4>
+                    <p>סריקת DXA (צילום רנטגן במינון נמוך) למדידת מסת שריר, שומן ועצם</p>
+                </div>
+            </div>
+            <div class="measure-card">
+                <div class="measure-icon measure-icon--img"><img src="images/scale.jpg" alt="מדידות אנתרופומטריות"></div>
+                <div>
+                    <h4>מדידות אנתרופומטריות</h4>
+                    <p>משקל, גובה, היקפים ועובי קפלי עור</p>
+                </div>
+            </div>
+            <div class="measure-card">
+                <div class="measure-icon measure-icon--img"><img src="images/walking.jpg" alt="תפקוד פיזי"></div>
+                <div>
+                    <h4>תפקוד פיזי</h4>
+                    <p>מבחני כוח אחיזת יד (Handgrip), הליכה (2 דקות), מבחן קימה מכיסא (SPPB) ואולטרסאונד שרירים</p>
+                </div>
+            </div>
+            <div class="measure-card">
+                <div class="measure-icon measure-icon--img"><img src="images/balance.jpg" alt="הליכה ושיווי משקל"></div>
+                <div>
+                    <h4>הליכה ושיווי משקל</h4>
+                    <p>חיישני IMU למדידת דפוסי הליכה ושיווי משקל</p>
+                </div>
+            </div>
+            <div class="measure-card">
+                <div class="measure-icon">&#x1F35D;</div>
+                <div>
+                    <h4>צריכת מזון</h4>
+                    <p>יומני מזון ל-3 ימים, שאלון תדירות מזון (FFQ), הערכת צריכת אנרגיה וחלבון</p>
+                </div>
+            </div>
+            <div class="measure-card">
+                <div class="measure-icon measure-icon--img"><img src="images/nitrogen.jpg" alt="מאזן חנקן וחלבון"></div>
+                <div>
+                    <h4>מאזן חנקן וחלבון</h4>
+                    <p>הערכת מאזן חנקן, צריכת חלבון תזונתית, מנת נשימה (RQ) ואיבודי חנקן</p>
+                </div>
+            </div>
+            <div class="measure-card">
+                <div class="measure-icon measure-icon--img"><img src="images/calorimetry.jpg" alt="חילוף חומרים"></div>
+                <div>
+                    <h4>חילוף חומרים</h4>
+                    <p>קצב חילוף חומרים במנוחה (RMR) באמצעות קלורימטריה עקיפה, והשוואה לערכים חזויים</p>
+                </div>
+            </div>
+            <div class="measure-card">
+                <div class="measure-icon">&#x1F9E0;</div>
+                <div>
+                    <h4>ויסות אכילה</h4>
+                    <p>שאלוני שליטה באכילה, כוח המזון, רעש מזון, התנהגות רעייה והעדפות מזון</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Criteria -->
+<section class="criteria-section" id="criteria">
+    <div class="container">
+        <div class="section-header">
+            <h2>מי יכול להשתתף?</h2>
+            <p>קריטריוני הכללה ואי-הכללה למחקר</p>
+        </div>
+        <div class="criteria-columns">
+            <div class="criteria-box inclusion">
+                <h3>&#x2705; קריטריוני הכללה</h3>
+                <ul>
+                    <li>גיל 45 ומעלה</li>
+                    <li>BMI &ge; 30 או BMI &ge; 27 (ק"ג/מ&sup2;) עם לפחות תחלואה אחת נלווית להשמנה</li>
+                    <li>דוברי עברית (קריאה ודיבור)</li>
+                    <li>מתחילים טיפול ב-Wegovy או Mounjaro</li>
+                </ul>
+            </div>
+            <div class="criteria-box exclusion">
+                <h3>&#x274C; קריטריוני אי-הכללה</h3>
+                <ul>
+                    <li>התוויות נגד לשימוש ב-Mounjaro או Wegovy (לדוגמה: ניסיון להרות, היריון או הנקה בהווה)</li>
+                    <li>מטופלים הנוטלים אינסולין או תרופות מקבוצת סולפונילאוראה</li>
+                    <li>הפרעות פסיכיאטריות שאינן מאוזנות</li>
+                    <li>אבחנה של מחלת מעי דלקתית (IBD)</li>
+                    <li>ליקוי קוגניטיבי</li>
+                    <li>בולימיה נרבוזה פעילה</li>
+                    <li>ניתוח בריאטרי או שרוול אנדוסקופי</li>
+                    <li>שימוש בתרופות לטיפול בהשמנה בחודש האחרון</li>
+                    <li>השתתפות בתהליך ירידה במשקל פעיל עם ירידה של 5% ממשקל הגוף ב-3 החודשים האחרונים</li>
+                    <li>התקן אלקטרוני מושתל (כגון קוצב לב)</li>
+                    <li>מגבלה פיזית משמעותית שיכולה למנוע ביצוע אימוני כוח באופן עצמאי</li>
+                    <li>ביצוע אימוני כוח בתדירות העולה על אימון אחד בשבוע, במהלך 3 החודשים האחרונים</li>
+                    <li>מחלת כליות כרונית המחייבת הגבלת חלבון בתזונה</li>
+                    <li>הימנעות מתוספי חלבון על בסיס חלב מסיבה כלשהי (למשל אלרגיה לחלב/תזונה טבעונית)</li>
+                    <li>שימוש תדיר בתוספי חלבון</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Team -->
+<section class="team-section" id="team">
+    <div class="container">
+        <div class="section-header">
+            <h2>צוות החוקרים</h2>
+            <p>צוות מחקר רב-תחומי ממרכזים רפואיים מובילים בישראל ובקנדה</p>
+        </div>
+        <div class="team-grid">
+            <div class="team-card">
+                <img src="images/team-shiri.jpg" alt="ד״ר שירי שרף-דגן">
+                <div class="team-card-info">
+                    <h3>ד״ר שירי שרף-דגן</h3>
+                    <p>חוקרת ראשית</p>
+                </div>
+            </div>
+            <div class="team-card">
+                <img src="images/team-assaf.jpg" alt="ד״ר אסף בוך">
+                <div class="team-card-info">
+                    <h3>ד״ר אסף בוך</h3>
+                    <p>חוקר שותף</p>
+                </div>
+            </div>
+            <div class="team-card">
+                <img src="images/team-tair.jpg" alt="ד״ר תאיר בן-פורת">
+                <div class="team-card-info">
+                    <h3>ד״ר תאיר בן-פורת</h3>
+                    <p>חוקרת שותפה</p>
+                </div>
+            </div>
+            <div class="team-card">
+                <img src="images/team-amir.jpg" alt="אמיר רובין">
+                <div class="team-card-info">
+                    <h3>אמיר רובין</h3>
+                    <p>דוקטורנט, B.Sc, M.P.E, דיאטן קליני</p>
+                </div>
+            </div>
+            <div class="team-card">
+                <img src="images/team-shiran.jpg" alt="שירן בנדלר">
+                <div class="team-card-info">
+                    <h3>שירן בנדלר</h3>
+                    <p>דוקטורנטית, M.Sc, דיאטנית קלינית</p>
+                </div>
+            </div>
+            <div class="team-card">
+                <img src="images/team-hila.jpg" alt="הילה בן-צבי">
+                <div class="team-card-info">
+                    <h3>הילה בן-צבי</h3>
+                    <p>מאסטרנטית</p>
+                </div>
+            </div>
+            <div class="team-card">
+                <img src="images/team-merav.jpg" alt="מירב דוד-זגדון">
+                <div class="team-card-info">
+                    <h3>מירב דוד-זגדון</h3>
+                    <p>מאסטרנטית</p>
+                </div>
+            </div>
+            <div class="team-card">
+                <img src="images/team-reut.jpg" alt="רעות לוי-יששכר">
+                <div class="team-card-info">
+                    <h3>רעות לוי-יששכר</h3>
+                    <p>מאסטרנטית</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Approvals -->
+<section class="approvals-section">
+    <div class="container">
+        <div class="section-header">
+            <h2>אישורים ורישום</h2>
+            <p>המחקר אושר על ידי ועדות הלסינקי ורשום במאגרים בינלאומיים</p>
+        </div>
+        <div class="approvals-list">
+            <div class="approval-item">
+                <div class="label">ClinicalTrials.gov</div>
+                <div class="value">NCT06950684</div>
+            </div>
+            <div class="approval-item">
+                <div class="label">הלסינקי &mdash; איכילוב</div>
+                <div class="value">TLV-0168-25</div>
+            </div>
+            <div class="approval-item">
+                <div class="label">הלסינקי &mdash; אסותא</div>
+                <div class="value">ASMC-0035-25</div>
+            </div>
+        </div>
+        <p style="text-align:center; margin-top:24px; color:var(--text-muted); font-size:14px;">
+            המחקר זכה במענק ממשרד החדשנות, המדע והטכנולוגיה
+            &bull; שיתוף פעולה עם פרופ׳ קרלה פרדו מאוניברסיטת אלברטה, קנדה
+        </p>
+    </div>
+</section>
+
+<!-- Contact -->
+<section class="contact-section" id="contact">
+    <div class="container">
+        <div class="section-header">
+            <h2>צרו קשר</h2>
+            <p>מעוניינים לשמוע עוד? רוצים להשתתף במחקר? דברו איתנו</p>
+        </div>
+        <div class="contact-cards">
+            <div class="contact-card">
+                <img src="images/team-amir.jpg" alt="אמיר רובין">
+                <h3>אמיר רובין</h3>
+                <p class="role">דוקטורנט, B.Sc, M.P.E, דיאטן קליני</p>
+                <div class="contact-links">
+                    <a href="https://mail.google.com/mail/?view=cm&to=Amirsportdiet@gmail.com&su=%D7%94%D7%AA%D7%A2%D7%A0%D7%99%D7%99%D7%A0%D7%95%D7%AA%20%D7%91%D7%9E%D7%97%D7%A7%D7%A8%20PRIME&body=%D7%A9%D7%9C%D7%95%D7%9D%20%D7%90%D7%9E%D7%99%D7%A8%2C%0A%0A%D7%90%D7%A0%D7%99%20%D7%9E%D7%AA%D7%A2%D7%A0%D7%99%D7%99%D7%9F%2F%D7%AA%20%D7%9C%D7%A9%D7%9E%D7%95%D7%A2%20%D7%A2%D7%95%D7%93%20%D7%A2%D7%9C%20%D7%9E%D7%97%D7%A7%D7%A8%20PRIME.%0A%0A%D7%A9%D7%9D%20%D7%9E%D7%9C%D7%90%3A%20%0A%D7%98%D7%9C%D7%A4%D7%95%D7%9F%3A%20%0A%0A%D7%AA%D7%95%D7%93%D7%94" target="_blank" class="contact-link email">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                        Amirsportdiet@gmail.com
+                    </a>
+                    <a href="https://wa.me/97252484497" target="_blank" class="contact-link whatsapp">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                        052-4844497
+                    </a>
+                </div>
+            </div>
+            <div class="contact-card">
+                <img src="images/team-shiran.jpg" alt="שירן בנדלר">
+                <h3>שירן בנדלר</h3>
+                <p class="role">דוקטורנטית, M.Sc, דיאטנית קלינית</p>
+                <div class="contact-links">
+                    <a href="https://mail.google.com/mail/?view=cm&to=Shiranendi@gmail.com&su=%D7%94%D7%AA%D7%A2%D7%A0%D7%99%D7%99%D7%A0%D7%95%D7%AA%20%D7%91%D7%9E%D7%97%D7%A7%D7%A8%20PRIME&body=%D7%A9%D7%9C%D7%95%D7%9D%20%D7%A9%D7%99%D7%A8%D7%9F%2C%0A%0A%D7%90%D7%A0%D7%99%20%D7%9E%D7%AA%D7%A2%D7%A0%D7%99%D7%99%D7%9F%2F%D7%AA%20%D7%9C%D7%A9%D7%9E%D7%95%D7%A2%20%D7%A2%D7%95%D7%93%20%D7%A2%D7%9C%20%D7%9E%D7%97%D7%A7%D7%A8%20PRIME.%0A%0A%D7%A9%D7%9D%20%D7%9E%D7%9C%D7%90%3A%20%0A%D7%98%D7%9C%D7%A4%D7%95%D7%9F%3A%20%0A%0A%D7%AA%D7%95%D7%93%D7%94" target="_blank" class="contact-link email">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                        Shiranendi@gmail.com
+                    </a>
+                    <a href="https://wa.me/972546694839" target="_blank" class="contact-link whatsapp">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                        054-6694839
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+    <p>&copy; 2026 PRIME Study &bull; מחקר PRIME &mdash; כל הזכויות שמורות</p>
+</footer>
+
+<script>
+    // Navbar scroll effect
+    window.addEventListener('scroll', () => {
+        document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 20);
+    });
+
+    // Mobile menu toggle
+    document.getElementById('mobileToggle').addEventListener('click', () => {
+        document.getElementById('navLinks').classList.toggle('open');
+    });
+
+    // Close mobile menu on link click
+    document.querySelectorAll('.nav-links a').forEach(link => {
+        link.addEventListener('click', () => {
+            document.getElementById('navLinks').classList.remove('open');
+        });
+    });
+
+    // Simple fade-in on scroll
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.why-card, .team-card, .stat-item, .group-card, .approval-item, .contact-card, .measure-card, .criteria-box').forEach(el => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(20px)';
+        el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        observer.observe(el);
+    });
+</script>
+
+</body>
+</html>

@@ -125,6 +125,8 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
   transition:.15s;
 }
 .btn-gen:hover { transform:translateY(-1px); box-shadow:0 6px 20px rgba(13,148,136,.45); }
+.btn-clear-form { background:#fff; border:2px solid #e2e8f0; border-radius:12px; padding:15px 28px; font-size:15px; font-weight:700; color:#64748b; cursor:pointer; font-family:inherit; transition:.15s; }
+.btn-clear-form:hover { border-color:#f87171; color:#dc2626; background:#fff5f5; }
 .error-msg { background:#fef2f2; border:1px solid #fca5a5; border-radius:10px; color:#b91c1c; font-size:12.5px; padding:12px 16px; margin:0 24px 16px; display:none; line-height:1.8; }
 
 /* ===== Report ===== */
@@ -427,7 +429,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
       <div class="form-section-body">
         <div class="form-row single" style="max-width:260px;">
           <div class="simple-field">
-            <label>גובה (ס״מ) — קבוע לאורך המחקר</label>
+            <label>גובה (ס״מ)</label>
             <input type="number" id="f-height" placeholder="לדוגמה: 176" min="100" max="250" step="0.1" inputmode="decimal">
           </div>
         </div>
@@ -580,7 +582,10 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
 
     <div class="form-actions">
       <div style="text-align:center;">
-        <button class="btn-gen" onclick="generateReport()">לחיצה להפקת דו״ח</button>
+        <div style="display:flex;gap:12px;justify-content:center;">
+          <button class="btn-gen" onclick="generateReport()">לחיצה להפקת דו״ח</button>
+          <button class="btn-clear-form" onclick="clearForm()">ניקוי שדות</button>
+        </div>
         <p style="margin:10px 0 0; font-size:12px; color:#94a3b8;">*הדוחות לא נשמרים, יש להוריד ולשלוח או להדפיס מיד לאחר הפקת הדו״ח</p>
       </div>
     </div>
@@ -690,6 +695,20 @@ document.addEventListener('blur', e => {
     const errEl = t.parentElement.querySelector('.field-err');
     const hasErr = errEl && errEl.textContent !== '';
     markTab(t.closest('.field-card'), t.dataset.side, t.value !== '' && !hasErr);
+    autoComplement(t);
+  } else if (t.id === 'f-height') {
+    // suggest meters → cm conversion
+    const v = parseFloat(t.value);
+    if (t.value !== '' && v >= 1.0 && v <= 2.5) {
+      const suggested = Math.round(v * 100);
+      if (confirm(`האם התכוונת לגובה ${suggested} ס״מ?\n(הוזן ${v} — נראה כמו מטרים)`)) {
+        t.value = suggested;
+        const sf = t.closest('.simple-field');
+        if (sf) { sf.classList.add('sf-filled'); sf.classList.remove('simple-field--missing'); }
+        setFieldCheck('f-height', 'ok');
+      }
+    }
+    showFieldError(t);
   } else {
     showFieldError(t);
   }
@@ -751,6 +770,51 @@ document.addEventListener('DOMContentLoaded', () => {
     sexLabel.appendChild(ck);
   }
 });
+
+window.autoComplement = (inp) => {
+  const PAIRS = { 'f-fatburn': 'f-chburn', 'f-chburn': 'f-fatburn' };
+  const partner = PAIRS[inp.dataset.field];
+  if (!partner || inp.value === '') return;
+  const v = parseFloat(inp.value);
+  if (isNaN(v) || v < 0 || v > 100) return;
+  const side = inp.dataset.side;
+  const partnerHidden = document.getElementById(partner + '-' + side);
+  if (!partnerHidden || partnerHidden.value !== '') return;
+  const comp = +(100 - v).toFixed(1);
+  partnerHidden.value = comp;
+  const partnerCard = partnerHidden.closest ? partnerHidden.closest('.field-card') : null;
+  if (!partnerCard) return;
+  const partnerInp = partnerCard.querySelector('.field-active-input');
+  if (partnerInp && partnerInp.dataset.side === side) partnerInp.value = comp;
+  markTab(partnerCard, side, true);
+};
+
+window.clearForm = () => {
+  if (!confirm('למחוק את כל הנתונים שהוזנו?')) return;
+  document.querySelectorAll('.field-active-input').forEach(inp => {
+    inp.value = '';
+    const card = inp.closest('.field-card');
+    if (!card) return;
+    card.querySelectorAll('.field-tab').forEach(b => { b.classList.remove('active','filled'); b.textContent = b.classList.contains('start') ? 'התחלה' : 'סוף'; });
+    card.querySelector('.field-tab.start')?.classList.add('active');
+    inp.dataset.side = 's';
+    inp.placeholder = inp.dataset.phS || '';
+    card.classList.remove('card-done','field-card--missing');
+  });
+  document.querySelectorAll('input[type=hidden][id^="f-"]').forEach(h => h.value = '');
+  ['f-code','f-age','f-height'].forEach(id => {
+    const inp = document.getElementById(id); if (!inp) return;
+    inp.value = '';
+    setFieldCheck(id, '');
+    inp.closest('.simple-field')?.classList.remove('sf-filled','simple-field--missing');
+  });
+  document.getElementById('f-sex').value = '';
+  document.querySelectorAll('.sex-btn').forEach(b => b.classList.remove('active'));
+  setFieldCheck('sex', '');
+  document.querySelector('.simple-field:has(#sex-m)')?.classList.remove('sf-filled','simple-field--missing');
+  const errEl = document.getElementById('form-error');
+  errEl.style.display = 'none'; errEl.innerHTML = '';
+};
 
 window.flushActiveInputs = () => {
   document.querySelectorAll('.field-active-input').forEach(inp => {
@@ -978,8 +1042,9 @@ window.generateReport = () => {
         if (checkId) setFieldCheck(checkId, 'err');
       }
     });
-    errEl.innerHTML = '<strong>שדות חסרים — יש להשלים לפני הפקת הדו״ח:</strong><br>' +
-      missing.map(f => f.label).join(' &nbsp;|&nbsp; ');
+    errEl.innerHTML = '<strong>שדות חסרים — יש להשלים לפני הפקת הדו״ח:</strong>' +
+      '<ul style="margin:8px 0 0;padding-right:18px;line-height:2;">' +
+      missing.map(f => `<li>${f.label}</li>`).join('') + '</ul>';
     errEl.style.display = 'block';
     errEl.scrollIntoView({ behavior:'smooth', block:'nearest' });
     return;

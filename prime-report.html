@@ -44,6 +44,11 @@ body { font-family:"Rubik","Assistant","Heebo",sans-serif; direction:rtl; margin
 .sex-btn:hover { border-color:#0d9488; color:#0d9488; }
 .sex-btn.active { background:#0d9488; border-color:#0d9488; color:#fff; }
 
+.form-researcher-note {
+  background:#fefce8; border:1px solid #fde68a; border-radius:10px;
+  margin:0 24px 16px; padding:12px 16px; font-size:13px; color:#92400e; font-weight:600;
+}
+
 /* Sections */
 .form-body { padding:0 24px; }
 .form-section {
@@ -102,7 +107,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
   transition:.15s;
 }
 .btn-gen:hover { transform:translateY(-1px); box-shadow:0 6px 20px rgba(13,148,136,.45); }
-.error-msg { color:#b91c1c; font-size:13px; text-align:center; margin-top:8px; display:none; }
+.error-msg { background:#fef2f2; border:1px solid #fca5a5; border-radius:10px; color:#b91c1c; font-size:12.5px; padding:12px 16px; margin:0 24px 16px; display:none; line-height:1.8; }
 
 /* ===== Report ===== */
 #report-screen { display:none; }
@@ -309,6 +314,10 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
         <span class="form-user-email" id="user-email-display"></span>
         <button class="btn-out" onclick="signOut()">יציאה</button>
       </div>
+    </div>
+
+    <div class="form-researcher-note no-print">
+      &#9432; יש להזין את כל השדות, כולל ערכי תחילת המחקר וסוף המחקר
     </div>
 
     <div class="form-body no-print">
@@ -547,15 +556,16 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
       </div>
     </div>
 
+    </div><!-- /form-body -->
+
+    <div class="error-msg" id="form-error"></div>
+
     <div class="form-actions">
       <div style="text-align:center;">
         <button class="btn-gen" onclick="generateReport()">לחיצה להפקת דו״ח</button>
         <p style="margin:10px 0 0; font-size:12px; color:#94a3b8;">*הדוחות לא נשמרים, יש להוריד ולשלוח או להדפיס מיד לאחר הפקת הדו״ח</p>
       </div>
     </div>
-
-    </div><!-- /form-body -->
-    <p class="error-msg" id="form-error">נא למלא את כל השדות החובה (גיל, מין, גובה).</p>
   </div>
 </div>
 
@@ -651,9 +661,16 @@ window.showFieldError = (inp) => {
   const v = parseFloat(inp.value);
   const mn = inp.min !== '' ? parseFloat(inp.min) : null;
   const mx = inp.max !== '' ? parseFloat(inp.max) : null;
-  if (mx !== null && v > mx) errEl.textContent = `ערך גבוה מדי — המקסימום הוא ${mx}`;
-  else if (mn !== null && v < mn) errEl.textContent = `ערך נמוך מדי — המינימום הוא ${mn}`;
-  else errEl.textContent = '';
+  let err = '';
+  if (mx !== null && v > mx) err = `ערך גבוה מדי — המקסימום הוא ${mx}`;
+  else if (mn !== null && v < mn) err = `ערך נמוך מדי — המינימום הוא ${mn}`;
+  if (err) {
+    errEl.textContent = err;
+    inp.value = '';
+    if (inp.matches('.field-active-input')) storeVal(inp);
+  } else {
+    errEl.textContent = '';
+  }
 };
 
 // inject error spans after DOM ready
@@ -819,15 +836,63 @@ window.backToForm = () => {
 
 window.generateReport = () => {
   flushActiveInputs();
+
+  const REQUIRED = [
+    { id:'f-code',     label:'קוד נחקר/ת' },
+    { id:'f-age',      label:'גיל' },
+    { id:'f-sex',      label:'מין' },
+    { id:'f-height',   label:'גובה' },
+    { id:'f-ree-s',    label:'REE — התחלה' },
+    { id:'f-ree-e',    label:'REE — סוף' },
+    { id:'f-rer-s',    label:'RER — התחלה' },
+    { id:'f-rer-e',    label:'RER — סוף' },
+    { id:'f-fatburn-s',label:'% שריפת שומן — התחלה' },
+    { id:'f-fatburn-e',label:'% שריפת שומן — סוף' },
+    { id:'f-chburn-s', label:'% שריפת פחמימה — התחלה' },
+    { id:'f-chburn-e', label:'% שריפת פחמימה — סוף' },
+    { id:'f-wt-s',     label:'משקל — התחלה' },
+    { id:'f-wt-e',     label:'משקל — סוף' },
+    { id:'f-fm-s',     label:'מסת שומן FM — התחלה' },
+    { id:'f-fm-e',     label:'מסת שומן FM — סוף' },
+    { id:'f-smm-s',    label:'מסת שריר SMM — התחלה' },
+    { id:'f-smm-e',    label:'מסת שריר SMM — סוף' },
+    { id:'f-tbw-s',    label:'TBW — התחלה' },
+    { id:'f-tbw-e',    label:'TBW — סוף' },
+    { id:'f-icw-s',    label:'ICW — התחלה' },
+    { id:'f-icw-e',    label:'ICW — סוף' },
+    { id:'f-ecw-s',    label:'ECW — התחלה' },
+    { id:'f-ecw-e',    label:'ECW — סוף' },
+    { id:'f-waist-s',  label:'היקף מותניים — התחלה' },
+    { id:'f-waist-e',  label:'היקף מותניים — סוף' },
+    { id:'f-calf-s',   label:'היקף שוק — התחלה' },
+    { id:'f-calf-e',   label:'היקף שוק — סוף' },
+    { id:'f-hg-s',     label:'כוח לפיתה — התחלה' },
+    { id:'f-hg-e',     label:'כוח לפיתה — סוף' },
+    { id:'f-sppb-s',   label:'SPPB — התחלה' },
+    { id:'f-sppb-e',   label:'SPPB — סוף' },
+    { id:'f-sts-s',    label:'קימה מכיסא — התחלה' },
+    { id:'f-sts-e',    label:'קימה מכיסא — סוף' },
+    { id:'f-walk-s',   label:'הליכה 2 דקות — התחלה' },
+    { id:'f-walk-e',   label:'הליכה 2 דקות — סוף' },
+  ];
+
+  const missing = REQUIRED.filter(f => {
+    const el = document.getElementById(f.id);
+    return !el || el.value === '' || el.value === null;
+  }).map(f => f.label);
+
+  const errEl = document.getElementById('form-error');
+  if (missing.length > 0) {
+    errEl.innerHTML = '<strong>שדות חסרים:</strong><br>' + missing.join(' &nbsp;|&nbsp; ');
+    errEl.style.display = 'block';
+    errEl.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    return;
+  }
+  errEl.style.display = 'none';
+
   const age = +document.getElementById('f-age').value;
   const sex = document.getElementById('f-sex').value;
   const height = +document.getElementById('f-height').value;
-  if (!age || !sex || !height) {
-    const err = document.getElementById('form-error');
-    err.style.display = 'block';
-    return;
-  }
-  document.getElementById('form-error').style.display = 'none';
 
   const g = id => +document.getElementById(id).value || 0;
 

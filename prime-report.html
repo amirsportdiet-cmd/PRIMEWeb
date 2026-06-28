@@ -400,7 +400,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; }
 <!-- Firebase SDKs -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut as fbSignOut }
+import { getAuth, signInWithRedirect, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signOut as fbSignOut }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 // =====================================================================
@@ -431,13 +431,15 @@ const provider = new GoogleAuthProvider();
 // ---- expose functions to global scope ----
 window.signInWithGoogle = async () => {
   document.getElementById('auth-loading').style.display = 'block';
-  try { await signInWithPopup(auth, provider); }
-  catch(e) { document.getElementById('auth-loading').style.display = 'none'; }
+  await signInWithRedirect(auth, provider);
 };
 window.signOut = async () => {
   await fbSignOut(auth);
   showAuthScreen();
 };
+
+// ---- Handle redirect result on page load ----
+getRedirectResult(auth).catch(() => {});
 
 // ---- Auth state ----
 onAuthStateChanged(auth, user => {

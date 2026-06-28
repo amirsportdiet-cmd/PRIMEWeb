@@ -326,7 +326,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
           </div>
           <div class="simple-field">
             <label>גיל (שנים)</label>
-            <input type="number" id="f-age" min="18" max="120" placeholder="לדוגמה: 62" inputmode="numeric" oninput="clampVal(this)">
+            <input type="number" id="f-age" min="18" max="120" placeholder="לדוגמה: 62" inputmode="numeric">
           </div>
           <div class="simple-field">
             <label>מין</label>
@@ -400,7 +400,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
         <div class="form-row single" style="max-width:260px;">
           <div class="simple-field">
             <label>גובה (ס״מ) — קבוע לאורך המחקר</label>
-            <input type="number" id="f-height" placeholder="לדוגמה: 176" min="100" max="250" step="0.1" inputmode="decimal" oninput="clampVal(this)">
+            <input type="number" id="f-height" placeholder="לדוגמה: 176" min="100" max="250" step="0.1" inputmode="decimal">
           </div>
         </div>
         <div class="form-row">
@@ -628,10 +628,18 @@ window.switchTab = (btn, field, side) => {
 };
 
 window.storeVal = (inp) => {
-  clampVal(inp);
   const hidden = document.getElementById(inp.dataset.field + '-' + inp.dataset.side);
   if (hidden) hidden.value = inp.value;
 };
+
+// clamp only on blur (not while typing)
+document.addEventListener('blur', e => {
+  const t = e.target;
+  if (t.matches('.field-active-input, #f-age, #f-height')) {
+    clampVal(t);
+    if (t.matches('.field-active-input')) storeVal(t);
+  }
+}, true);
 
 window.clampVal = (inp) => {
   if (inp.value === '') return;

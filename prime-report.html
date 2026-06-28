@@ -20,30 +20,80 @@ body { font-family:"Rubik","Assistant","Heebo",sans-serif; direction:rtl; margin
 .btn-signout { margin-top:20px; background:#f1f5f9; border:none; border-radius:8px; padding:10px 22px; font-size:14px; cursor:pointer; color:#64748b; }
 
 /* ===== Form UI ===== */
-#form-screen { display:none; min-height:100vh; padding:24px; }
-.form-wrap { max-width:860px; margin:0 auto; }
-.form-title { background:#16304f; color:#fff; border-radius:14px; padding:20px 28px; margin-bottom:24px; display:flex; align-items:center; justify-content:space-between; }
-.form-title h1 { font-size:22px; margin:0; }
-.form-title span { font-size:13px; color:#94c7f4; }
-.form-section { background:#fff; border-radius:14px; padding:20px 24px; margin-bottom:16px; border:1px solid #e2e8f0; }
-.form-section h3 { color:#16304f; font-size:16px; font-weight:700; margin:0 0 16px; padding-bottom:10px; border-bottom:2px solid #0d9488; }
-.form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+#form-screen { display:none; min-height:100vh; background:#f0f4f8; }
+.form-wrap { max-width:880px; margin:0 auto; padding:0 0 40px; }
+
+/* Header — matches report style */
+.form-header {
+  background:linear-gradient(135deg,#16304f 0%,#1e3a5f 100%);
+  padding:20px 32px; display:flex; align-items:center; gap:20px;
+  border-bottom:4px solid #0d9488; margin-bottom:24px;
+}
+.form-header-logo { height:64px; display:flex; align-items:center; }
+.form-header-logo img { height:100%; width:auto; object-fit:contain; }
+.form-header-text { flex:1; }
+.form-header-text h1 { color:#fff; font-size:22px; font-weight:700; margin:0 0 4px; letter-spacing:-.2px; }
+.form-header-text p { color:#94c7f4; font-size:13px; margin:0; }
+.form-header-badge { background:#0d9488; color:#fff; font-size:12px; font-weight:700; padding:6px 16px; border-radius:20px; white-space:nowrap; }
+.form-header-actions { display:flex; align-items:center; gap:10px; }
+.form-user-email { color:#94c7f4; font-size:12px; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.btn-out { background:rgba(255,255,255,.1); color:#fff; border:1px solid rgba(255,255,255,.3); border-radius:8px; padding:7px 16px; font-size:13px; cursor:pointer; font-family:inherit; transition:.15s; }
+.btn-out:hover { background:rgba(255,255,255,.2); }
+
+/* Sections */
+.form-body { padding:0 24px; }
+.form-section {
+  background:#fff; border-radius:14px; margin-bottom:16px;
+  border:1px solid #e2e8f0; overflow:hidden;
+  box-shadow:0 1px 4px rgba(0,0,0,.05);
+}
+.form-section-head {
+  display:flex; align-items:center; gap:14px;
+  background:linear-gradient(90deg,#f8fafc 0%,#fff 100%);
+  border-bottom:1px solid #e2e8f0; padding:14px 20px;
+}
+.form-sec-num {
+  width:32px; height:32px; border-radius:9px; background:#0d9488; color:#fff;
+  font-weight:700; font-size:16px; display:flex; align-items:center; justify-content:center; flex:0 0 auto;
+}
+.form-section-head h3 { color:#16304f; font-size:15px; font-weight:700; margin:0; }
+.form-section-body { padding:18px 20px; }
+
+/* Grid rows */
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+.form-row:last-child { margin-bottom:0; }
 .form-row.triple { grid-template-columns:1fr 1fr 1fr; }
-.form-row.single { grid-template-columns:1fr; }
-label { display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:4px; }
+.form-row.single { grid-template-columns:1fr; max-width:300px; }
+
+/* Field card — each metric with start/end */
+.field-card { background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px; }
+.field-card .field-label { font-size:12px; font-weight:700; color:#16304f; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid #e2e8f0; }
+.field-card .field-inputs { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.field-col-head { font-size:10px; font-weight:700; text-align:center; padding:3px 6px; border-radius:5px; margin-bottom:4px; }
+.field-col-head.start { background:#e2e8f0; color:#64748b; }
+.field-col-head.end { background:#0d9488; color:#fff; }
+
+label { display:block; font-size:11px; font-weight:600; color:#64748b; margin-bottom:3px; }
 input[type=number], input[type=text], select {
-  width:100%; border:1.5px solid #e2e8f0; border-radius:8px; padding:9px 12px;
+  width:100%; border:1.5px solid #e2e8f0; border-radius:7px; padding:8px 10px;
   font-size:14px; font-family:inherit; direction:rtl; box-sizing:border-box; background:#fff;
+  transition:.15s; color:#1f2937;
+}
+input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0 3px rgba(13,148,136,.1); }
+
+/* Simple labeled field (no start/end) */
+.simple-field label { font-size:12px; font-weight:700; color:#16304f; margin-bottom:6px; }
+.simple-field input, .simple-field select { background:#f8fafc; }
+
+/* Actions */
+.form-actions { display:flex; gap:12px; justify-content:center; margin-top:28px; }
+.btn-gen {
+  background:linear-gradient(135deg,#0d9488,#0a7c72); color:#fff; border:none;
+  border-radius:12px; padding:15px 48px; font-size:17px; font-weight:700;
+  cursor:pointer; font-family:inherit; box-shadow:0 4px 16px rgba(13,148,136,.35);
   transition:.15s;
 }
-input:focus, select:focus { outline:none; border-color:#0d9488; }
-.col-pair { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
-.col-pair label { grid-column:span 2; }
-.col-label { font-size:10px; text-align:center; color:#94a3b8; margin-bottom:2px; }
-.form-actions { display:flex; gap:12px; justify-content:center; margin-top:24px; }
-.btn-gen { background:#0d9488; color:#fff; border:none; border-radius:10px; padding:14px 36px; font-size:16px; font-weight:700; cursor:pointer; font-family:inherit; }
-.btn-gen:hover { background:#0a7c72; }
-.btn-out { background:#f1f5f9; color:#64748b; border:none; border-radius:10px; padding:14px 20px; font-size:14px; cursor:pointer; font-family:inherit; }
+.btn-gen:hover { transform:translateY(-1px); box-shadow:0 6px 20px rgba(13,148,136,.45); }
 .error-msg { color:#b91c1c; font-size:13px; text-align:center; margin-top:8px; display:none; }
 
 /* ===== Report ===== */
@@ -168,7 +218,42 @@ input:focus, select:focus { outline:none; border-color:#0d9488; }
   .no-print { display:none !important; }
   .print-bar { display:none !important; }
   body { background:#fff; }
-  #report-content { margin:0; padding:0; max-width:none; }
+  #report-content { margin:0; padding:0; max-width:none; font-size:11.2px; line-height:1.32; }
+  /* Compact page 1 to prevent overflow */
+  .head { padding-bottom:7px; margin-bottom:4px; }
+  .logo { height:62px; }
+  .head-txt h1 { font-size:25px; }
+  .head-txt .sub { font-size:13px; margin-top:4px; }
+  .sec-head { margin-bottom:3px; }
+  .sec-head h2 { font-size:17px; }
+  .section { margin-bottom:1px; }
+  .lead { padding:4px 12px; margin-bottom:1px; font-size:10.5px; }
+  .grid { gap:10px; }
+  .grid2 { gap:10px; }
+  .card { padding:4px 11px 4px; }
+  .card .label { font-size:11.5px; }
+  .card .val { font-size:20px; margin:1px 0; }
+  .card .val small { font-size:11px; }
+  .card .desc { font-size:9px; line-height:1.25; margin-top:2px; }
+  .bar-wrap { margin-top:3px; }
+  .bar { height:9px; }
+  .scale { font-size:9px; margin-top:2px; }
+  .note { font-size:9.5px; margin-top:2px; line-height:1.2; }
+  .tag { font-size:9px; padding:2px 8px; }
+  .dual { margin:3px 0 1px; }
+  .dual .dv { font-size:18px; }
+  .split { height:22px; font-size:9.5px; margin-top:5px; }
+  .qrule { padding:4px 10px; font-size:9.5px; margin-top:2px; }
+  .statrow5 { gap:5px; }
+  .statrow5 .stat { padding:5px 8px; }
+  .statrow5 .stat .l { font-size:9px; min-height:22px; }
+  .statrow5 .stat .v { font-size:17px; }
+  .refbox { padding:4px 10px; margin-top:3px; font-size:8.8px; }
+  .agenote { font-size:8.5px; margin-top:2px; }
+  .foot { margin-top:4px; padding-top:6px; font-size:10px; }
+  /* Page 2 */
+  .ill .photo { height:90px; }
+  .summary { padding:10px 16px; font-size:11.5px; margin-top:12px; }
 }
 </style>
 </head>
@@ -201,192 +286,232 @@ input:focus, select:focus { outline:none; border-color:#0d9488; }
 <!-- ===== FORM SCREEN ===== -->
 <div id="form-screen">
   <div class="form-wrap">
-    <div class="form-title no-print">
-      <h1>מחולל דוח PRIME</h1>
-      <span id="user-email-display"></span>
-      <button class="btn-out" onclick="signOut()">יציאה</button>
-    </div>
 
-    <!-- פרטי נחקר -->
-    <div class="form-section no-print">
-      <h3>פרטי נחקר/ת</h3>
-      <div class="form-row triple">
-        <div>
-          <label>קוד נחקר/ת</label>
-          <input type="text" id="f-code" placeholder="לדוגמה: P042">
-        </div>
-        <div>
-          <label>גיל (שנים)</label>
-          <input type="number" id="f-age" min="18" max="100" placeholder="62">
-        </div>
-        <div>
-          <label>מין</label>
-          <select id="f-sex">
-            <option value="">-- בחר --</option>
-            <option value="m">זכר</option>
-            <option value="f">נקבה</option>
-          </select>
-        </div>
+    <!-- Header — matches report style -->
+    <div class="form-header no-print">
+      <div class="form-header-logo">
+        <img src="images/prime/prime_logo.jpeg" alt="PRIME" onerror="this.style.display='none'">
+      </div>
+      <div class="form-header-text">
+        <h1>מחולל דוח PRIME</h1>
+        <p>הזנת נתוני נחקר/ת להפקת דוח אישי</p>
+      </div>
+      <div class="form-header-badge">מחקר PRIME</div>
+      <div class="form-header-actions">
+        <span class="form-user-email" id="user-email-display"></span>
+        <button class="btn-out" onclick="signOut()">יציאה</button>
       </div>
     </div>
 
-    <!-- מטבוליזם -->
-    <div class="form-section no-print">
-      <h3>מטבוליזם (QNRG)</h3>
-      <div class="form-row">
-        <div>
-          <div class="col-pair">
-            <label>REE (קק״ל/יום)</label>
-            <div><div class="col-label">התחלה</div><input type="number" id="f-ree-s" placeholder="1735"></div>
-            <div><div class="col-label">סוף</div><input type="number" id="f-ree-e" placeholder="1720"></div>
-          </div>
-        </div>
-        <div>
-          <div class="col-pair">
-            <label>RER</label>
-            <div><div class="col-label">התחלה</div><input type="number" id="f-rer-s" step="0.01" placeholder="0.84"></div>
-            <div><div class="col-label">סוף</div><input type="number" id="f-rer-e" step="0.01" placeholder="0.82"></div>
-          </div>
-        </div>
+    <div class="form-body no-print">
+
+    <!-- 1. פרטי נחקר -->
+    <div class="form-section">
+      <div class="form-section-head">
+        <div class="form-sec-num">1</div>
+        <h3>פרטי נחקר/ת</h3>
       </div>
-      <div class="form-row">
-        <div>
-          <div class="col-pair">
-            <label>% שריפת שומן</label>
-            <div><div class="col-label">התחלה</div><input type="number" id="f-fatburn-s" placeholder="60"></div>
-            <div><div class="col-label">סוף</div><input type="number" id="f-fatburn-e" placeholder="67"></div>
+      <div class="form-section-body">
+        <div class="form-row triple">
+          <div class="simple-field">
+            <label>קוד נחקר/ת</label>
+            <input type="text" id="f-code" placeholder="לדוגמה: P042">
           </div>
-        </div>
-        <div>
-          <div class="col-pair">
-            <label>% שריפת פחמימה</label>
-            <div><div class="col-label">התחלה</div><input type="number" id="f-chburn-s" placeholder="40"></div>
-            <div><div class="col-label">סוף</div><input type="number" id="f-chburn-e" placeholder="33"></div>
+          <div class="simple-field">
+            <label>גיל (שנים)</label>
+            <input type="number" id="f-age" min="18" max="100" placeholder="62">
+          </div>
+          <div class="simple-field">
+            <label>מין</label>
+            <select id="f-sex">
+              <option value="">-- בחר --</option>
+              <option value="m">זכר</option>
+              <option value="f">נקבה</option>
+            </select>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- הרכב גוף -->
-    <div class="form-section no-print">
-      <h3>הרכב גוף (InBody)</h3>
-      <div class="form-row">
-        <div>
-          <label>גובה (ס״מ) — קבוע לאורך המחקר</label>
-          <input type="number" id="f-height" placeholder="176" step="0.1">
-        </div>
+    <!-- 2. מטבוליזם -->
+    <div class="form-section">
+      <div class="form-section-head">
+        <div class="form-sec-num">2</div>
+        <h3>מטבוליזם (QNRG)</h3>
       </div>
-      <div class="form-row">
-        <div>
-          <div class="col-pair">
-            <label>משקל (ק״ג)</label>
-            <div><div class="col-label">התחלה</div><input type="number" id="f-wt-s" step="0.1" placeholder="92.0"></div>
-            <div><div class="col-label">סוף</div><input type="number" id="f-wt-e" step="0.1" placeholder="88.0"></div>
+      <div class="form-section-body">
+        <div class="form-row">
+          <div class="field-card">
+            <div class="field-label">REE — הוצאה אנרגטית במנוחה (קק״ל/יום)</div>
+            <div class="field-inputs">
+              <div><div class="field-col-head start">התחלה</div><input type="number" id="f-ree-s" placeholder="1735"></div>
+              <div><div class="field-col-head end">סוף</div><input type="number" id="f-ree-e" placeholder="1720"></div>
+            </div>
+          </div>
+          <div class="field-card">
+            <div class="field-label">RER — מנת הנשימה</div>
+            <div class="field-inputs">
+              <div><div class="field-col-head start">התחלה</div><input type="number" id="f-rer-s" step="0.01" placeholder="0.84"></div>
+              <div><div class="field-col-head end">סוף</div><input type="number" id="f-rer-e" step="0.01" placeholder="0.82"></div>
+            </div>
           </div>
         </div>
-        <div>
-          <div class="col-pair">
-            <label>מסת שומן FM (ק״ג)</label>
-            <div><div class="col-label">התחלה</div><input type="number" id="f-fm-s" step="0.1" placeholder="24.8"></div>
-            <div><div class="col-label">סוף</div><input type="number" id="f-fm-e" step="0.1" placeholder="20.5"></div>
+        <div class="form-row">
+          <div class="field-card">
+            <div class="field-label">% שריפת שומן</div>
+            <div class="field-inputs">
+              <div><div class="field-col-head start">התחלה</div><input type="number" id="f-fatburn-s" placeholder="60"></div>
+              <div><div class="field-col-head end">סוף</div><input type="number" id="f-fatburn-e" placeholder="67"></div>
+            </div>
           </div>
-        </div>
-      </div>
-      <div class="form-row">
-        <div>
-          <div class="col-pair">
-            <label>מסת שריר SMM (ק״ג)</label>
-            <div><div class="col-label">התחלה</div><input type="number" id="f-smm-s" step="0.1" placeholder="35.5"></div>
-            <div><div class="col-label">סוף</div><input type="number" id="f-smm-e" step="0.1" placeholder="35.8"></div>
-          </div>
-        </div>
-        <div>
-          <div class="col-pair">
-            <label>TBW — סך נוזלים (ליטר)</label>
-            <div><div class="col-label">התחלה</div><input type="number" id="f-tbw-s" step="0.1" placeholder="49.2"></div>
-            <div><div class="col-label">סוף</div><input type="number" id="f-tbw-e" step="0.1" placeholder="49.0"></div>
-          </div>
-        </div>
-      </div>
-      <div class="form-row">
-        <div>
-          <div class="col-pair">
-            <label>ICW — תוך-תאיים (ליטר)</label>
-            <div><div class="col-label">התחלה</div><input type="number" id="f-icw-s" step="0.1" placeholder="30.7"></div>
-            <div><div class="col-label">סוף</div><input type="number" id="f-icw-e" step="0.1" placeholder="30.5"></div>
-          </div>
-        </div>
-        <div>
-          <div class="col-pair">
-            <label>ECW — חוץ-תאיים (ליטר)</label>
-            <div><div class="col-label">התחלה</div><input type="number" id="f-ecw-s" step="0.1" placeholder="18.5"></div>
-            <div><div class="col-label">סוף</div><input type="number" id="f-ecw-e" step="0.1" placeholder="18.5"></div>
+          <div class="field-card">
+            <div class="field-label">% שריפת פחמימה</div>
+            <div class="field-inputs">
+              <div><div class="field-col-head start">התחלה</div><input type="number" id="f-chburn-s" placeholder="40"></div>
+              <div><div class="field-col-head end">סוף</div><input type="number" id="f-chburn-e" placeholder="33"></div>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- היקפים -->
-    <div class="form-section no-print">
-      <h3>מדידות גוף והיקפים</h3>
-      <div class="form-row">
-        <div>
-          <div class="col-pair">
-            <label>היקף מותניים (ס״מ)</label>
-            <div><div class="col-label">התחלה</div><input type="number" id="f-waist-s" step="0.5" placeholder="104"></div>
-            <div><div class="col-label">סוף</div><input type="number" id="f-waist-e" step="0.5" placeholder="98"></div>
+    <!-- 3. הרכב גוף -->
+    <div class="form-section">
+      <div class="form-section-head">
+        <div class="form-sec-num">3</div>
+        <h3>הרכב גוף (InBody)</h3>
+      </div>
+      <div class="form-section-body">
+        <div class="form-row single" style="max-width:260px;">
+          <div class="simple-field">
+            <label>גובה (ס״מ) — קבוע לאורך המחקר</label>
+            <input type="number" id="f-height" placeholder="176" step="0.1">
           </div>
         </div>
-        <div>
-          <div class="col-pair">
-            <label>היקף שוק (ס״מ)</label>
-            <div><div class="col-label">התחלה</div><input type="number" id="f-calf-s" step="0.5" placeholder="37"></div>
-            <div><div class="col-label">סוף</div><input type="number" id="f-calf-e" step="0.5" placeholder="37"></div>
+        <div class="form-row">
+          <div class="field-card">
+            <div class="field-label">משקל (ק״ג)</div>
+            <div class="field-inputs">
+              <div><div class="field-col-head start">התחלה</div><input type="number" id="f-wt-s" step="0.1" placeholder="92.0"></div>
+              <div><div class="field-col-head end">סוף</div><input type="number" id="f-wt-e" step="0.1" placeholder="88.0"></div>
+            </div>
+          </div>
+          <div class="field-card">
+            <div class="field-label">מסת שומן FM (ק״ג)</div>
+            <div class="field-inputs">
+              <div><div class="field-col-head start">התחלה</div><input type="number" id="f-fm-s" step="0.1" placeholder="24.8"></div>
+              <div><div class="field-col-head end">סוף</div><input type="number" id="f-fm-e" step="0.1" placeholder="20.5"></div>
+            </div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field-card">
+            <div class="field-label">מסת שריר SMM (ק״ג)</div>
+            <div class="field-inputs">
+              <div><div class="field-col-head start">התחלה</div><input type="number" id="f-smm-s" step="0.1" placeholder="35.5"></div>
+              <div><div class="field-col-head end">סוף</div><input type="number" id="f-smm-e" step="0.1" placeholder="35.8"></div>
+            </div>
+          </div>
+          <div class="field-card">
+            <div class="field-label">TBW — סך נוזלים (ליטר)</div>
+            <div class="field-inputs">
+              <div><div class="field-col-head start">התחלה</div><input type="number" id="f-tbw-s" step="0.1" placeholder="49.2"></div>
+              <div><div class="field-col-head end">סוף</div><input type="number" id="f-tbw-e" step="0.1" placeholder="49.0"></div>
+            </div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field-card">
+            <div class="field-label">ICW — תוך-תאיים (ליטר)</div>
+            <div class="field-inputs">
+              <div><div class="field-col-head start">התחלה</div><input type="number" id="f-icw-s" step="0.1" placeholder="30.7"></div>
+              <div><div class="field-col-head end">סוף</div><input type="number" id="f-icw-e" step="0.1" placeholder="30.5"></div>
+            </div>
+          </div>
+          <div class="field-card">
+            <div class="field-label">ECW — חוץ-תאיים (ליטר)</div>
+            <div class="field-inputs">
+              <div><div class="field-col-head start">התחלה</div><input type="number" id="f-ecw-s" step="0.1" placeholder="18.5"></div>
+              <div><div class="field-col-head end">סוף</div><input type="number" id="f-ecw-e" step="0.1" placeholder="18.5"></div>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- תפקודיות -->
-    <div class="form-section no-print">
-      <h3>בדיקות תפקודיות</h3>
-      <div class="form-row">
-        <div>
-          <div class="col-pair">
-            <label>כוח לפיתה (ק״ג)</label>
-            <div><div class="col-label">התחלה</div><input type="number" id="f-hg-s" step="0.5" placeholder="38"></div>
-            <div><div class="col-label">סוף</div><input type="number" id="f-hg-e" step="0.5" placeholder="40"></div>
-          </div>
-        </div>
-        <div>
-          <div class="col-pair">
-            <label>SPPB (0–12)</label>
-            <div><div class="col-label">התחלה</div><input type="number" id="f-sppb-s" min="0" max="12" placeholder="11"></div>
-            <div><div class="col-label">סוף</div><input type="number" id="f-sppb-e" min="0" max="12" placeholder="12"></div>
-          </div>
-        </div>
+    <!-- 4. היקפים -->
+    <div class="form-section">
+      <div class="form-section-head">
+        <div class="form-sec-num">4</div>
+        <h3>מדידות גוף והיקפים</h3>
       </div>
-      <div class="form-row">
-        <div>
-          <div class="col-pair">
-            <label>קימה מכיסא 30 שנ׳ (חזרות)</label>
-            <div><div class="col-label">התחלה</div><input type="number" id="f-sts-s" placeholder="15"></div>
-            <div><div class="col-label">סוף</div><input type="number" id="f-sts-e" placeholder="17"></div>
+      <div class="form-section-body">
+        <div class="form-row">
+          <div class="field-card">
+            <div class="field-label">היקף מותניים (ס״מ)</div>
+            <div class="field-inputs">
+              <div><div class="field-col-head start">התחלה</div><input type="number" id="f-waist-s" step="0.5" placeholder="104"></div>
+              <div><div class="field-col-head end">סוף</div><input type="number" id="f-waist-e" step="0.5" placeholder="98"></div>
+            </div>
           </div>
-        </div>
-        <div>
-          <div class="col-pair">
-            <label>הליכה 2 דקות (מטר)</label>
-            <div><div class="col-label">התחלה</div><input type="number" id="f-walk-s" placeholder="178"></div>
-            <div><div class="col-label">סוף</div><input type="number" id="f-walk-e" placeholder="190"></div>
+          <div class="field-card">
+            <div class="field-label">היקף שוק (ס״מ)</div>
+            <div class="field-inputs">
+              <div><div class="field-col-head start">התחלה</div><input type="number" id="f-calf-s" step="0.5" placeholder="37"></div>
+              <div><div class="field-col-head end">סוף</div><input type="number" id="f-calf-e" step="0.5" placeholder="37"></div>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="form-actions no-print">
-      <button class="btn-gen" onclick="generateReport()">הפק דוח</button>
+    <!-- 5. תפקודיות -->
+    <div class="form-section">
+      <div class="form-section-head">
+        <div class="form-sec-num">5</div>
+        <h3>בדיקות תפקודיות</h3>
+      </div>
+      <div class="form-section-body">
+        <div class="form-row">
+          <div class="field-card">
+            <div class="field-label">כוח לפיתה — Handgrip (ק״ג)</div>
+            <div class="field-inputs">
+              <div><div class="field-col-head start">התחלה</div><input type="number" id="f-hg-s" step="0.5" placeholder="38"></div>
+              <div><div class="field-col-head end">סוף</div><input type="number" id="f-hg-e" step="0.5" placeholder="40"></div>
+            </div>
+          </div>
+          <div class="field-card">
+            <div class="field-label">SPPB (0–12)</div>
+            <div class="field-inputs">
+              <div><div class="field-col-head start">התחלה</div><input type="number" id="f-sppb-s" min="0" max="12" placeholder="11"></div>
+              <div><div class="field-col-head end">סוף</div><input type="number" id="f-sppb-e" min="0" max="12" placeholder="12"></div>
+            </div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field-card">
+            <div class="field-label">קימה מכיסא 30 שנ׳ (חזרות)</div>
+            <div class="field-inputs">
+              <div><div class="field-col-head start">התחלה</div><input type="number" id="f-sts-s" placeholder="15"></div>
+              <div><div class="field-col-head end">סוף</div><input type="number" id="f-sts-e" placeholder="17"></div>
+            </div>
+          </div>
+          <div class="field-card">
+            <div class="field-label">הליכה 2 דקות (מטר)</div>
+            <div class="field-inputs">
+              <div><div class="field-col-head start">התחלה</div><input type="number" id="f-walk-s" placeholder="178"></div>
+              <div><div class="field-col-head end">סוף</div><input type="number" id="f-walk-e" placeholder="190"></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
+
+    <div class="form-actions">
+      <button class="btn-gen" onclick="generateReport()">הפק דוח ←</button>
+    </div>
+
+    </div><!-- /form-body -->
     <p class="error-msg" id="form-error">נא למלא את כל השדות החובה (גיל, מין, גובה).</p>
   </div>
 </div>

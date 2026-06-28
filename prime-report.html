@@ -91,6 +91,9 @@ body { font-family:"Rubik","Assistant","Heebo",sans-serif; direction:rtl; margin
 .field-active-input { width:100%; box-sizing:border-box; border:2px solid #e2e8f0; border-radius:8px; padding:9px 10px; font-size:16px; font-family:inherit; color:#16304f; text-align:center; transition:.15s; background:#fff; }
 .field-active-input:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0 3px rgba(13,148,136,.1); }
 .field-err { display:block; font-size:11px; color:#dc2626; margin-top:5px; min-height:14px; font-weight:600; }
+.field-check { font-size:12px; font-weight:800; margin-right:5px; transition:.2s; }
+.field-check.ok { color:#16a34a; }
+.field-check.err { color:#dc2626; }
 
 label { display:block; font-size:11px; font-weight:600; color:#64748b; margin-bottom:3px; }
 input[type=number], input[type=text], select {
@@ -705,20 +708,31 @@ document.addEventListener('DOMContentLoaded', () => {
       inp.closest('.field-card')?.classList.remove('field-card--missing');
     });
   });
-  ['f-age','f-height','f-code'].forEach(id => {
+  // simple fields: error span + check mark + blur listener
+  ['f-code','f-age','f-height'].forEach(id => {
     const inp = document.getElementById(id); if (!inp) return;
+    // error span
     const s = document.createElement('span'); s.className = 'field-err'; inp.after(s);
+    // check span inside label
+    const label = inp.closest('.simple-field')?.querySelector('label');
+    if (label) {
+      const ck = document.createElement('span'); ck.className = 'field-check'; ck.id = 'fc-' + id;
+      label.appendChild(ck);
+    }
     inp.addEventListener('input', () => {
       s.textContent = '';
       inp.closest('.simple-field')?.classList.remove('simple-field--missing');
     });
-  });
-  // sex toggle clears missing on click
-  document.querySelectorAll('.sex-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      btn.closest('.simple-field')?.classList.remove('simple-field--missing');
+    inp.addEventListener('blur', () => {
+      setFieldCheck(id, inp.value !== '' ? 'ok' : '');
     });
   });
+  // sex check span
+  const sexLabel = document.querySelector('.simple-field:has(#sex-m) label');
+  if (sexLabel) {
+    const ck = document.createElement('span'); ck.className = 'field-check'; ck.id = 'fc-sex';
+    sexLabel.appendChild(ck);
+  }
 });
 
 window.flushActiveInputs = () => {
@@ -728,10 +742,19 @@ window.flushActiveInputs = () => {
   });
 };
 
+window.setFieldCheck = (id, state) => {
+  const el = document.getElementById('fc-' + id);
+  if (!el) return;
+  el.textContent = state === 'ok' ? ' ✓' : state === 'err' ? ' ✗' : '';
+  el.className = 'field-check' + (state ? ' ' + state : '');
+};
+
 window.setSex = (val) => {
   document.getElementById('f-sex').value = val;
   document.querySelectorAll('.sex-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('sex-' + val).classList.add('active');
+  setFieldCheck('sex', 'ok');
+  document.querySelector('.simple-field:has(#sex-m)')?.classList.remove('simple-field--missing');
 };
 
 window.signInWithGoogle = () => {
@@ -928,8 +951,14 @@ window.generateReport = () => {
       if (!el) return;
       const card = el.closest('.field-card');
       const simple = el.closest('.simple-field');
-      if (card) card.classList.add('field-card--missing');
-      else if (simple) simple.classList.add('simple-field--missing');
+      if (card) {
+        card.classList.add('field-card--missing');
+      } else if (simple) {
+        simple.classList.add('simple-field--missing');
+        // show ✗ on the label check span
+        const checkId = f.id === 'f-code' ? 'code' : f.id === 'f-age' ? 'age' : f.id === 'f-height' ? 'height' : f.id === 'f-sex' ? 'sex' : null;
+        if (checkId) setFieldCheck(checkId, 'err');
+      }
     });
     errEl.innerHTML = '<strong>שדות חסרים — יש להשלים לפני הפקת הדו״ח:</strong><br>' +
       missing.map(f => f.label).join(' &nbsp;|&nbsp; ');

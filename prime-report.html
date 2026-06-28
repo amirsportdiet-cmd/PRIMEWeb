@@ -82,6 +82,12 @@ body { font-family:"Rubik","Assistant","Heebo",sans-serif; direction:rtl; margin
 .field-tab:hover:not(.active) { border-color:#0d9488; color:#0d9488; }
 .field-tab.active.start { background:#e2e8f0; border-color:#94a3b8; color:#334155; }
 .field-tab.active.end { background:#0d9488; border-color:#0d9488; color:#fff; }
+.field-tab.filled:not(.active) { border-color:#16a34a; color:#16a34a; background:#f0fdf4; }
+.field-tab.active.start.filled { background:#dcfce7; border-color:#16a34a; color:#15803d; }
+.field-tab.active.end.filled { background:#15803d; border-color:#15803d; color:#fff; }
+.field-card--missing { border:2px solid #f87171 !important; background:#fff5f5 !important; }
+.field-card--missing .field-label { color:#dc2626; }
+.simple-field--missing input, .simple-field--missing select, .simple-field--missing .sex-toggle .sex-btn { border-color:#f87171 !important; }
 .field-active-input { width:100%; box-sizing:border-box; border:2px solid #e2e8f0; border-radius:8px; padding:9px 10px; font-size:16px; font-family:inherit; color:#16304f; text-align:center; transition:.15s; background:#fff; }
 .field-active-input:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0 3px rgba(13,148,136,.1); }
 .field-err { display:block; font-size:11px; color:#dc2626; margin-top:5px; min-height:14px; font-weight:600; }
@@ -626,11 +632,21 @@ function handleUser(user) {
 }
 
 // ---- Sign in ----
+window.markTab = (card, side, filled) => {
+  const btn = card.querySelector(`.field-tab.${side === 's' ? 'start' : 'end'}`);
+  if (!btn) return;
+  const label = side === 's' ? 'התחלה' : 'סוף';
+  btn.textContent = filled ? '✓ ' + label : label;
+  btn.classList.toggle('filled', filled);
+};
+
 window.switchTab = (btn, field, side) => {
   const card = btn.closest('.field-card');
   const inp = card.querySelector('.field-active-input');
-  // save current value to hidden
-  document.getElementById(inp.dataset.field + '-' + inp.dataset.side).value = inp.value;
+  // save current side value + mark tab
+  const currentSide = inp.dataset.side;
+  document.getElementById(inp.dataset.field + '-' + currentSide).value = inp.value;
+  markTab(card, currentSide, inp.value !== '');
   // switch tab
   card.querySelectorAll('.field-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
@@ -646,12 +662,19 @@ window.storeVal = (inp) => {
   if (hidden) hidden.value = inp.value;
 };
 
-// validate on blur — show error message, don't clamp
+// validate on blur — show error, mark ✓
 document.addEventListener('blur', e => {
   const t = e.target;
   if (!t.matches('.field-active-input, #f-age, #f-height')) return;
-  if (t.matches('.field-active-input')) storeVal(t);
-  showFieldError(t);
+  if (t.matches('.field-active-input')) {
+    storeVal(t);
+    showFieldError(t);
+    const errEl = t.parentElement.querySelector('.field-err');
+    const hasErr = errEl && errEl.textContent !== '';
+    markTab(t.closest('.field-card'), t.dataset.side, t.value !== '' && !hasErr);
+  } else {
+    showFieldError(t);
+  }
 }, true);
 
 window.showFieldError = (inp) => {
@@ -673,16 +696,28 @@ window.showFieldError = (inp) => {
   }
 };
 
-// inject error spans after DOM ready
+// inject error spans + clear missing highlight on input
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.field-active-input').forEach(inp => {
     const s = document.createElement('span'); s.className = 'field-err'; inp.after(s);
-    inp.addEventListener('input', () => { s.textContent = ''; });
+    inp.addEventListener('input', () => {
+      s.textContent = '';
+      inp.closest('.field-card')?.classList.remove('field-card--missing');
+    });
   });
-  ['f-age','f-height'].forEach(id => {
+  ['f-age','f-height','f-code'].forEach(id => {
     const inp = document.getElementById(id); if (!inp) return;
     const s = document.createElement('span'); s.className = 'field-err'; inp.after(s);
-    inp.addEventListener('input', () => { s.textContent = ''; });
+    inp.addEventListener('input', () => {
+      s.textContent = '';
+      inp.closest('.simple-field')?.classList.remove('simple-field--missing');
+    });
+  });
+  // sex toggle clears missing on click
+  document.querySelectorAll('.sex-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.closest('.simple-field')?.classList.remove('simple-field--missing');
+    });
   });
 });
 
@@ -881,9 +916,23 @@ window.generateReport = () => {
     return !el || el.value === '' || el.value === null;
   }).map(f => f.label);
 
+  // clear previous highlights
+  document.querySelectorAll('.field-card--missing, .simple-field--missing').forEach(el =>
+    el.classList.remove('field-card--missing', 'simple-field--missing'));
+
   const errEl = document.getElementById('form-error');
   if (missing.length > 0) {
-    errEl.innerHTML = '<strong>שדות חסרים:</strong><br>' + missing.join(' &nbsp;|&nbsp; ');
+    // highlight each missing field
+    missing.forEach(f => {
+      const el = document.getElementById(f.id);
+      if (!el) return;
+      const card = el.closest('.field-card');
+      const simple = el.closest('.simple-field');
+      if (card) card.classList.add('field-card--missing');
+      else if (simple) simple.classList.add('simple-field--missing');
+    });
+    errEl.innerHTML = '<strong>שדות חסרים — יש להשלים לפני הפקת הדו״ח:</strong><br>' +
+      missing.map(f => f.label).join(' &nbsp;|&nbsp; ');
     errEl.style.display = 'block';
     errEl.scrollIntoView({ behavior:'smooth', block:'nearest' });
     return;

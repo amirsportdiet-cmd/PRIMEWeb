@@ -392,6 +392,18 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
             <input type="hidden" id="f-sex" value="">
           </div>
         </div>
+        <div class="form-row" style="margin-top:14px;">
+          <div class="field-card">
+            <div class="field-label">תאריך מדידה <span style="font-weight:500;color:#94a3b8;font-size:11px;">(אופציונלי)</span></div>
+            <div class="field-tab-row">
+              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-date','s')">התחלה</button>
+              <button type="button" class="field-tab end" onclick="switchTab(this,'f-date','e')">סוף</button>
+            </div>
+            <input type="date" class="field-active-input" data-field="f-date" data-side="s"
+              data-ph-s="" data-ph-e="" oninput="storeVal(this)">
+            <input type="hidden" id="f-date-s"><input type="hidden" id="f-date-e">
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1082,9 +1094,17 @@ window.generateReport = () => {
 
   const g = id => +document.getElementById(id).value || 0;
 
+  const fmtDate = d => {
+    if (!d) return '';
+    const [y,m,day] = d.split('-');
+    return `${day}/${m}/${y}`;
+  };
+
   const D = {
     code: document.getElementById('f-code').value || '—',
     age, sex, height,
+    dateS: fmtDate(document.getElementById('f-date-s').value),
+    dateE: fmtDate(document.getElementById('f-date-e').value),
     // metabolism
     reeS: g('f-ree-s'), reeE: g('f-ree-e'),
     rerS: g('f-rer-s'), rerE: g('f-rer-e'),
@@ -1180,7 +1200,7 @@ window.generateReport = () => {
   <div class="logo"><img src="images/prime/prime_logo.jpeg" alt="PRIME"></div>
   <div class="head-txt">
     <h1>הסבר על תוצאות הבדיקות שלך</h1>
-    <div class="sub">בדיקות מטבוליזם והרכב גוף · קוד: ${D.code}</div>
+    <div class="sub">בדיקות מטבוליזם והרכב גוף · קוד: ${D.code}${D.dateS || D.dateE ? ` · ${D.dateS || '?'} — ${D.dateE || '?'}` : ''}</div>
   </div>
   <div class="head-badge">מחקר PRIME</div>
 </div>

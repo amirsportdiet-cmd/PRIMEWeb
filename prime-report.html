@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מחולל דוח PRIME</title>
+<style>
+/* ===== Firebase Auth UI ===== */
+body { font-family:"Rubik","Assistant","Heebo",sans-serif; direction:rtl; margin:0; background:#f1f5f9; }
+#auth-screen { display:flex; align-items:center; justify-content:center; min-height:100vh; }
+.auth-box { background:#fff; border-radius:16px; padding:40px 36px; text-align:center; max-width:380px; width:90%; box-shadow:0 4px 24px rgba(0,0,0,.1); }
+.auth-box h2 { color:#16304f; font-size:22px; margin-bottom:8px; }
+.auth-box p { color:#64748b; font-size:14px; margin-bottom:28px; }
+.btn-google { display:flex; align-items:center; justify-content:center; gap:10px; background:#fff; border:2px solid #e2e8f0; border-radius:10px; padding:12px 20px; font-size:15px; font-weight:600; color:#1f2937; cursor:pointer; width:100%; transition:.15s; }
+.btn-google:hover { background:#f8fafc; border-color:#94a3b8; }
+.btn-google svg { width:22px; height:22px; }
+.no-access { background:#fff; border-radius:16px; padding:40px 36px; text-align:center; max-width:380px; width:90%; box-shadow:0 4px 24px rgba(0,0,0,.1); }
+.no-access h2 { color:#b91c1c; font-size:22px; }
+.no-access p { color:#64748b; font-size:14px; margin-top:12px; }
+.btn-signout { margin-top:20px; background:#f1f5f9; border:none; border-radius:8px; padding:10px 22px; font-size:14px; cursor:pointer; color:#64748b; }
+
+/* ===== Form UI ===== */
+#form-screen { display:none; min-height:100vh; padding:24px; }
+.form-wrap { max-width:860px; margin:0 auto; }
+.form-title { background:#16304f; color:#fff; border-radius:14px; padding:20px 28px; margin-bottom:24px; display:flex; align-items:center; justify-content:space-between; }
+.form-title h1 { font-size:22px; margin:0; }
+.form-title span { font-size:13px; color:#94c7f4; }
+.form-section { background:#fff; border-radius:14px; padding:20px 24px; margin-bottom:16px; border:1px solid #e2e8f0; }
+.form-section h3 { color:#16304f; font-size:16px; font-weight:700; margin:0 0 16px; padding-bottom:10px; border-bottom:2px solid #0d9488; }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+.form-row.triple { grid-template-columns:1fr 1fr 1fr; }
+.form-row.single { grid-template-columns:1fr; }
+label { display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:4px; }
+input[type=number], input[type=text], select {
+  width:100%; border:1.5px solid #e2e8f0; border-radius:8px; padding:9px 12px;
+  font-size:14px; font-family:inherit; direction:rtl; box-sizing:border-box; background:#fff;
+  transition:.15s;
+}
+input:focus, select:focus { outline:none; border-color:#0d9488; }
+.col-pair { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.col-pair label { grid-column:span 2; }
+.col-label { font-size:10px; text-align:center; color:#94a3b8; margin-bottom:2px; }
+.form-actions { display:flex; gap:12px; justify-content:center; margin-top:24px; }
+.btn-gen { background:#0d9488; color:#fff; border:none; border-radius:10px; padding:14px 36px; font-size:16px; font-weight:700; cursor:pointer; font-family:inherit; }
+.btn-gen:hover { background:#0a7c72; }
+.btn-out { background:#f1f5f9; color:#64748b; border:none; border-radius:10px; padding:14px 20px; font-size:14px; cursor:pointer; font-family:inherit; }
+.error-msg { color:#b91c1c; font-size:13px; text-align:center; margin-top:8px; display:none; }
+
+/* ===== Report ===== */
+#report-screen { display:none; }
+.print-bar { background:#16304f; color:#fff; padding:12px 24px; display:flex; align-items:center; justify-content:space-between; }
+.print-bar span { font-size:14px; }
+.btn-print { background:#0d9488; color:#fff; border:none; border-radius:8px; padding:10px 24px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }
+.btn-back { background:transparent; color:#94c7f4; border:1px solid #94c7f4; border-radius:8px; padding:10px 18px; font-size:13px; cursor:pointer; font-family:inherit; }
+#report-content { background:#fff; max-width:794px; margin:24px auto; padding:13mm; }
+
+/* ===== Report styles (copied from template exactly) ===== */
+@page { size: A4; margin: 13mm 13mm; }
+#report-content * { box-sizing:border-box; }
+:root{
+  --navy:#16304f; --navy2:#1e3a5f; --teal:#0d9488; --teal-l:#e6f7f4;
+  --ink:#1f2937; --muted:#64748b; --line:#e2e8f0;
+  --green:#10b981; --green-l:#d1fae5; --amber:#f59e0b; --amber-l:#fef3c7;
+}
+#report-content { font-family:"Rubik","Assistant","Heebo",sans-serif; color:var(--ink); direction:rtl; font-size:12.5px; line-height:1.4; }
+.head{ display:flex; align-items:center; gap:18px; border-bottom:4px solid var(--teal); padding-bottom:12px; margin-bottom:6px; }
+.logo{ flex:0 0 auto; height:82px; display:flex; align-items:center; justify-content:center; }
+.logo img{ height:100%; width:auto; object-fit:contain; }
+.head-txt{ flex:1; }
+.head-txt h1{ font-size:30px; font-weight:700; color:var(--navy); letter-spacing:-.3px; }
+.head-txt .sub{ font-size:16px; color:var(--muted); margin-top:7px; }
+.head-badge{ flex:0 0 auto; background:var(--navy); color:#fff; font-size:13px; font-weight:600; padding:9px 17px; border-radius:24px; }
+.section{ margin-bottom:2px; }
+.sec-head{ display:flex; align-items:center; gap:12px; margin-bottom:5px; }
+.sec-num{ width:34px; height:34px; border-radius:9px; background:var(--teal); color:#fff; font-weight:700; font-size:18px; display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+.sec-head h2{ font-size:22px; font-weight:700; color:var(--navy); }
+.lead{ background:var(--teal-l); border-radius:12px; padding:7px 15px; font-size:12px; color:#0f5e57; margin-bottom:2px; line-height:1.38; }
+.lead b{ color:var(--teal); }
+.grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+.grid2{ display:grid; grid-template-columns:repeat(2,1fr); gap:18px; }
+.pagebreak{ break-before:page; }
+.summary{ background:var(--teal-l); border-radius:12px; padding:15px 22px; font-size:14px; color:#0f5e57; line-height:1.6; margin-top:18px; }
+.summary b{ color:var(--teal); }
+.nb{ white-space:nowrap; }
+.qrule{ background:#fff7ed; border:1px solid #fed7aa; border-radius:10px; padding:7px 13px; font-size:11px; color:#9a3412; line-height:1.38; margin-top:4px; }
+.qrule b{ color:#c2410c; }
+.statrow5{ display:grid; grid-template-columns:repeat(6,1fr); gap:8px; }
+.statrow5 .stat{ flex-direction:column; align-items:center; justify-content:flex-start; gap:1px; padding:8px 11px; text-align:center; }
+.statrow5 .stat .l{ font-size:10.5px; min-height:27px; }
+.statrow5 .stat .v{ font-size:20px; margin-top:1px; }
+.statrow5 .stat .v small{ font-size:10px; }
+.statrow5 .stat .meta{ text-align:center; font-size:9.2px; line-height:1.45; margin-top:4px; }
+.statrow5 .tag{ font-size:9.5px; padding:1.5px 8px; }
+.refbox{ background:#f8fafc; border:1px solid var(--line); border-radius:9px; padding:6px 12px; margin-top:6px; font-size:9.8px; color:#475569; }
+.refbox .rt{ font-weight:700; color:var(--navy); margin-bottom:2px; font-size:10.5px; }
+.refbox .items{ display:grid; grid-template-columns:1fr 1fr; gap:1px 18px; line-height:1.38; }
+.refbox .items b{ color:var(--navy); }
+.agenote{ font-size:9.5px; color:#94a3b8; margin-top:4px; line-height:1.4; }
+.sheet2{ min-height:1010px; display:flex; flex-direction:column; }
+.sheet2 .section{ flex:1; display:flex; flex-direction:column; }
+.sheet2 .grid2{ flex:1; grid-auto-rows:1fr; }
+.sheet2 .card{ display:flex; flex-direction:column; }
+.sheet2 .card .bar-wrap{ margin-top:auto; }
+.ill{ display:flex; justify-content:center; align-items:center; margin:12px 0 6px; }
+.ill svg{ height:60px; width:auto; }
+.ill .photo{ height:120px; width:auto; max-width:100%; object-fit:contain; border-radius:8px; }
+.card{ border:1px solid var(--line); border-radius:12px; padding:7px 14px 6px; background:#fff; }
+.card .label{ font-size:13.5px; color:var(--muted); font-weight:500; text-align:center; }
+.card .val{ font-size:25px; font-weight:700; color:var(--navy); line-height:1.05; margin:2px 0 2px; }
+.card .val small{ font-size:13px; font-weight:500; color:var(--muted); }
+.card .desc{ font-size:10.5px; color:#475569; line-height:1.3; margin-top:3px; }
+.tag{ display:inline-block; font-size:12px; font-weight:700; padding:3px 12px; border-radius:24px; }
+.tag.ok{ background:var(--green-l); color:#047857; }
+.tag.warn{ background:var(--amber-l); color:#b45309; }
+.note .tag, .desc .tag, .meta .tag{ display:block; width:fit-content; margin:4px auto 0; }
+.bar-wrap{ margin-top:5px; }
+.bar{ position:relative; height:11px; border-radius:8px; background:linear-gradient(90deg,#fde68a 0%,#a7f3d0 35%,#a7f3d0 65%,#fecaca 100%); }
+.bar.simple{ background:#eef2f7; }
+.zone{ position:absolute; top:0; bottom:0; background:var(--green); opacity:.32; border-radius:8px; }
+.mark{ position:absolute; top:-5px; width:0; height:0; border-left:7px solid transparent; border-right:7px solid transparent; border-top:11px solid var(--navy); transform:translateX(50%); }
+.scale{ display:flex; justify-content:space-between; font-size:10.5px; color:#94a3b8; margin-top:3px; }
+.split{ display:flex; height:30px; border-radius:8px; overflow:hidden; margin-top:8px; font-size:11px; font-weight:700; color:#fff; }
+.split .a{ background:var(--teal); display:flex; align-items:center; justify-content:center; text-align:center; line-height:1.1; padding:0 2px; }
+.split .b{ background:var(--navy2); display:flex; align-items:center; justify-content:center; text-align:center; line-height:1.1; padding:0 2px; }
+.splitleg{ display:flex; gap:18px; font-size:11px; color:#475569; margin-top:7px; }
+.splitleg span{ display:flex; align-items:center; gap:5px; }
+.dot{ width:11px; height:11px; border-radius:3px; display:inline-block; }
+.dual{ display:flex; gap:18px; margin:5px 0 2px; }
+.dual .dv{ font-size:22px; font-weight:700; color:var(--navy); line-height:1.05; }
+.dual .dv small{ font-size:11px; font-weight:500; color:var(--muted); }
+.dual .dl{ font-size:10.5px; color:var(--muted); margin-top:1px; }
+.note{ font-size:11px; color:#64748b; margin-top:3px; line-height:1.28; }
+.note b{ color:var(--navy); }
+.foot{ margin-top:7px; border-top:1px solid var(--line); padding-top:10px; display:flex; justify-content:space-between; font-size:12px; color:#94a3b8; }
+.csub{ font-size:12.5px; font-weight:700; color:var(--navy); margin:9px 0 5px; padding-right:9px; border-right:4px solid var(--teal); }
+.cgrid{ display:grid; gap:10px; }
+.cgrid.g3{ grid-template-columns:repeat(3,1fr); }
+.cgrid.g4{ grid-template-columns:repeat(4,1fr); }
+.ccard{ border:1px solid var(--line); border-radius:10px; padding:7px 10px; background:#fff; }
+.ccard .cl{ font-size:10.5px; color:var(--navy); font-weight:600; margin-bottom:6px; min-height:24px; line-height:1.22; }
+.crow{ display:flex; align-items:center; justify-content:space-between; gap:6px; }
+.cside{ text-align:center; }
+.ct{ font-size:8px; color:#94a3b8; margin-bottom:1px; letter-spacing:.2px; }
+.cv{ font-weight:700; line-height:1; white-space:nowrap; }
+.cv.s{ font-size:13.5px; color:#9aa6b4; }
+.cv.e{ font-size:17px; color:var(--navy); }
+.cv .ex{ display:block; font-size:8.5px; font-weight:500; color:var(--muted); margin-top:2px; }
+.cv.s .ex{ color:#b4bdc9; }
+.chip{ display:inline-flex; align-items:center; gap:2px; padding:2px 6px; border-radius:14px; font-size:9px; font-weight:700; white-space:nowrap; }
+.chip.up{ background:var(--green-l); color:#047857; }
+.chip.down{ background:#fee2e2; color:#b91c1c; }
+.chip.flat{ background:#f1f5f9; color:#64748b; }
+.cinterp{ font-size:9px; color:#475569; margin-top:5px; padding-top:4px; border-top:1px dashed var(--line); line-height:1.2; }
+.clegend{ display:flex; gap:16px; font-size:10.5px; color:#475569; margin:0 0 4px; }
+.compare{ min-height:1012px; display:flex; flex-direction:column; }
+.compare .cbody{ flex:1; display:flex; flex-direction:column; justify-content:space-between; gap:8px; }
+.fmgrid{ display:grid; grid-template-columns:1fr auto 1fr; align-items:center; text-align:center; column-gap:6px; row-gap:6px; margin-top:2px; }
+.fmgrid .h{ font-size:9px; color:#94a3b8; letter-spacing:.2px; }
+.fmgrid .s{ font-size:15px; font-weight:700; color:#9aa6b4; line-height:1; white-space:nowrap; }
+.fmgrid .e{ font-size:17px; font-weight:700; color:var(--navy); line-height:1; white-space:nowrap; }
+.fmgrid .s small{ font-size:9px; font-weight:500; color:#b4bdc9; }
+.fmgrid .e small{ font-size:9px; font-weight:500; color:var(--muted); }
+.fmgrid .c{ display:flex; justify-content:center; }
+.clegend span{ display:flex; align-items:center; gap:5px; }
+.stat{ border:1px solid var(--line); border-radius:10px; padding:8px 11px; text-align:center; background:#fff; }
+
+@media print {
+  .no-print { display:none !important; }
+  .print-bar { display:none !important; }
+  body { background:#fff; }
+  #report-content { margin:0; padding:0; max-width:none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ===== AUTH SCREEN ===== -->
+<div id="auth-screen">
+  <div id="auth-box" class="auth-box">
+    <div style="font-size:42px; margin-bottom:12px;">🔬</div>
+    <h2>מחולל דוח מחקר PRIME</h2>
+    <p>כלי פנימי למחקר. יש להתחבר עם חשבון Google מורשה.</p>
+    <button class="btn-google" onclick="signInWithGoogle()">
+      <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg>
+      התחברות עם Google
+    </button>
+    <div id="auth-loading" style="color:#64748b; font-size:13px; margin-top:16px; display:none;">מתחבר...</div>
+  </div>
+  <div id="no-access-box" class="no-access" style="display:none;">
+    <div style="font-size:42px; margin-bottom:12px;">🔒</div>
+    <h2>אין הרשאה</h2>
+    <p id="no-access-msg">החשבון שלך אינו מורשה לגשת לכלי זה.</p>
+    <button class="btn-signout" onclick="signOut()">התנתק</button>
+  </div>
+</div>
+
+<!-- ===== FORM SCREEN ===== -->
+<div id="form-screen">
+  <div class="form-wrap">
+    <div class="form-title no-print">
+      <h1>מחולל דוח PRIME</h1>
+      <span id="user-email-display"></span>
+      <button class="btn-out" onclick="signOut()">יציאה</button>
+    </div>
+
+    <!-- פרטי נחקר -->
+    <div class="form-section no-print">
+      <h3>פרטי נחקר/ת</h3>
+      <div class="form-row triple">
+        <div>
+          <label>קוד נחקר/ת</label>
+          <input type="text" id="f-code" placeholder="לדוגמה: P042">
+        </div>
+        <div>
+          <label>גיל (שנים)</label>
+          <input type="number" id="f-age" min="18" max="100" placeholder="62">
+        </div>
+        <div>
+          <label>מין</label>
+          <select id="f-sex">
+            <option value="">-- בחר --</option>
+            <option value="m">זכר</option>
+            <option value="f">נקבה</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- מטבוליזם -->
+    <div class="form-section no-print">
+      <h3>מטבוליזם (QNRG)</h3>
+      <div class="form-row">
+        <div>
+          <div class="col-pair">
+            <label>REE (קק״ל/יום)</label>
+            <div><div class="col-label">התחלה</div><input type="number" id="f-ree-s" placeholder="1735"></div>
+            <div><div class="col-label">סוף</div><input type="number" id="f-ree-e" placeholder="1720"></div>
+          </div>
+        </div>
+        <div>
+          <div class="col-pair">
+            <label>RER</label>
+            <div><div class="col-label">התחלה</div><input type="number" id="f-rer-s" step="0.01" placeholder="0.84"></div>
+            <div><div class="col-label">סוף</div><input type="number" id="f-rer-e" step="0.01" placeholder="0.82"></div>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div>
+          <div class="col-pair">
+            <label>% שריפת שומן</label>
+            <div><div class="col-label">התחלה</div><input type="number" id="f-fatburn-s" placeholder="60"></div>
+            <div><div class="col-label">סוף</div><input type="number" id="f-fatburn-e" placeholder="67"></div>
+          </div>
+        </div>
+        <div>
+          <div class="col-pair">
+            <label>% שריפת פחמימה</label>
+            <div><div class="col-label">התחלה</div><input type="number" id="f-chburn-s" placeholder="40"></div>
+            <div><div class="col-label">סוף</div><input type="number" id="f-chburn-e" placeholder="33"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- הרכב גוף -->
+    <div class="form-section no-print">
+      <h3>הרכב גוף (InBody)</h3>
+      <div class="form-row">
+        <div>
+          <label>גובה (ס״מ) — קבוע לאורך המחקר</label>
+          <input type="number" id="f-height" placeholder="176" step="0.1">
+        </div>
+      </div>
+      <div class="form-row">
+        <div>
+          <div class="col-pair">
+            <label>משקל (ק״ג)</label>
+            <div><div class="col-label">התחלה</div><input type="number" id="f-wt-s" step="0.1" placeholder="92.0"></div>
+            <div><div class="col-label">סוף</div><input type="number" id="f-wt-e" step="0.1" placeholder="88.0"></div>
+          </div>
+        </div>
+        <div>
+          <div class="col-pair">
+            <label>מסת שומן FM (ק״ג)</label>
+            <div><div class="col-label">התחלה</div><input type="number" id="f-fm-s" step="0.1" placeholder="24.8"></div>
+            <div><div class="col-label">סוף</div><input type="number" id="f-fm-e" step="0.1" placeholder="20.5"></div>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div>
+          <div class="col-pair">
+            <label>מסת שריר SMM (ק״ג)</label>
+            <div><div class="col-label">התחלה</div><input type="number" id="f-smm-s" step="0.1" placeholder="35.5"></div>
+            <div><div class="col-label">סוף</div><input type="number" id="f-smm-e" step="0.1" placeholder="35.8"></div>
+          </div>
+        </div>
+        <div>
+          <div class="col-pair">
+            <label>TBW — סך נוזלים (ליטר)</label>
+            <div><div class="col-label">התחלה</div><input type="number" id="f-tbw-s" step="0.1" placeholder="49.2"></div>
+            <div><div class="col-label">סוף</div><input type="number" id="f-tbw-e" step="0.1" placeholder="49.0"></div>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div>
+          <div class="col-pair">
+            <label>ICW — תוך-תאיים (ליטר)</label>
+            <div><div class="col-label">התחלה</div><input type="number" id="f-icw-s" step="0.1" placeholder="30.7"></div>
+            <div><div class="col-label">סוף</div><input type="number" id="f-icw-e" step="0.1" placeholder="30.5"></div>
+          </div>
+        </div>
+        <div>
+          <div class="col-pair">
+            <label>ECW — חוץ-תאיים (ליטר)</label>
+            <div><div class="col-label">התחלה</div><input type="number" id="f-ecw-s" step="0.1" placeholder="18.5"></div>
+            <div><div class="col-label">סוף</div><input type="number" id="f-ecw-e" step="0.1" placeholder="18.5"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- היקפים -->
+    <div class="form-section no-print">
+      <h3>מדידות גוף והיקפים</h3>
+      <div class="form-row">
+        <div>
+          <div class="col-pair">
+            <label>היקף מותניים (ס״מ)</label>
+            <div><div class="col-label">התחלה</div><input type="number" id="f-waist-s" step="0.5" placeholder="104"></div>
+            <div><div class="col-label">סוף</div><input type="number" id="f-waist-e" step="0.5" placeholder="98"></div>
+          </div>
+        </div>
+        <div>
+          <div class="col-pair">
+            <label>היקף שוק (ס״מ)</label>
+            <div><div class="col-label">התחלה</div><input type="number" id="f-calf-s" step="0.5" placeholder="37"></div>
+            <div><div class="col-label">סוף</div><input type="number" id="f-calf-e" step="0.5" placeholder="37"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- תפקודיות -->
+    <div class="form-section no-print">
+      <h3>בדיקות תפקודיות</h3>
+      <div class="form-row">
+        <div>
+          <div class="col-pair">
+            <label>כוח לפיתה (ק״ג)</label>
+            <div><div class="col-label">התחלה</div><input type="number" id="f-hg-s" step="0.5" placeholder="38"></div>
+            <div><div class="col-label">סוף</div><input type="number" id="f-hg-e" step="0.5" placeholder="40"></div>
+          </div>
+        </div>
+        <div>
+          <div class="col-pair">
+            <label>SPPB (0–12)</label>
+            <div><div class="col-label">התחלה</div><input type="number" id="f-sppb-s" min="0" max="12" placeholder="11"></div>
+            <div><div class="col-label">סוף</div><input type="number" id="f-sppb-e" min="0" max="12" placeholder="12"></div>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div>
+          <div class="col-pair">
+            <label>קימה מכיסא 30 שנ׳ (חזרות)</label>
+            <div><div class="col-label">התחלה</div><input type="number" id="f-sts-s" placeholder="15"></div>
+            <div><div class="col-label">סוף</div><input type="number" id="f-sts-e" placeholder="17"></div>
+          </div>
+        </div>
+        <div>
+          <div class="col-pair">
+            <label>הליכה 2 דקות (מטר)</label>
+            <div><div class="col-label">התחלה</div><input type="number" id="f-walk-s" placeholder="178"></div>
+            <div><div class="col-label">סוף</div><input type="number" id="f-walk-e" placeholder="190"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions no-print">
+      <button class="btn-gen" onclick="generateReport()">הפק דוח</button>
+    </div>
+    <p class="error-msg" id="form-error">נא למלא את כל השדות החובה (גיל, מין, גובה).</p>
+  </div>
+</div>
+
+<!-- ===== REPORT SCREEN ===== -->
+<div id="report-screen">
+  <div class="print-bar no-print">
+    <button class="btn-back" onclick="backToForm()">← חזרה לטופס</button>
+    <span id="report-code-title"></span>
+    <button class="btn-print" onclick="window.print()">הדפס / הורד PDF</button>
+  </div>
+  <div id="report-content"></div>
+</div>
+
+<!-- Firebase SDKs -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut as fbSignOut }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+// =====================================================================
+// ⚠️  מלא כאן את פרטי הפרויקט שלך מ-Firebase Console
+// =====================================================================
+const firebaseConfig = {
+  apiKey:            "REPLACE_API_KEY",
+  authDomain:        "REPLACE_AUTH_DOMAIN",
+  projectId:         "REPLACE_PROJECT_ID",
+  storageBucket:     "REPLACE_STORAGE_BUCKET",
+  messagingSenderId: "REPLACE_MESSAGING_SENDER_ID",
+  appId:             "REPLACE_APP_ID"
+};
+
+// =====================================================================
+// ⚠️  הוסף כאן את כתובות המייל המורשות (אותיות קטנות)
+// =====================================================================
+const ALLOWED_EMAILS = [
+  "amirsportdiet@gmail.com",   // אמיר — תמיד מורשה
+  // "shiranendi@gmail.com",   // שירן — הסר את // כדי להוסיף
+];
+// =====================================================================
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+
+// ---- expose functions to global scope ----
+window.signInWithGoogle = async () => {
+  document.getElementById('auth-loading').style.display = 'block';
+  try { await signInWithPopup(auth, provider); }
+  catch(e) { document.getElementById('auth-loading').style.display = 'none'; }
+};
+window.signOut = async () => {
+  await fbSignOut(auth);
+  showAuthScreen();
+};
+
+// ---- Auth state ----
+onAuthStateChanged(auth, user => {
+  if (!user) { showAuthScreen(); return; }
+  const email = (user.email || '').toLowerCase();
+  if (ALLOWED_EMAILS.map(e=>e.toLowerCase()).includes(email)) {
+    document.getElementById('user-email-display').textContent = user.email;
+    showFormScreen();
+  } else {
+    document.getElementById('no-access-msg').textContent =
+      `החשבון ${user.email} אינו מורשה לגשת לכלי זה.`;
+    showNoAccess();
+  }
+});
+
+function showAuthScreen(){
+  document.getElementById('auth-screen').style.display='flex';
+  document.getElementById('auth-box').style.display='block';
+  document.getElementById('no-access-box').style.display='none';
+  document.getElementById('form-screen').style.display='none';
+  document.getElementById('report-screen').style.display='none';
+}
+function showNoAccess(){
+  document.getElementById('auth-screen').style.display='flex';
+  document.getElementById('auth-box').style.display='none';
+  document.getElementById('no-access-box').style.display='block';
+  document.getElementById('form-screen').style.display='none';
+  document.getElementById('report-screen').style.display='none';
+}
+function showFormScreen(){
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('form-screen').style.display='block';
+  document.getElementById('report-screen').style.display='none';
+}
+</script>
+
+<script>
+// =====================================================================
+// NORMS
+// =====================================================================
+const NORMS = {
+  bmi: { ok: [18.5, 24.9] },
+  waist: { okM: 102, okF: 88 },   // less than
+  whtr: { ok: 0.5 },              // less than
+  calf: { okM: 34, okF: 33 },     // greater than
+  fatPct: {
+    m: { '40-59': [11,21], '60+': [13,24] },
+    f: { '40-59': [23,33], '60+': [24,35] }
+  },
+  ree_pct: { ok: [90, 110] },
+  rer: { ok: [0.70, 1.00] },
+  hg: { okM: 27, okF: 16 },        // greater or equal
+  sppb: { ok: 10 },               // greater or equal
+  // 30s STS Rikli & Jones (25th–75th percentile)
+  sts: {
+    m: [[14,19],[12,18],[12,17],[11,17],[10,15],[8,14],[7,12]],  // 60-64,65-69,...,90+
+    f: [[12,17],[11,16],[10,15],[10,15],[9,14],[8,13],[4,11]]
+  },
+  walk2: {
+    m: { 18:200, 40:196, 50:190, 60:185, 70:170, 80:150 },
+    f: { 18:190, 40:184, 50:178, 60:176, 70:160, 80:140 }
+  }
+};
+
+function stsRange(age, sex) {
+  const ages = [60,65,70,75,80,85,90];
+  let i = 0;
+  for (let a of ages) { if (age >= a) i = ages.indexOf(a); }
+  if (age < 60) i = 0;
+  return sex === 'm' ? NORMS.sts.m[i] : NORMS.sts.f[i];
+}
+function walkExpected(age, sex) {
+  const tbl = sex === 'm' ? NORMS.walk2.m : NORMS.walk2.f;
+  const keys = Object.keys(tbl).map(Number).sort((a,b)=>b-a);
+  for (let k of keys) { if (age >= k) return tbl[k]; }
+  return sex === 'm' ? 200 : 190;
+}
+
+function tagOk(v, min, max) {
+  if (v >= min && v <= max) return '<span class="tag ok">בטווח תקין</span>';
+  return '<span class="tag warn">לשיפור</span>';
+}
+function tagGte(v, thr) {
+  return v >= thr ? '<span class="tag ok">בטווח תקין</span>' : '<span class="tag warn">לשיפור</span>';
+}
+function tagLt(v, thr) {
+  return v < thr ? '<span class="tag ok">בטווח תקין</span>' : '<span class="tag warn">לשיפור</span>';
+}
+
+function harrisB(age, sex, wtKg, htCm) {
+  if (sex === 'm') return 88.362 + 13.397 * wtKg + 4.799 * htCm - 5.677 * age;
+  return 447.593 + 9.247 * wtKg + 3.098 * htCm - 4.330 * age;
+}
+
+function n(v, d=1) { return typeof v === 'number' ? v.toFixed(d) : v; }
+
+// bar marker position (right %) clamped
+function markPos(val, lo, hi) {
+  const pct = (val - lo) / (hi - lo);
+  return Math.max(2, Math.min(96, (1 - pct) * 100));
+}
+
+// Chip logic
+function chip(startVal, endVal, goodDir) {
+  const diff = endVal - startVal;
+  const absDiff = Math.abs(diff);
+  const threshold = 0.01;
+  if (absDiff < threshold) return { cls:'flat', arrow:'נשמר', size:'' };
+  const up = diff > 0;
+  const improved = (goodDir === 'up' && up) || (goodDir === 'down' && !up);
+  const cls = absDiff < threshold ? 'flat' : (improved ? 'up' : 'down');
+  const arrow = up ? '&#9650;' : '&#9660;';
+  return { cls, arrow, size: absDiff };
+}
+
+function interp(goodDir, diff, texts) {
+  const threshold = 0.01;
+  if (Math.abs(diff) < threshold) return texts.flat;
+  return diff > 0 ? texts.up : texts.down;
+}
+
+// =====================================================================
+// GENERATE REPORT
+// =====================================================================
+window.backToForm = () => {
+  document.getElementById('form-screen').style.display = 'block';
+  document.getElementById('report-screen').style.display = 'none';
+};
+
+window.generateReport = () => {
+  const age = +document.getElementById('f-age').value;
+  const sex = document.getElementById('f-sex').value;
+  const height = +document.getElementById('f-height').value;
+  if (!age || !sex || !height) {
+    const err = document.getElementById('form-error');
+    err.style.display = 'block';
+    return;
+  }
+  document.getElementById('form-error').style.display = 'none';
+
+  const g = id => +document.getElementById(id).value || 0;
+
+  const D = {
+    code: document.getElementById('f-code').value || '—',
+    age, sex, height,
+    // metabolism
+    reeS: g('f-ree-s'), reeE: g('f-ree-e'),
+    rerS: g('f-rer-s'), rerE: g('f-rer-e'),
+    fatburnS: g('f-fatburn-s'), fatburnE: g('f-fatburn-e'),
+    chburnS: g('f-chburn-s'), chburnE: g('f-chburn-e'),
+    // body comp
+    wtS: g('f-wt-s'), wtE: g('f-wt-e'),
+    fmS: g('f-fm-s'), fmE: g('f-fm-e'),
+    smmS: g('f-smm-s'), smmE: g('f-smm-e'),
+    tbwS: g('f-tbw-s'), tbwE: g('f-tbw-e'),
+    icwS: g('f-icw-s'), icwE: g('f-icw-e'),
+    ecwS: g('f-ecw-s'), ecwE: g('f-ecw-e'),
+    // circumferences
+    waistS: g('f-waist-s'), waistE: g('f-waist-e'),
+    calfS: g('f-calf-s'), calfE: g('f-calf-e'),
+    // functional
+    hgS: g('f-hg-s'), hgE: g('f-hg-e'),
+    sppbS: g('f-sppb-s'), sppbE: g('f-sppb-e'),
+    stsS: g('f-sts-s'), stsE: g('f-sts-e'),
+    walkS: g('f-walk-s'), walkE: g('f-walk-e'),
+  };
+
+  // Derived — END values
+  const htM = height / 100;
+  const bmiE = D.wtE / (htM * htM);
+  const fatPctE = D.fmE / D.wtE * 100;
+  const ffmE = D.wtE - D.fmE;
+  const whtrE = D.waistE / height;
+  const ecwTbwE = D.ecwE / D.tbwE;
+  const reeExpE = harrisB(age, sex, D.wtE, height);
+  const reePctE = D.reeE / reeExpE * 100;
+
+  // Derived — START values
+  const bmiS = D.wtS / (htM * htM);
+  const fatPctS = D.fmS / D.wtS * 100;
+  const ffmS = D.wtS - D.fmS;
+  const whtrS = D.waistS / height;
+
+  // Tags
+  const ageGroup = age < 60 ? '40-59' : '60+';
+  const fatPctNorm = sex === 'm' ? NORMS.fatPct.m[ageGroup] : NORMS.fatPct.f[ageGroup];
+  const stsRng = stsRange(age, sex);
+  const walkExp = walkExpected(age, sex);
+
+  const tBmi = tagOk(bmiE, 18.5, 24.9);
+  const tWaist = sex === 'm' ? tagLt(D.waistE, 102) : tagLt(D.waistE, 88);
+  const tWhtr = tagLt(whtrE, 0.5);
+  const tCalf = sex === 'm' ? tagGte(D.calfE, 34) : tagGte(D.calfE, 33);
+  const tFatPct = tagOk(fatPctE, fatPctNorm[0], fatPctNorm[1]);
+  const tRee = tagOk(reePctE, 90, 110);
+  const tRer = tagOk(D.rerE, 0.70, 1.00);
+  const tHg = sex === 'm' ? tagGte(D.hgE, 27) : tagGte(D.hgE, 16);
+  const tSppb = tagGte(D.sppbE, 10);
+  const tSts = tagOk(D.stsE, stsRng[0], stsRng[1]);
+  const tWalk = tagGte(D.walkE, walkExp * 0.85);
+
+  // REE bar marker position
+  const reePctPos = markPos(reePctE, 70, 130);
+  const rerPos = markPos(D.rerE, 0.70, 1.00);
+  const fatPctPos = markPos(fatPctE, 0, 50);
+
+  // CHIP helper
+  function mkChip(s, e, goodDir, unit, decimals) {
+    const diff = e - s;
+    const abs = Math.abs(diff);
+    const threshold = decimals === 0 ? 0.5 : 0.005;
+    if (abs < threshold) return `<div class="chip flat">נשמר</div>`;
+    const up = diff > 0;
+    const improved = (goodDir === 'up' && up) || (goodDir === 'down' && !up) || goodDir === 'preserve';
+    const cls = improved ? 'up' : 'down';
+    const arrow = up ? '&#9650;' : '&#9660;';
+    const sizeStr = decimals != null ? abs.toFixed(decimals) : abs.toFixed(1);
+    return `<div class="chip ${cls}">${arrow} ${sizeStr}${unit ? ' ' + unit : ''}</div>`;
+  }
+
+  function mkInterp(s, e, goodDir, texts) {
+    const diff = e - s;
+    const abs = Math.abs(diff);
+    if (abs < 0.005) return texts.flat || 'נשמר';
+    return diff > 0 ? (texts.up || '') : (texts.down || '');
+  }
+
+  // ================================================================
+  // PAGE 1
+  // ================================================================
+  const fatBurnWidth = Math.round(D.fatburnE);
+  const chBurnWidth = 100 - fatBurnWidth;
+  const fatBurnWidthS = Math.round(D.fatburnS);
+  const chBurnWidthS = 100 - fatBurnWidthS;
+
+  const page1 = `
+<div class="head">
+  <div class="logo"><img src="images/prime/prime_logo.jpeg" alt="PRIME"></div>
+  <div class="head-txt">
+    <h1>הסבר על תוצאות הבדיקות שלך</h1>
+    <div class="sub">בדיקות מטבוליזם והרכב גוף · קוד: ${D.code}</div>
+  </div>
+  <div class="head-badge">מחקר PRIME</div>
+</div>
+
+<div class="section">
+  <div class="sec-head"><div class="sec-num">1</div><h2>בדיקת חילוף חומרים במנוחה (QNRG), כמה אנרגיה הגוף שלך שורף?</h2></div>
+  <div class="lead">הבדיקה מודדת, באמצעות מסכה ובמנוחה, כמה <b>חמצן</b> הגוף צורך וכמה <b>פחמן דו-חמצני</b> הוא פולט, ומתוך זה מחושב במדויק כמה קלוריות הגוף שלך שורף, ואיזה "דלק" הוא מעדיף.</div>
+  <div class="grid">
+    <div class="card">
+      <div class="label">הוצאה אנרגטית במנוחה&nbsp;<span class="nb">(REE)</span></div>
+      <div class="val">${Math.round(D.reeE).toLocaleString('he')} <small>קק״ל/יום</small></div>
+      <div class="desc">הקלוריות שהגוף שורף במנוחה מלאה. מספר זה מהווה כ-70% מסך שריפת הקלוריות היומית.</div>
+      <div class="bar-wrap">
+        <div class="bar simple"><div class="zone" style="right:25%;left:0;"></div><div class="mark" style="right:${reePctPos}%;"></div></div>
+        <div class="scale"><span>נמוך מהצפוי</span><span>צפוי</span><span>גבוה מהצפוי</span></div>
+      </div>
+      <div class="note"><b>${n(reePctE,0)}% מהצפוי</b> (Harris-Benedict). תקין: 90–110% ${tRee}</div>
+    </div>
+    <div class="card">
+      <div class="label">מנת הנשימה&nbsp;<span class="nb">(RER)</span></div>
+      <div class="val">${n(D.rerE,2)}</div>
+      <div class="desc">יחס בין פחמן דו-חמצני נפלט לחמצן נצרך. מספר נמוך = שריפת שומן, גבוה = שריפת פחמימה.</div>
+      <div class="bar-wrap">
+        <div class="bar"><div class="mark" style="right:${rerPos}%;"></div></div>
+        <div class="scale"><span>0.70 · שומן</span><span>תמהיל</span><span>1.00 · פחמימה</span></div>
+      </div>
+      <div class="note">טווח אופייני במנוחה בצום ~0.80–0.85 ${tRer}</div>
+    </div>
+    <div class="card">
+      <div class="label">מה שורפים במנוחה</div>
+      <div class="val" style="font-size:17px; margin-top:6px; text-align:center;">תמהיל הדלק</div>
+      <div class="split">
+        <div class="a" style="width:${fatBurnWidth}%;">שומן ${fatBurnWidth}%</div>
+        <div class="b" style="width:${chBurnWidth}%;">פחמימה ${chBurnWidth}%</div>
+      </div>
+      <div class="desc">תמהיל מטבולי הנגזר מ-RER. ${fatBurnWidth >= 60 ? 'שריפת שומן כמקור עיקרי — תמהיל בריא.' : 'תמהיל מטבולי בהתאם לערכי RER.'}</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="sec-head"><div class="sec-num">2</div><h2>בדיקת הרכב גוף (InBody), ממה הגוף שלך בנוי?</h2></div>
+  <div class="lead">זרם חשמלי חלש עובר בגוף ומעריך את הרכבו. חשוב: המכשיר מודד <b>מסה רזה</b> (כל מה שאינו שומן), ומסת השריר היא אומדן הנגזר ממנה, ולא מדידה ישירה.</div>
+  <div class="grid">
+    <div class="card">
+      <div class="label">מסת שומן · Fat Mass&nbsp;<span class="nb">(FM)</span></div>
+      <div class="val">${n(D.fmE,1)} <small>ק״ג · ${n(fatPctE,1)}% אחוז שומן</small></div>
+      <div class="desc">חלק המשקל שמורכב משומן, במשקל ובאחוזים.</div>
+      <div class="bar-wrap">
+        <div class="bar"><div class="mark" style="right:${markPos(fatPctE, 0, 50)}%;"></div></div>
+        <div class="scale"><span>נמוך</span><span>תקין</span><span>גבוה</span></div>
+      </div>
+      <div class="note"><b>גברים:</b> 11–21% (40–59) · 13–24% (60+)<br><b>נשים:</b> 23–33% (40–59) · 24–35% (60+) ${tFatPct}</div>
+    </div>
+    <div class="card">
+      <div class="label">מסה רזה ומסת שריר</div>
+      <div class="dual">
+        <div><div class="dv">${n(ffmE,1)}<small> ק״ג</small></div><div class="dl">FFM · מסה רזה</div></div>
+        <div><div class="dv">${n(D.smmE,1)}<small> ק״ג</small></div><div class="dl">SMM · מסת שריר</div></div>
+      </div>
+      <div class="desc">מסה רזה (FFM) = המשקל פחות השומן. שמירה עליה בירידה במשקל היא מטרת-העל.</div>
+      <div class="bar-wrap">
+        <div class="bar simple"><div class="zone" style="right:30%;left:0;"></div><div class="mark" style="right:55%;"></div></div>
+        <div class="scale"><span>נמוך</span><span>טווח תקין</span><span>גבוה</span></div>
+      </div>
+      <div class="note"><span class="tag ok">בטווח תקין</span></div>
+    </div>
+    <div class="card">
+      <div class="label">נוזלים · Total Body Water&nbsp;<span class="nb">(TBW)</span></div>
+      <div class="val">${n(D.tbwE,1)} <small>ליטר</small></div>
+      <div class="split" style="height:26px; font-size:11.5px;">
+        <div class="a" style="width:${Math.round(D.icwE/D.tbwE*100)}%; background:#0ea5e9;">ICW · ${n(D.icwE,1)}</div>
+        <div class="b" style="width:${Math.round(D.ecwE/D.tbwE*100)}%; background:#7dd3fc; color:#0c4a6e;">ECW · ${n(D.ecwE,1)}</div>
+      </div>
+      <div class="desc"><b>סך</b> המים בגוף. יחס ECW/TBW: <b>${n(ecwTbwE,3)}</b>, תקין 0.360–0.390. ${tagOk(ecwTbwE, 0.360, 0.390)}</div>
+    </div>
+  </div>
+  <div class="qrule"><b>חוק הרבע:</b> בירידה במשקל ללא אימוני כוח, בממוצע כ-25% מהמשקל היורד מגיע ממסה רזה. לכן השילוב של חלבון ואימוני כוח במחקר נועד לשמר את השריר.</div>
+</div>
+
+<div class="section">
+  <div class="sec-head"><div class="sec-num">3</div><h2>מדידות גוף והיקפים · Anthropometrics</h2></div>
+  <div class="statrow5">
+    <div class="stat"><div class="l">גובה · Height</div><div class="v">${height} <small>ס״מ</small></div></div>
+    <div class="stat"><div class="l">משקל · Weight</div><div class="v">${n(D.wtE,1)} <small>ק״ג</small></div></div>
+    <div class="stat"><div class="l">BMI · מדד מסת גוף</div><div class="v">${n(bmiE,1)}</div><div class="meta">${tBmi}</div></div>
+    <div class="stat"><div class="l">היקף מותניים · Waist</div><div class="v">${n(D.waistE,0)} <small>ס״מ</small></div><div class="meta">${tWaist}</div></div>
+    <div class="stat"><div class="l">יחס מותן-גובה · WHtR</div><div class="v">${n(whtrE,2)}</div><div class="meta">${tWhtr}</div></div>
+    <div class="stat"><div class="l">היקף שוק · Calf</div><div class="v">${n(D.calfE,0)} <small>ס״מ</small></div><div class="meta">${tCalf}</div></div>
+  </div>
+  <div class="refbox">
+    <div class="rt">טווחי ייחוס תקינים</div>
+    <div class="items">
+      <div><b>BMI:</b> 18.5–24.9 (עודף משקל 25–29.9; השמנה ≥30)</div>
+      <div><b>יחס מותן-גובה (WHtR):</b> מתחת ל-0.5</div>
+      <div><b>היקף מותניים:</b> גברים מתחת ל-102, נשים מתחת ל-88 ס״מ</div>
+      <div><b>היקף שוק:</b> גברים מעל 34, נשים מעל 33 ס״מ</div>
+    </div>
+  </div>
+  <div class="agenote">* ערכי הסף התלויים בגיל ובמין (אחוז שומן, קימה מכיסא) מותאמים לגיל ולמין של הנחקר/ת.</div>
+</div>
+<div class="foot"><span>קוד: ${D.code} · גיל ${age} · ${sex==='m'?'זכר':'נקבה'}</span><span>מחקר PRIME</span></div>`;
+
+  // ================================================================
+  // PAGE 2
+  // ================================================================
+  const hgNote = sex === 'm' ? 'תקין: גברים ≥27, נשים ≥16 ק״ג' : 'תקין: נשים ≥16, גברים ≥27 ק״ג';
+  const stsNote = `תקין (גיל ${age < 60 ? '60–64' : age < 65 ? '60–64' : age < 70 ? '65–69' : age < 75 ? '70–74' : age < 80 ? '75–79' : age < 85 ? '80–84' : age < 90 ? '85–89' : '90+'}): ${sex==='m'?'גברים':'נשים'} ${stsRng[0]}–${stsRng[1]} חזרות`;
+
+  const page2 = `
+<div class="sheet2 pagebreak">
+<div class="head">
+  <div class="logo"><img src="images/prime/prime_logo.jpeg" alt="PRIME"></div>
+  <div class="head-txt"><h1>הסבר על תוצאות הבדיקות שלך</h1><div class="sub">בדיקות תפקודיות · קוד: ${D.code}</div></div>
+  <div class="head-badge">מחקר PRIME</div>
+</div>
+<div class="section">
+  <div class="sec-head"><div class="sec-num">4</div><h2>בדיקות תפקודיות, איך הגוף מתפקד בפועל?</h2></div>
+  <div class="lead">מעבר להרכב הגוף, חשוב לבדוק איך הגוף <b>מתפקד בפועל</b>: כמה כוח יש לך, שיווי המשקל והסיבולת. הבדיקות רגישות מאוד לשינויים בשריר ובכושר לאורך המחקר.</div>
+  <div class="grid2">
+    <div class="card">
+      <div class="label">כוח לפיתה&nbsp;<span class="nb">(Handgrip Strength)</span></div>
+      <div class="val">${n(D.hgE,1)} <small>ק״ג</small></div>
+      <div class="desc">כוח הלפיתה של כף היד. זהו מדד אמין לכוח השרירים בכל הגוף, וירידה בו מעידה על איבוד שריר (סרקופניה).</div>
+      <div class="ill"><img class="photo" src="images/prime/hg.png" alt="כוח לפיתה" onerror="this.style.display='none'"></div>
+      <div class="bar-wrap">
+        <div class="bar simple"><div class="zone" style="right:25%;left:0;"></div><div class="mark" style="right:${markPos(D.hgE, 0, 70)}%;"></div></div>
+        <div class="scale"><span>חולשה</span><span>טווח תקין</span><span>כוח גבוה</span></div>
+      </div>
+      <div class="note">${hgNote} ${tHg}</div>
+    </div>
+    <div class="card">
+      <div class="label">סוללת מבחנים קצרה להערכת התפקוד הגופני&nbsp;<span class="nb">(SPPB)</span></div>
+      <div class="val"><span dir="ltr">${D.sppbE} <small>/ 12</small></span></div>
+      <div class="desc">מבחן משולב משלושה חלקים: שיווי משקל, מהירות הליכה, ויכולת לקום מכיסא. 0–12, ככל שגבוה יותר — תפקוד טוב יותר.</div>
+      <div class="ill"><img class="photo" src="images/prime/sppb.png" alt="SPPB" onerror="this.style.display='none'"></div>
+      <div class="bar-wrap">
+        <div class="bar simple"><div class="zone" style="right:20%;left:0;"></div><div class="mark" style="right:${markPos(D.sppbE, 0, 12)}%;"></div></div>
+        <div class="scale"><span>0 · מוגבל</span><span>סיכון</span><span>12 · מצוין</span></div>
+      </div>
+      <div class="note">ציון ≥10 = תפקוד טוב; ≤8 = סיכון לירידה תפקודית ${tSppb}</div>
+    </div>
+    <div class="card">
+      <div class="label">קימה מכיסא ב-30 שניות&nbsp;<span class="nb">(30s STS)</span></div>
+      <div class="val">${D.stsE} <small>חזרות</small></div>
+      <div class="desc">כמה פעמים מצליחים לקום מכיסא ולשבת חזרה, בלי עזרת הידיים, ב-30 שניות. מודד כוח וסיבולת שרירי הרגליים.</div>
+      <div class="ill"><img class="photo" src="images/prime/sts.png" alt="קימה מכיסא" onerror="this.style.display='none'"></div>
+      <div class="bar-wrap">
+        <div class="bar simple"><div class="zone" style="right:25%;left:0;"></div><div class="mark" style="right:${markPos(D.stsE, 0, 25)}%;"></div></div>
+        <div class="scale"><span>נמוך</span><span>טווח תקין</span><span>גבוה</span></div>
+      </div>
+      <div class="note">${stsNote} ${tSts}</div>
+    </div>
+    <div class="card">
+      <div class="label">מבחן הליכה 2 דקות&nbsp;<span class="nb" dir="ltr">(2-min walk)</span></div>
+      <div class="val">${D.walkE} <small>מטר</small></div>
+      <div class="desc">המרחק שעוברים בהליכה רציפה במשך 2 דקות. מודד סיבולת לב-ריאה ויכולת תפקודית.</div>
+      <div class="ill"><img class="photo" src="images/prime/walk.png" alt="מבחן הליכה" onerror="this.style.display='none'"></div>
+      <div class="bar-wrap">
+        <div class="bar simple"><div class="zone" style="right:25%;left:0;"></div><div class="mark" style="right:${markPos(D.walkE, 0, 250)}%;"></div></div>
+        <div class="scale"><span>נמוך</span><span>טווח תקין</span><span>גבוה</span></div>
+      </div>
+      <div class="note">ממוצע צפוי (גיל ${age}): ~${walkExp} מ׳ ${tWalk}</div>
+    </div>
+  </div>
+  <div class="summary">המטרה אינה רק לרדת במשקל, אלא גם לשמור על ה<b>כוח, העצמאות והניידות</b>. שמירה או שיפור של הערכים האלה לאורך המחקר הם סימן מצוין לכך שירידת המשקל מגיעה מהמקום הנכון.</div>
+</div>
+<div class="foot"><span>קוד: ${D.code}</span><span>מחקר PRIME</span></div>
+</div>`;
+
+  // ================================================================
+  // PAGE 3 — comparison
+  // ================================================================
+  // Chips
+  const cRee  = mkChip(D.reeS, D.reeE, 'preserve', 'קק״ל', 0);
+  const cRer  = mkChip(D.rerS, D.rerE, 'down', '', 2);
+  const cWt   = mkChip(D.wtS, D.wtE, 'down', 'ק״ג', 1);
+  const cFmKg = mkChip(D.fmS, D.fmE, 'down', 'ק״ג', 1);
+  const cFmPct= mkChip(fatPctS, fatPctE, 'down', '%', 1);
+  const cFfm  = mkChip(ffmS, ffmE, 'preserve', 'ק״ג', 1);
+  const cSmm  = mkChip(D.smmS, D.smmE, 'up', 'ק״ג', 1);
+  const cBmi  = mkChip(bmiS, bmiE, 'down', '', 1);
+  const cWaist= mkChip(D.waistS, D.waistE, 'down', 'ס״מ', 1);
+  const cWhtr = mkChip(whtrS, whtrE, 'down', '', 2);
+  const cCalf = mkChip(D.calfS, D.calfE, 'preserve', 'ס״מ', 1);
+  const cHg   = mkChip(D.hgS, D.hgE, 'up', 'ק״ג', 1);
+  const cSppb = mkChip(D.sppbS, D.sppbE, 'up', 'נק׳', 0);
+  const cSts  = mkChip(D.stsS, D.stsE, 'up', 'חז׳', 0);
+  const cWalk = mkChip(D.walkS, D.walkE, 'up', 'מ׳', 0);
+
+  // Interps
+  const T = {
+    ree:   { down:'ירידה קלה בהוצאה האנרגטית במנוחה, המטבוליזם כמעט נשמר', up:'עלייה בהוצאה האנרגטית במנוחה', flat:'המטבוליזם נשמר' },
+    rer:   { down:'ירידה במנת הנשימה, עלייה בשריפת השומן במנוחה', up:'עלייה במנת הנשימה, פחות שריפת שומן במנוחה', flat:'מנת הנשימה נשמרה' },
+    wt:    { down:'ירידה במשקל הכולל', up:'עלייה במשקל הכולל', flat:'המשקל נשמר' },
+    fm:    { down:'ירידה במסת השומן ובאחוז השומן, פחות שומן בגוף', up:'עלייה במסת השומן ובאחוז השומן', flat:'מסת השומן נשמרה' },
+    ffm:   { down:'ירידה קלה במסה הרזה, כמעט נשמרה במלואה', up:'עלייה במסה הרזה', flat:'המסה הרזה נשמרה' },
+    smm:   { down:'ירידה במסת השריר', up:'עלייה במסת השריר, רקמה פעילה יותר', flat:'מסת השריר נשמרה' },
+    bmi:   { down:'ירידה ב-BMI, התקרבות לטווח הבריא', up:'עלייה ב-BMI', flat:'ה-BMI נשמר' },
+    waist: { down:'ירידה בהיקף המותניים ובשומן הבטני', up:'עלייה בהיקף המותניים', flat:'היקף המותניים נשמר' },
+    whtr:  { down:'ירידה ביחס מותן-גובה ובסיכון המטבולי', up:'עלייה ביחס מותן-גובה', flat:'היחס נשמר' },
+    calf:  { down:'ירידה בהיקף השוק', up:'עלייה בהיקף השוק', flat:'היקף השוק נשמר, מסת השריר ברגל נשמרה' },
+    hg:    { down:'ירידה בכוח האחיזה', up:'עלייה בכוח האחיזה, כוח כללי טוב יותר', flat:'כוח האחיזה נשמר' },
+    sppb:  { down:'ירידה בציון התפקוד', up:'עלייה בציון התפקוד, ניידות טובה יותר', flat:'ציון התפקוד נשמר' },
+    sts:   { down:'ירידה במספר הקימות', up:'עלייה במספר הקימות, רגליים חזקות יותר', flat:'מספר הקימות נשמר' },
+    walk:  { down:'ירידה במרחק ההליכה', up:'עלייה במרחק ההליכה ובסיבולת לב-ריאה', flat:'מרחק ההליכה נשמר' },
+  };
+
+  const iRee  = mkInterp(D.reeS, D.reeE, 'preserve', T.ree);
+  const iRer  = mkInterp(D.rerS, D.rerE, 'down', T.rer);
+  const iWt   = mkInterp(D.wtS, D.wtE, 'down', T.wt);
+  const iFm   = mkInterp(D.fmS, D.fmE, 'down', T.fm);
+  const iFfm  = mkInterp(ffmS, ffmE, 'preserve', T.ffm);
+  const iSmm  = mkInterp(D.smmS, D.smmE, 'up', T.smm);
+  const iBmi  = mkInterp(bmiS, bmiE, 'down', T.bmi);
+  const iWaist= mkInterp(D.waistS, D.waistE, 'down', T.waist);
+  const iWhtr = mkInterp(whtrS, whtrE, 'down', T.whtr);
+  const iCalf = mkInterp(D.calfS, D.calfE, 'preserve', T.calf);
+  const iHg   = mkInterp(D.hgS, D.hgE, 'up', T.hg);
+  const iSppb = mkInterp(D.sppbS, D.sppbE, 'up', T.sppb);
+  const iSts  = mkInterp(D.stsS, D.stsE, 'up', T.sts);
+  const iWalk = mkInterp(D.walkS, D.walkE, 'up', T.walk);
+
+  // fuel bars
+  const fuelRow = (label, fat, ch) => `
+    <div style="display:flex;align-items:center;gap:6px;">
+      <span class="ct" style="width:30px;">${label}</span>
+      <div style="flex:1;display:flex;height:16px;border-radius:5px;overflow:hidden;font-size:8.5px;font-weight:700;color:#fff;">
+        <div style="width:${fat}%;background:var(--teal);display:flex;align-items:center;justify-content:center;">${fat}%</div>
+        <div style="width:${ch}%;background:var(--navy2);display:flex;align-items:center;justify-content:center;">${ch}%</div>
+      </div>
+    </div>`;
+
+  function cRow(startVal, endVal, unit) {
+    return `
+      <div class="cside"><div class="ct">התחלה</div><div class="cv s">${startVal}<span class="ex">${unit}</span></div></div>
+      %%CHIP%%
+      <div class="cside"><div class="ct">סוף</div><div class="cv e">${endVal}<span class="ex">${unit}</span></div></div>`;
+  }
+
+  const page3 = `
+<div class="pagebreak compare">
+<div class="head">
+  <div class="logo"><img src="images/prime/prime_logo.jpeg" alt="PRIME"></div>
+  <div class="head-txt"><h1>השוואת תוצאות, התחלה מול סוף</h1><div class="sub">המגמה שלך לאורך המחקר · קוד: ${D.code}</div></div>
+  <div class="head-badge">מחקר PRIME</div>
+</div>
+<div class="lead">התוצאות שלך ב<b>תחילת המחקר</b> (מימין) לעומת <b>סופו</b> (משמאל). הסימון באמצע מראה את כיוון השינוי וגודלו, והצבע אם זה שיפור.</div>
+<div class="clegend">
+  <span><span class="chip up" style="padding:1px 7px;">&#9650;</span> עלייה</span>
+  <span><span class="chip down" style="padding:1px 7px;">&#9660;</span> ירידה</span>
+  <span><span class="chip flat" style="padding:1px 7px;">נשמר</span> ללא שינוי</span>
+</div>
+<div class="cbody">
+  <div>
+    <div class="csub">מטבוליזם</div>
+    <div class="cgrid g3">
+      <div class="ccard">
+        <div class="cl">הוצאה אנרגטית במנוחה (REE)</div>
+        <div class="crow">
+          <div class="cside"><div class="ct">התחלה</div><div class="cv s">${Math.round(D.reeS).toLocaleString('he')}<span class="ex">קק״ל</span></div></div>
+          ${cRee}
+          <div class="cside"><div class="ct">סוף</div><div class="cv e">${Math.round(D.reeE).toLocaleString('he')}<span class="ex">קק״ל</span></div></div>
+        </div>
+        <div class="cinterp">${iRee}</div>
+      </div>
+      <div class="ccard">
+        <div class="cl">מנת הנשימה (RER)</div>
+        <div class="crow">
+          <div class="cside"><div class="ct">התחלה</div><div class="cv s">${n(D.rerS,2)}</div></div>
+          ${cRer}
+          <div class="cside"><div class="ct">סוף</div><div class="cv e">${n(D.rerE,2)}</div></div>
+        </div>
+        <div class="cinterp">${iRer}</div>
+      </div>
+      <div class="ccard">
+        <div class="cl">תמהיל הדלק (שומן/פחמימה)</div>
+        <div style="display:flex;flex-direction:column;gap:5px;margin-top:2px;">
+          ${fuelRow('התחלה', fatBurnWidthS, chBurnWidthS)}
+          ${fuelRow('סוף', fatBurnWidth, chBurnWidth)}
+        </div>
+        <div class="cinterp">${fatBurnWidth > fatBurnWidthS ? T.rer.down : fatBurnWidth < fatBurnWidthS ? 'ירידה בשריפת השומן' : 'תמהיל הדלק נשמר'}</div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div class="csub">הרכב גוף</div>
+    <div class="cgrid g4">
+      <div class="ccard">
+        <div class="cl">משקל</div>
+        <div class="crow">
+          <div class="cside"><div class="ct">התחלה</div><div class="cv s">${n(D.wtS,1)}<span class="ex">ק״ג</span></div></div>
+          ${cWt}
+          <div class="cside"><div class="ct">סוף</div><div class="cv e">${n(D.wtE,1)}<span class="ex">ק״ג</span></div></div>
+        </div>
+        <div class="cinterp">${iWt}</div>
+      </div>
+      <div class="ccard">
+        <div class="cl">מסת שומן (FM)</div>
+        <div class="fmgrid">
+          <div class="h">התחלה</div><div></div><div class="h">סוף</div>
+          <div class="s">${n(D.fmS,1)} <small>ק״ג</small></div>
+          <div class="c">${cFmKg}</div>
+          <div class="e">${n(D.fmE,1)} <small>ק״ג</small></div>
+          <div class="s">${n(fatPctS,1)}% <small>שומן</small></div>
+          <div class="c">${cFmPct}</div>
+          <div class="e">${n(fatPctE,1)}% <small>שומן</small></div>
+        </div>
+        <div class="cinterp">${iFm}</div>
+      </div>
+      <div class="ccard">
+        <div class="cl">מסה רזה (FFM)</div>
+        <div class="crow">
+          <div class="cside"><div class="ct">התחלה</div><div class="cv s">${n(ffmS,1)}<span class="ex">ק״ג</span></div></div>
+          ${cFfm}
+          <div class="cside"><div class="ct">סוף</div><div class="cv e">${n(ffmE,1)}<span class="ex">ק״ג</span></div></div>
+        </div>
+        <div class="cinterp">${iFfm}</div>
+      </div>
+      <div class="ccard">
+        <div class="cl">מסת שריר (SMM)</div>
+        <div class="crow">
+          <div class="cside"><div class="ct">התחלה</div><div class="cv s">${n(D.smmS,1)}<span class="ex">ק״ג</span></div></div>
+          ${cSmm}
+          <div class="cside"><div class="ct">סוף</div><div class="cv e">${n(D.smmE,1)}<span class="ex">ק״ג</span></div></div>
+        </div>
+        <div class="cinterp">${iSmm}</div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div class="csub">מדידות גוף והיקפים</div>
+    <div class="cgrid g4">
+      <div class="ccard">
+        <div class="cl">BMI</div>
+        <div class="crow">
+          <div class="cside"><div class="ct">התחלה</div><div class="cv s">${n(bmiS,1)}</div></div>
+          ${cBmi}
+          <div class="cside"><div class="ct">סוף</div><div class="cv e">${n(bmiE,1)}</div></div>
+        </div>
+        <div class="cinterp">${iBmi}</div>
+      </div>
+      <div class="ccard">
+        <div class="cl">היקף מותניים</div>
+        <div class="crow">
+          <div class="cside"><div class="ct">התחלה</div><div class="cv s">${n(D.waistS,0)}<span class="ex">ס״מ</span></div></div>
+          ${cWaist}
+          <div class="cside"><div class="ct">סוף</div><div class="cv e">${n(D.waistE,0)}<span class="ex">ס״מ</span></div></div>
+        </div>
+        <div class="cinterp">${iWaist}</div>
+      </div>
+      <div class="ccard">
+        <div class="cl">יחס מותן-גובה (WHtR)</div>
+        <div class="crow">
+          <div class="cside"><div class="ct">התחלה</div><div class="cv s">${n(whtrS,2)}</div></div>
+          ${cWhtr}
+          <div class="cside"><div class="ct">סוף</div><div class="cv e">${n(whtrE,2)}</div></div>
+        </div>
+        <div class="cinterp">${iWhtr}</div>
+      </div>
+      <div class="ccard">
+        <div class="cl">היקף שוק</div>
+        <div class="crow">
+          <div class="cside"><div class="ct">התחלה</div><div class="cv s">${n(D.calfS,0)}<span class="ex">ס״מ</span></div></div>
+          ${cCalf}
+          <div class="cside"><div class="ct">סוף</div><div class="cv e">${n(D.calfE,0)}<span class="ex">ס״מ</span></div></div>
+        </div>
+        <div class="cinterp">${iCalf}</div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div class="csub">בדיקות תפקודיות</div>
+    <div class="cgrid g4">
+      <div class="ccard">
+        <div class="cl">כוח לפיתה (Handgrip)</div>
+        <div class="crow">
+          <div class="cside"><div class="ct">התחלה</div><div class="cv s">${n(D.hgS,1)}<span class="ex">ק״ג</span></div></div>
+          ${cHg}
+          <div class="cside"><div class="ct">סוף</div><div class="cv e">${n(D.hgE,1)}<span class="ex">ק״ג</span></div></div>
+        </div>
+        <div class="cinterp">${iHg}</div>
+      </div>
+      <div class="ccard">
+        <div class="cl">סוללת מבחנים קצרה <span dir="ltr">(SPPB)</span></div>
+        <div class="crow">
+          <div class="cside"><div class="ct">התחלה</div><div class="cv s">${D.sppbS}<span class="ex">/12</span></div></div>
+          ${cSppb}
+          <div class="cside"><div class="ct">סוף</div><div class="cv e">${D.sppbE}<span class="ex">/12</span></div></div>
+        </div>
+        <div class="cinterp">${iSppb}</div>
+      </div>
+      <div class="ccard">
+        <div class="cl">קימה מכיסא <span dir="ltr">(30s STS)</span></div>
+        <div class="crow">
+          <div class="cside"><div class="ct">התחלה</div><div class="cv s">${D.stsS}<span class="ex">חזרות</span></div></div>
+          ${cSts}
+          <div class="cside"><div class="ct">סוף</div><div class="cv e">${D.stsE}<span class="ex">חזרות</span></div></div>
+        </div>
+        <div class="cinterp">${iSts}</div>
+      </div>
+      <div class="ccard">
+        <div class="cl">הליכה 2 דקות <span dir="ltr">(2-min walk)</span></div>
+        <div class="crow">
+          <div class="cside"><div class="ct">התחלה</div><div class="cv s">${D.walkS}<span class="ex">מטר</span></div></div>
+          ${cWalk}
+          <div class="cside"><div class="ct">סוף</div><div class="cv e">${D.walkE}<span class="ex">מטר</span></div></div>
+        </div>
+        <div class="cinterp">${iWalk}</div>
+      </div>
+    </div>
+  </div>
+  <div class="summary" style="padding:13px 18px; font-size:12.5px;">
+    <b>המגמה הכללית:</b> ${D.wtE < D.wtS ? 'ירידה במשקל' : 'שינוי במשקל'}, ${D.fmE < D.fmS ? 'ירידה בשומן' : 'שינוי בשומן'}, ${D.smmE >= D.smmS ? 'תוך שמירה/עלייה במסת השריר' : 'ושינוי במסת השריר'}.
+  </div>
+</div>
+<div class="foot"><span>קוד: ${D.code}</span><span>מחקר PRIME</span></div>
+</div>`;
+
+  document.getElementById('report-content').innerHTML = page1 + page2 + page3;
+  document.getElementById('report-code-title').textContent = `קוד נחקר/ת: ${D.code}`;
+  document.getElementById('form-screen').style.display = 'none';
+  document.getElementById('report-screen').style.display = 'block';
+  window.scrollTo(0, 0);
+};
+</script>
+</body>
+</html>

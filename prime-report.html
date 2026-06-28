@@ -69,13 +69,16 @@ body { font-family:"Rubik","Assistant","Heebo",sans-serif; direction:rtl; margin
 .form-row.triple { grid-template-columns:1fr 1fr 1fr; }
 .form-row.single { grid-template-columns:1fr; max-width:300px; }
 
-/* Field card — each metric with start/end */
+/* Field card — each metric with start/end toggle */
 .field-card { background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px; }
-.field-card .field-label { font-size:12px; font-weight:700; color:#16304f; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid #e2e8f0; }
-.field-card .field-inputs { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-.field-col-head { font-size:10px; font-weight:700; text-align:center; padding:3px 6px; border-radius:5px; margin-bottom:4px; }
-.field-col-head.start { background:#e2e8f0; color:#64748b; }
-.field-col-head.end { background:#0d9488; color:#fff; }
+.field-label { font-size:12px; font-weight:700; color:#16304f; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid #e2e8f0; }
+.field-tab-row { display:flex; gap:6px; margin-bottom:8px; }
+.field-tab { flex:1; padding:7px 0; border:2px solid #e2e8f0; border-radius:7px; background:#f1f5f9; color:#94a3b8; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; transition:.15s; }
+.field-tab:hover:not(.active) { border-color:#0d9488; color:#0d9488; }
+.field-tab.active.start { background:#e2e8f0; border-color:#94a3b8; color:#334155; }
+.field-tab.active.end { background:#0d9488; border-color:#0d9488; color:#fff; }
+.field-active-input { width:100%; box-sizing:border-box; border:2px solid #e2e8f0; border-radius:8px; padding:9px 10px; font-size:16px; font-family:inherit; color:#16304f; text-align:center; transition:.15s; background:#fff; }
+.field-active-input:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0 3px rgba(13,148,136,.1); }
 
 label { display:block; font-size:11px; font-weight:600; color:#64748b; margin-bottom:3px; }
 input[type=number], input[type=text], select {
@@ -319,11 +322,11 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
         <div class="form-row triple">
           <div class="simple-field">
             <label>קוד נחקר/ת</label>
-            <input type="text" id="f-code" placeholder="לדוגמה: 042">
+            <input type="text" id="f-code" placeholder="לדוגמה: 042" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
           </div>
           <div class="simple-field">
             <label>גיל (שנים)</label>
-            <input type="number" id="f-age" min="18" max="100" placeholder="לדוגמה: 62">
+            <input type="number" id="f-age" min="18" max="120" placeholder="לדוגמה: 62" inputmode="numeric" oninput="clampVal(this)">
           </div>
           <div class="simple-field">
             <label>מין</label>
@@ -347,33 +350,41 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
         <div class="form-row">
           <div class="field-card">
             <div class="field-label">REE — הוצאה אנרגטית במנוחה (קק״ל/יום)</div>
-            <div class="field-inputs">
-              <div><div class="field-col-head start">התחלה</div><input type="number" id="f-ree-s" placeholder="לדוגמה: 1735"></div>
-              <div><div class="field-col-head end">סוף</div><input type="number" id="f-ree-e" placeholder="לדוגמה: 1720"></div>
+            <div class="field-tab-row">
+              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-ree','s')">התחלה</button>
+              <button type="button" class="field-tab end" onclick="switchTab(this,'f-ree','e')">סוף</button>
             </div>
+            <input type="number" class="field-active-input" data-field="f-ree" data-side="s" data-ph-s="לדוגמה: 1735" data-ph-e="לדוגמה: 1720" placeholder="לדוגמה: 1735" min="500" max="5000" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-ree-s"><input type="hidden" id="f-ree-e">
           </div>
           <div class="field-card">
             <div class="field-label">RER — מנת הנשימה</div>
-            <div class="field-inputs">
-              <div><div class="field-col-head start">התחלה</div><input type="number" id="f-rer-s" step="0.01" placeholder="לדוגמה: 0.84"></div>
-              <div><div class="field-col-head end">סוף</div><input type="number" id="f-rer-e" step="0.01" placeholder="לדוגמה: 0.82"></div>
+            <div class="field-tab-row">
+              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-rer','s')">התחלה</button>
+              <button type="button" class="field-tab end" onclick="switchTab(this,'f-rer','e')">סוף</button>
             </div>
+            <input type="number" class="field-active-input" data-field="f-rer" data-side="s" data-ph-s="לדוגמה: 0.84" data-ph-e="לדוגמה: 0.82" placeholder="לדוגמה: 0.84" min="0.5" max="1.3" step="0.01" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-rer-s"><input type="hidden" id="f-rer-e">
           </div>
         </div>
         <div class="form-row">
           <div class="field-card">
             <div class="field-label">% שריפת שומן</div>
-            <div class="field-inputs">
-              <div><div class="field-col-head start">התחלה</div><input type="number" id="f-fatburn-s" placeholder="לדוגמה: 60"></div>
-              <div><div class="field-col-head end">סוף</div><input type="number" id="f-fatburn-e" placeholder="לדוגמה: 67"></div>
+            <div class="field-tab-row">
+              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-fatburn','s')">התחלה</button>
+              <button type="button" class="field-tab end" onclick="switchTab(this,'f-fatburn','e')">סוף</button>
             </div>
+            <input type="number" class="field-active-input" data-field="f-fatburn" data-side="s" data-ph-s="לדוגמה: 60" data-ph-e="לדוגמה: 67" placeholder="לדוגמה: 60" min="0" max="100" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-fatburn-s"><input type="hidden" id="f-fatburn-e">
           </div>
           <div class="field-card">
             <div class="field-label">% שריפת פחמימה</div>
-            <div class="field-inputs">
-              <div><div class="field-col-head start">התחלה</div><input type="number" id="f-chburn-s" placeholder="לדוגמה: 40"></div>
-              <div><div class="field-col-head end">סוף</div><input type="number" id="f-chburn-e" placeholder="לדוגמה: 33"></div>
+            <div class="field-tab-row">
+              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-chburn','s')">התחלה</button>
+              <button type="button" class="field-tab end" onclick="switchTab(this,'f-chburn','e')">סוף</button>
             </div>
+            <input type="number" class="field-active-input" data-field="f-chburn" data-side="s" data-ph-s="לדוגמה: 40" data-ph-e="לדוגמה: 33" placeholder="לדוגמה: 40" min="0" max="100" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-chburn-s"><input type="hidden" id="f-chburn-e">
           </div>
         </div>
       </div>
@@ -389,55 +400,67 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
         <div class="form-row single" style="max-width:260px;">
           <div class="simple-field">
             <label>גובה (ס״מ) — קבוע לאורך המחקר</label>
-            <input type="number" id="f-height" placeholder="לדוגמה: 176" step="0.1">
+            <input type="number" id="f-height" placeholder="לדוגמה: 176" min="100" max="250" step="0.1" inputmode="decimal" oninput="clampVal(this)">
           </div>
         </div>
         <div class="form-row">
           <div class="field-card">
             <div class="field-label">משקל (ק״ג)</div>
-            <div class="field-inputs">
-              <div><div class="field-col-head start">התחלה</div><input type="number" id="f-wt-s" step="0.1" placeholder="לדוגמה: 92.0"></div>
-              <div><div class="field-col-head end">סוף</div><input type="number" id="f-wt-e" step="0.1" placeholder="לדוגמה: 88.0"></div>
+            <div class="field-tab-row">
+              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-wt','s')">התחלה</button>
+              <button type="button" class="field-tab end" onclick="switchTab(this,'f-wt','e')">סוף</button>
             </div>
+            <input type="number" class="field-active-input" data-field="f-wt" data-side="s" data-ph-s="לדוגמה: 92.0" data-ph-e="לדוגמה: 88.0" placeholder="לדוגמה: 92.0" min="20" max="300" step="0.1" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-wt-s"><input type="hidden" id="f-wt-e">
           </div>
           <div class="field-card">
             <div class="field-label">מסת שומן FM (ק״ג)</div>
-            <div class="field-inputs">
-              <div><div class="field-col-head start">התחלה</div><input type="number" id="f-fm-s" step="0.1" placeholder="לדוגמה: 24.8"></div>
-              <div><div class="field-col-head end">סוף</div><input type="number" id="f-fm-e" step="0.1" placeholder="לדוגמה: 20.5"></div>
+            <div class="field-tab-row">
+              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-fm','s')">התחלה</button>
+              <button type="button" class="field-tab end" onclick="switchTab(this,'f-fm','e')">סוף</button>
             </div>
+            <input type="number" class="field-active-input" data-field="f-fm" data-side="s" data-ph-s="לדוגמה: 24.8" data-ph-e="לדוגמה: 20.5" placeholder="לדוגמה: 24.8" min="0" max="200" step="0.1" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-fm-s"><input type="hidden" id="f-fm-e">
           </div>
         </div>
         <div class="form-row">
           <div class="field-card">
             <div class="field-label">מסת שריר SMM (ק״ג)</div>
-            <div class="field-inputs">
-              <div><div class="field-col-head start">התחלה</div><input type="number" id="f-smm-s" step="0.1" placeholder="לדוגמה: 35.5"></div>
-              <div><div class="field-col-head end">סוף</div><input type="number" id="f-smm-e" step="0.1" placeholder="לדוגמה: 35.8"></div>
+            <div class="field-tab-row">
+              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-smm','s')">התחלה</button>
+              <button type="button" class="field-tab end" onclick="switchTab(this,'f-smm','e')">סוף</button>
             </div>
+            <input type="number" class="field-active-input" data-field="f-smm" data-side="s" data-ph-s="לדוגמה: 35.5" data-ph-e="לדוגמה: 35.8" placeholder="לדוגמה: 35.5" min="0" max="100" step="0.1" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-smm-s"><input type="hidden" id="f-smm-e">
           </div>
           <div class="field-card">
             <div class="field-label">TBW — סך נוזלים (ליטר)</div>
-            <div class="field-inputs">
-              <div><div class="field-col-head start">התחלה</div><input type="number" id="f-tbw-s" step="0.1" placeholder="לדוגמה: 49.2"></div>
-              <div><div class="field-col-head end">סוף</div><input type="number" id="f-tbw-e" step="0.1" placeholder="לדוגמה: 49.0"></div>
+            <div class="field-tab-row">
+              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-tbw','s')">התחלה</button>
+              <button type="button" class="field-tab end" onclick="switchTab(this,'f-tbw','e')">סוף</button>
             </div>
+            <input type="number" class="field-active-input" data-field="f-tbw" data-side="s" data-ph-s="לדוגמה: 49.2" data-ph-e="לדוגמה: 49.0" placeholder="לדוגמה: 49.2" min="0" max="100" step="0.1" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-tbw-s"><input type="hidden" id="f-tbw-e">
           </div>
         </div>
         <div class="form-row">
           <div class="field-card">
             <div class="field-label">ICW — תוך-תאיים (ליטר)</div>
-            <div class="field-inputs">
-              <div><div class="field-col-head start">התחלה</div><input type="number" id="f-icw-s" step="0.1" placeholder="לדוגמה: 30.7"></div>
-              <div><div class="field-col-head end">סוף</div><input type="number" id="f-icw-e" step="0.1" placeholder="לדוגמה: 30.5"></div>
+            <div class="field-tab-row">
+              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-icw','s')">התחלה</button>
+              <button type="button" class="field-tab end" onclick="switchTab(this,'f-icw','e')">סוף</button>
             </div>
+            <input type="number" class="field-active-input" data-field="f-icw" data-side="s" data-ph-s="לדוגמה: 30.7" data-ph-e="לדוגמה: 30.5" placeholder="לדוגמה: 30.7" min="0" max="80" step="0.1" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-icw-s"><input type="hidden" id="f-icw-e">
           </div>
           <div class="field-card">
             <div class="field-label">ECW — חוץ-תאיים (ליטר)</div>
-            <div class="field-inputs">
-              <div><div class="field-col-head start">התחלה</div><input type="number" id="f-ecw-s" step="0.1" placeholder="לדוגמה: 18.5"></div>
-              <div><div class="field-col-head end">סוף</div><input type="number" id="f-ecw-e" step="0.1" placeholder="לדוגמה: 18.5"></div>
+            <div class="field-tab-row">
+              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-ecw','s')">התחלה</button>
+              <button type="button" class="field-tab end" onclick="switchTab(this,'f-ecw','e')">סוף</button>
             </div>
+            <input type="number" class="field-active-input" data-field="f-ecw" data-side="s" data-ph-s="לדוגמה: 18.5" data-ph-e="לדוגמה: 18.5" placeholder="לדוגמה: 18.5" min="0" max="50" step="0.1" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-ecw-s"><input type="hidden" id="f-ecw-e">
           </div>
         </div>
       </div>
@@ -453,17 +476,21 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
         <div class="form-row">
           <div class="field-card">
             <div class="field-label">היקף מותניים (ס״מ)</div>
-            <div class="field-inputs">
-              <div><div class="field-col-head start">התחלה</div><input type="number" id="f-waist-s" step="0.5" placeholder="לדוגמה: 104"></div>
-              <div><div class="field-col-head end">סוף</div><input type="number" id="f-waist-e" step="0.5" placeholder="לדוגמה: 98"></div>
+            <div class="field-tab-row">
+              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-waist','s')">התחלה</button>
+              <button type="button" class="field-tab end" onclick="switchTab(this,'f-waist','e')">סוף</button>
             </div>
+            <input type="number" class="field-active-input" data-field="f-waist" data-side="s" data-ph-s="לדוגמה: 104" data-ph-e="לדוגמה: 98" placeholder="לדוגמה: 104" min="40" max="200" step="0.5" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-waist-s"><input type="hidden" id="f-waist-e">
           </div>
           <div class="field-card">
             <div class="field-label">היקף שוק (ס״מ)</div>
-            <div class="field-inputs">
-              <div><div class="field-col-head start">התחלה</div><input type="number" id="f-calf-s" step="0.5" placeholder="לדוגמה: 37"></div>
-              <div><div class="field-col-head end">סוף</div><input type="number" id="f-calf-e" step="0.5" placeholder="לדוגמה: 37"></div>
+            <div class="field-tab-row">
+              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-calf','s')">התחלה</button>
+              <button type="button" class="field-tab end" onclick="switchTab(this,'f-calf','e')">סוף</button>
             </div>
+            <input type="number" class="field-active-input" data-field="f-calf" data-side="s" data-ph-s="לדוגמה: 37" data-ph-e="לדוגמה: 37" placeholder="לדוגמה: 37" min="10" max="80" step="0.5" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-calf-s"><input type="hidden" id="f-calf-e">
           </div>
         </div>
       </div>
@@ -479,33 +506,41 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
         <div class="form-row">
           <div class="field-card">
             <div class="field-label">כוח לפיתה — Handgrip (ק״ג)</div>
-            <div class="field-inputs">
-              <div><div class="field-col-head start">התחלה</div><input type="number" id="f-hg-s" step="0.5" placeholder="לדוגמה: 38"></div>
-              <div><div class="field-col-head end">סוף</div><input type="number" id="f-hg-e" step="0.5" placeholder="לדוגמה: 40"></div>
+            <div class="field-tab-row">
+              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-hg','s')">התחלה</button>
+              <button type="button" class="field-tab end" onclick="switchTab(this,'f-hg','e')">סוף</button>
             </div>
+            <input type="number" class="field-active-input" data-field="f-hg" data-side="s" data-ph-s="לדוגמה: 38" data-ph-e="לדוגמה: 40" placeholder="לדוגמה: 38" min="0" max="100" step="0.5" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-hg-s"><input type="hidden" id="f-hg-e">
           </div>
           <div class="field-card">
             <div class="field-label">SPPB (0–12)</div>
-            <div class="field-inputs">
-              <div><div class="field-col-head start">התחלה</div><input type="number" id="f-sppb-s" min="0" max="12" placeholder="לדוגמה: 11"></div>
-              <div><div class="field-col-head end">סוף</div><input type="number" id="f-sppb-e" min="0" max="12" placeholder="לדוגמה: 12"></div>
+            <div class="field-tab-row">
+              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-sppb','s')">התחלה</button>
+              <button type="button" class="field-tab end" onclick="switchTab(this,'f-sppb','e')">סוף</button>
             </div>
+            <input type="number" class="field-active-input" data-field="f-sppb" data-side="s" data-ph-s="לדוגמה: 11" data-ph-e="לדוגמה: 12" placeholder="לדוגמה: 11" min="0" max="12" inputmode="numeric" oninput="storeVal(this)">
+            <input type="hidden" id="f-sppb-s"><input type="hidden" id="f-sppb-e">
           </div>
         </div>
         <div class="form-row">
           <div class="field-card">
             <div class="field-label">קימה מכיסא 30 שנ׳ (חזרות)</div>
-            <div class="field-inputs">
-              <div><div class="field-col-head start">התחלה</div><input type="number" id="f-sts-s" placeholder="לדוגמה: 15"></div>
-              <div><div class="field-col-head end">סוף</div><input type="number" id="f-sts-e" placeholder="לדוגמה: 17"></div>
+            <div class="field-tab-row">
+              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-sts','s')">התחלה</button>
+              <button type="button" class="field-tab end" onclick="switchTab(this,'f-sts','e')">סוף</button>
             </div>
+            <input type="number" class="field-active-input" data-field="f-sts" data-side="s" data-ph-s="לדוגמה: 15" data-ph-e="לדוגמה: 17" placeholder="לדוגמה: 15" min="0" max="60" inputmode="numeric" oninput="storeVal(this)">
+            <input type="hidden" id="f-sts-s"><input type="hidden" id="f-sts-e">
           </div>
           <div class="field-card">
             <div class="field-label">הליכה 2 דקות (מטר)</div>
-            <div class="field-inputs">
-              <div><div class="field-col-head start">התחלה</div><input type="number" id="f-walk-s" placeholder="לדוגמה: 178"></div>
-              <div><div class="field-col-head end">סוף</div><input type="number" id="f-walk-e" placeholder="לדוגמה: 190"></div>
+            <div class="field-tab-row">
+              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-walk','s')">התחלה</button>
+              <button type="button" class="field-tab end" onclick="switchTab(this,'f-walk','e')">סוף</button>
             </div>
+            <input type="number" class="field-active-input" data-field="f-walk" data-side="s" data-ph-s="לדוגמה: 178" data-ph-e="לדוגמה: 190" placeholder="לדוגמה: 178" min="0" max="500" inputmode="numeric" oninput="storeVal(this)">
+            <input type="hidden" id="f-walk-s"><input type="hidden" id="f-walk-e">
           </div>
         </div>
       </div>
@@ -577,6 +612,41 @@ function handleUser(user) {
 }
 
 // ---- Sign in ----
+window.switchTab = (btn, field, side) => {
+  const card = btn.closest('.field-card');
+  const inp = card.querySelector('.field-active-input');
+  // save current value to hidden
+  document.getElementById(inp.dataset.field + '-' + inp.dataset.side).value = inp.value;
+  // switch tab
+  card.querySelectorAll('.field-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  // load new value
+  inp.dataset.side = side;
+  inp.value = document.getElementById(field + '-' + side).value;
+  inp.placeholder = inp.dataset['ph' + side.charAt(0).toUpperCase() + side.slice(1)] || '';
+  inp.focus();
+};
+
+window.storeVal = (inp) => {
+  clampVal(inp);
+  const hidden = document.getElementById(inp.dataset.field + '-' + inp.dataset.side);
+  if (hidden) hidden.value = inp.value;
+};
+
+window.clampVal = (inp) => {
+  if (inp.value === '') return;
+  const v = parseFloat(inp.value);
+  if (inp.max && v > parseFloat(inp.max)) inp.value = inp.max;
+  if (inp.min && v < parseFloat(inp.min)) inp.value = inp.min;
+};
+
+window.flushActiveInputs = () => {
+  document.querySelectorAll('.field-active-input').forEach(inp => {
+    const hidden = document.getElementById(inp.dataset.field + '-' + inp.dataset.side);
+    if (hidden) hidden.value = inp.value;
+  });
+};
+
 window.setSex = (val) => {
   document.getElementById('f-sex').value = val;
   document.querySelectorAll('.sex-btn').forEach(b => b.classList.remove('active'));
@@ -719,6 +789,7 @@ window.backToForm = () => {
 };
 
 window.generateReport = () => {
+  flushActiveInputs();
   const age = +document.getElementById('f-age').value;
   const sex = document.getElementById('f-sex').value;
   const height = +document.getElementById('f-height').value;

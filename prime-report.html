@@ -79,6 +79,7 @@ body { font-family:"Rubik","Assistant","Heebo",sans-serif; direction:rtl; margin
 .field-tab.active.end { background:#0d9488; border-color:#0d9488; color:#fff; }
 .field-active-input { width:100%; box-sizing:border-box; border:2px solid #e2e8f0; border-radius:8px; padding:9px 10px; font-size:16px; font-family:inherit; color:#16304f; text-align:center; transition:.15s; background:#fff; }
 .field-active-input:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0 3px rgba(13,148,136,.1); }
+.field-err { display:block; font-size:11px; color:#dc2626; margin-top:5px; min-height:14px; font-weight:600; }
 
 label { display:block; font-size:11px; font-weight:600; color:#64748b; margin-bottom:3px; }
 input[type=number], input[type=text], select {
@@ -635,21 +636,38 @@ window.storeVal = (inp) => {
   if (hidden) hidden.value = inp.value;
 };
 
-// clamp only on blur (not while typing)
+// validate on blur — show error message, don't clamp
 document.addEventListener('blur', e => {
   const t = e.target;
-  if (t.matches('.field-active-input, #f-age, #f-height')) {
-    clampVal(t);
-    if (t.matches('.field-active-input')) storeVal(t);
-  }
+  if (!t.matches('.field-active-input, #f-age, #f-height')) return;
+  if (t.matches('.field-active-input')) storeVal(t);
+  showFieldError(t);
 }, true);
 
-window.clampVal = (inp) => {
-  if (inp.value === '') return;
+window.showFieldError = (inp) => {
+  const errEl = inp.parentElement.querySelector('.field-err');
+  if (!errEl) return;
+  if (inp.value === '') { errEl.textContent = ''; return; }
   const v = parseFloat(inp.value);
-  if (inp.max && v > parseFloat(inp.max)) inp.value = inp.max;
-  if (inp.min && v < parseFloat(inp.min)) inp.value = inp.min;
+  const mn = inp.min !== '' ? parseFloat(inp.min) : null;
+  const mx = inp.max !== '' ? parseFloat(inp.max) : null;
+  if (mx !== null && v > mx) errEl.textContent = `ערך גבוה מדי — המקסימום הוא ${mx}`;
+  else if (mn !== null && v < mn) errEl.textContent = `ערך נמוך מדי — המינימום הוא ${mn}`;
+  else errEl.textContent = '';
 };
+
+// inject error spans after DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.field-active-input').forEach(inp => {
+    const s = document.createElement('span'); s.className = 'field-err'; inp.after(s);
+    inp.addEventListener('input', () => { s.textContent = ''; });
+  });
+  ['f-age','f-height'].forEach(id => {
+    const inp = document.getElementById(id); if (!inp) return;
+    const s = document.createElement('span'); s.className = 'field-err'; inp.after(s);
+    inp.addEventListener('input', () => { s.textContent = ''; });
+  });
+});
 
 window.flushActiveInputs = () => {
   document.querySelectorAll('.field-active-input').forEach(inp => {

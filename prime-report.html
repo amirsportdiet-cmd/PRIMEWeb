@@ -247,6 +247,31 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
 .clegend span{ display:flex; align-items:center; gap:5px; }
 .stat{ border:1px solid var(--line); border-radius:10px; padding:8px 11px; text-align:center; background:#fff; }
 
+@media (max-width:640px) {
+  .form-header { flex-wrap:wrap; gap:10px; padding:14px 16px; }
+  .form-header-logo { height:44px; }
+  .form-header-text h1 { font-size:17px; }
+  .form-header-text p { font-size:11px; }
+  .form-header-badge { display:none; }
+  .form-header-actions { width:100%; justify-content:space-between; }
+  .form-user-email { max-width:200px; }
+
+  .form-researcher-note { margin:0 12px 12px; font-size:12px; }
+  .form-body { padding:0 12px; }
+  .form-section-body { padding:12px 12px; }
+
+  .form-row { grid-template-columns:1fr !important; }
+  .form-row.triple { grid-template-columns:1fr 1fr !important; }
+  .form-row.single { max-width:100% !important; }
+
+  .field-active-input { font-size:16px; padding:11px 10px; }
+  .field-tab { padding:8px 0; font-size:13px; }
+
+  .error-msg { margin:0 12px 12px; }
+  .form-actions { margin-top:20px; }
+  .btn-gen, .btn-clear-form { padding:14px 20px; font-size:15px; }
+}
+
 @media print {
   .no-print { display:none !important; }
   .print-bar { display:none !important; }

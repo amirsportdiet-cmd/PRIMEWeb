@@ -1019,7 +1019,7 @@ window.generateReport = () => {
   const missing = REQUIRED.filter(f => {
     const el = document.getElementById(f.id);
     return !el || el.value === '' || el.value === null;
-  }).map(f => f.label);
+  }); // keep full objects — don't map to labels yet
 
   // clear previous highlights
   document.querySelectorAll('.field-card--missing, .simple-field--missing').forEach(el =>

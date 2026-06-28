@@ -438,14 +438,11 @@ window.signOut = async () => {
   showAuthScreen();
 };
 
-// ---- Handle redirect result on page load ----
-getRedirectResult(auth).catch(() => {});
-
-// ---- Auth state ----
-onAuthStateChanged(auth, user => {
+// ---- Auth logic ----
+function handleUser(user) {
   if (!user) { showAuthScreen(); return; }
   const email = (user.email || '').toLowerCase();
-  if (ALLOWED_EMAILS.map(e=>e.toLowerCase()).includes(email)) {
+  if (ALLOWED_EMAILS.map(e => e.toLowerCase()).includes(email)) {
     document.getElementById('user-email-display').textContent = user.email;
     showFormScreen();
   } else {
@@ -453,6 +450,20 @@ onAuthStateChanged(auth, user => {
       `החשבון ${user.email} אינו מורשה לגשת לכלי זה.`;
     showNoAccess();
   }
+}
+
+// ---- Handle redirect result first, then fall back to auth state ----
+document.getElementById('auth-loading').style.display = 'block';
+getRedirectResult(auth).then(result => {
+  if (result && result.user) {
+    handleUser(result.user);
+  } else {
+    // No redirect result — check existing session
+    onAuthStateChanged(auth, user => handleUser(user));
+  }
+}).catch(err => {
+  console.error('redirect error', err);
+  onAuthStateChanged(auth, user => handleUser(user));
 });
 
 function showAuthScreen(){

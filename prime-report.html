@@ -85,13 +85,22 @@ body { font-family:"Rubik","Assistant","Heebo",sans-serif; direction:rtl; margin
 .field-tab.filled:not(.active) { border-color:#16a34a; color:#16a34a; background:#f0fdf4; }
 .field-tab.active.start.filled { background:#dcfce7; border-color:#16a34a; color:#15803d; }
 .field-tab.active.end.filled { background:#15803d; border-color:#15803d; color:#fff; }
+/* card done = both sides filled → green border */
+.field-card.card-done { border:2px solid #16a34a !important; background:#f0fdf4 !important; }
+.field-card.card-done .field-label { color:#15803d; }
+/* card missing → red border */
 .field-card--missing { border:2px solid #f87171 !important; background:#fff5f5 !important; }
 .field-card--missing .field-label { color:#dc2626; }
-.simple-field--missing input, .simple-field--missing select, .simple-field--missing .sex-toggle .sex-btn { border-color:#f87171 !important; }
+/* simple field filled → green input border */
+.sf-filled input[type=text], .sf-filled input[type=number] { border-color:#16a34a !important; background:#f0fdf4 !important; }
+.sf-filled .sex-toggle { outline:2px solid #16a34a; border-radius:10px; }
+/* simple field missing → red */
+.simple-field--missing input, .simple-field--missing select { border-color:#f87171 !important; background:#fff5f5 !important; }
+.simple-field--missing .sex-toggle { outline:2px solid #f87171; border-radius:10px; }
 .field-active-input { width:100%; box-sizing:border-box; border:2px solid #e2e8f0; border-radius:8px; padding:9px 10px; font-size:16px; font-family:inherit; color:#16304f; text-align:center; transition:.15s; background:#fff; }
 .field-active-input:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0 3px rgba(13,148,136,.1); }
 .field-err { display:block; font-size:11px; color:#dc2626; margin-top:5px; min-height:14px; font-weight:600; }
-.field-check { font-size:12px; font-weight:800; margin-right:5px; transition:.2s; }
+.field-check { font-size:14px; font-weight:900; margin-right:4px; }
 .field-check.ok { color:#16a34a; }
 .field-check.err { color:#dc2626; }
 
@@ -641,6 +650,12 @@ window.markTab = (card, side, filled) => {
   const label = side === 's' ? 'התחלה' : 'סוף';
   btn.textContent = filled ? '✓ ' + label : label;
   btn.classList.toggle('filled', filled);
+  // green card border when both sides filled
+  const sBtn = card.querySelector('.field-tab.start');
+  const eBtn = card.querySelector('.field-tab.end');
+  const bothDone = sBtn?.classList.contains('filled') && eBtn?.classList.contains('filled');
+  card.classList.toggle('card-done', bothDone);
+  if (bothDone) card.classList.remove('field-card--missing');
 };
 
 window.switchTab = (btn, field, side) => {
@@ -724,7 +739,9 @@ document.addEventListener('DOMContentLoaded', () => {
       inp.closest('.simple-field')?.classList.remove('simple-field--missing');
     });
     inp.addEventListener('blur', () => {
-      setFieldCheck(id, inp.value !== '' ? 'ok' : '');
+      const ok = inp.value !== '';
+      setFieldCheck(id, ok ? 'ok' : '');
+      inp.closest('.simple-field')?.classList.toggle('sf-filled', ok);
     });
   });
   // sex check span
@@ -754,7 +771,8 @@ window.setSex = (val) => {
   document.querySelectorAll('.sex-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('sex-' + val).classList.add('active');
   setFieldCheck('sex', 'ok');
-  document.querySelector('.simple-field:has(#sex-m)')?.classList.remove('simple-field--missing');
+  const sexSF = document.querySelector('.simple-field:has(#sex-m)');
+  if (sexSF) { sexSF.classList.remove('simple-field--missing'); sexSF.classList.add('sf-filled'); }
 };
 
 window.signInWithGoogle = () => {

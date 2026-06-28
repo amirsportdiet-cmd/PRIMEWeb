@@ -39,6 +39,10 @@ body { font-family:"Rubik","Assistant","Heebo",sans-serif; direction:rtl; margin
 .form-user-email { color:#94c7f4; font-size:12px; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .btn-out { background:rgba(255,255,255,.1); color:#fff; border:1px solid rgba(255,255,255,.3); border-radius:8px; padding:7px 16px; font-size:13px; cursor:pointer; font-family:inherit; transition:.15s; }
 .btn-out:hover { background:rgba(255,255,255,.2); }
+.sex-toggle { display:flex; gap:8px; margin-top:2px; }
+.sex-btn { flex:1; padding:9px 0; border:2px solid #cbd5e1; border-radius:8px; background:#f8fafc; color:#64748b; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; transition:.15s; }
+.sex-btn:hover { border-color:#0d9488; color:#0d9488; }
+.sex-btn.active { background:#0d9488; border-color:#0d9488; color:#fff; }
 
 /* Sections */
 .form-body { padding:0 24px; }
@@ -323,11 +327,11 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
           </div>
           <div class="simple-field">
             <label>מין</label>
-            <select id="f-sex">
-              <option value="">-- בחר --</option>
-              <option value="m">זכר</option>
-              <option value="f">נקבה</option>
-            </select>
+            <div class="sex-toggle">
+              <button type="button" class="sex-btn" id="sex-m" onclick="setSex('m')">זכר</button>
+              <button type="button" class="sex-btn" id="sex-f" onclick="setSex('f')">נקבה</button>
+            </div>
+            <input type="hidden" id="f-sex" value="">
           </div>
         </div>
       </div>
@@ -573,6 +577,12 @@ function handleUser(user) {
 }
 
 // ---- Sign in ----
+window.setSex = (val) => {
+  document.getElementById('f-sex').value = val;
+  document.querySelectorAll('.sex-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('sex-' + val).classList.add('active');
+};
+
 window.signInWithGoogle = () => {
   document.getElementById('popup-blocked-msg').style.display = 'none';
   document.getElementById('btn-signin-text').textContent = 'מתחבר...';

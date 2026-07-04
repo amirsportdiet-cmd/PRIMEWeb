@@ -570,16 +570,28 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
         <h3>בדיקות תפקודיות</h3>
       </div>
       <div class="form-section-body">
+        <p style="background:#fefce8; border:1px solid #fde68a; border-radius:10px; margin:0 0 12px; padding:10px 14px; font-size:12.5px; color:#92400e; font-weight:600;">כוח לפיתה (Handgrip): יש להזין את <b>הערך הגבוה ביותר</b> מבין הניסיונות, בנפרד ליד ימין וליד שמאל.</p>
         <div class="form-row">
           <div class="field-card">
-            <div class="field-label">כוח לפיתה — Handgrip (ק״ג)</div>
+            <div class="field-label">כוח לפיתה — יד ימין (ק״ג)</div>
             <div class="field-tab-row">
-              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-hg','s')">התחלה</button>
-              <button type="button" class="field-tab end" onclick="switchTab(this,'f-hg','e')">סוף</button>
+              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-hgr','s')">התחלה</button>
+              <button type="button" class="field-tab end" onclick="switchTab(this,'f-hgr','e')">סוף</button>
             </div>
-            <input type="number" class="field-active-input" data-field="f-hg" data-side="s" data-ph-s="לדוגמה: 38" data-ph-e="לדוגמה: 40" placeholder="לדוגמה: 38" min="0" max="100" step="0.5" inputmode="decimal" oninput="storeVal(this)">
-            <input type="hidden" id="f-hg-s"><input type="hidden" id="f-hg-e">
+            <input type="number" class="field-active-input" data-field="f-hgr" data-side="s" data-ph-s="לדוגמה: 38" data-ph-e="לדוגמה: 40" placeholder="לדוגמה: 38" min="0" max="100" step="0.5" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-hgr-s"><input type="hidden" id="f-hgr-e">
           </div>
+          <div class="field-card">
+            <div class="field-label">כוח לפיתה — יד שמאל (ק״ג)</div>
+            <div class="field-tab-row">
+              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-hgl','s')">התחלה</button>
+              <button type="button" class="field-tab end" onclick="switchTab(this,'f-hgl','e')">סוף</button>
+            </div>
+            <input type="number" class="field-active-input" data-field="f-hgl" data-side="s" data-ph-s="לדוגמה: 36" data-ph-e="לדוגמה: 38" placeholder="לדוגמה: 36" min="0" max="100" step="0.5" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-hgl-s"><input type="hidden" id="f-hgl-e">
+          </div>
+        </div>
+        <div class="form-row">
           <div class="field-card">
             <div class="field-label">SPPB (0–12)</div>
             <div class="field-tab-row">
@@ -1043,8 +1055,10 @@ window.generateReport = () => {
     { id:'f-waist-e',  label:'היקף מותניים — סוף' },
     { id:'f-calf-s',   label:'היקף שוק — התחלה' },
     { id:'f-calf-e',   label:'היקף שוק — סוף' },
-    { id:'f-hg-s',     label:'כוח לפיתה — התחלה' },
-    { id:'f-hg-e',     label:'כוח לפיתה — סוף' },
+    { id:'f-hgr-s',    label:'כוח לפיתה יד ימין — התחלה' },
+    { id:'f-hgr-e',    label:'כוח לפיתה יד ימין — סוף' },
+    { id:'f-hgl-s',    label:'כוח לפיתה יד שמאל — התחלה' },
+    { id:'f-hgl-e',    label:'כוח לפיתה יד שמאל — סוף' },
     { id:'f-sppb-s',   label:'SPPB — התחלה' },
     { id:'f-sppb-e',   label:'SPPB — סוף' },
     { id:'f-sts-s',    label:'קימה מכיסא — התחלה' },
@@ -1121,7 +1135,8 @@ window.generateReport = () => {
     waistS: g('f-waist-s'), waistE: g('f-waist-e'),
     calfS: g('f-calf-s'), calfE: g('f-calf-e'),
     // functional
-    hgS: g('f-hg-s'), hgE: g('f-hg-e'),
+    hgrS: g('f-hgr-s'), hgrE: g('f-hgr-e'),
+    hglS: g('f-hgl-s'), hglE: g('f-hgl-e'),
     sppbS: g('f-sppb-s'), sppbE: g('f-sppb-e'),
     stsS: g('f-sts-s'), stsE: g('f-sts-e'),
     walkS: g('f-walk-s'), walkE: g('f-walk-e'),
@@ -1156,7 +1171,9 @@ window.generateReport = () => {
   const tFatPct = tagOk(fatPctE, fatPctNorm[0], fatPctNorm[1]);
   const tRee = tagOk(reePctE, 90, 110);
   const tRer = tagOk(D.rerE, 0.70, 1.00);
-  const tHg = sex === 'm' ? tagGte(D.hgE, 27) : tagGte(D.hgE, 16);
+  const hgMaxS = Math.max(D.hgrS, D.hglS);
+  const hgMaxE = Math.max(D.hgrE, D.hglE);
+  const tHg = sex === 'm' ? tagGte(hgMaxE, 27) : tagGte(hgMaxE, 16);
   const tSppb = tagGte(D.sppbE, 10);
   const tSts = tagOk(D.stsE, stsRng[0], stsRng[1]);
   const tWalk = tagGte(D.walkE, walkExp * 0.85);
@@ -1323,11 +1340,14 @@ window.generateReport = () => {
   <div class="grid2">
     <div class="card">
       <div class="label">כוח לפיתה&nbsp;<span class="nb">(Handgrip Strength)</span></div>
-      <div class="val">${n(D.hgE,1)} <small>ק״ג</small></div>
-      <div class="desc">כוח הלפיתה של כף היד. זהו מדד אמין לכוח השרירים בכל הגוף, וירידה בו מעידה על איבוד שריר (סרקופניה).</div>
+      <div class="dual">
+        <div><div class="dv">${n(D.hgrE,1)}<small> ק״ג</small></div><div class="dl">יד ימין</div></div>
+        <div><div class="dv">${n(D.hglE,1)}<small> ק״ג</small></div><div class="dl">יד שמאל</div></div>
+      </div>
+      <div class="desc">כוח הלפיתה של כף היד, <b>הערך הגבוה ביותר</b> שנמדד בכל יד. מדד אמין לכוח השרירים בכל הגוף, וירידה בו מעידה על איבוד שריר (סרקופניה).</div>
       <div class="ill"><img class="photo" src="images/prime/hg.png" alt="כוח לפיתה" onerror="this.style.display='none'"></div>
       <div class="bar-wrap">
-        <div class="bar simple"><div class="zone" style="right:25%;left:0;"></div><div class="mark" style="right:${markPos(D.hgE, 0, 70)}%;"></div></div>
+        <div class="bar simple"><div class="zone" style="right:25%;left:0;"></div><div class="mark" style="right:${markPos(hgMaxE, 0, 70)}%;"></div></div>
         <div class="scale"><span>חולשה</span><span>טווח תקין</span><span>כוח גבוה</span></div>
       </div>
       <div class="note">${hgNote} ${tHg}</div>
@@ -1386,7 +1406,8 @@ window.generateReport = () => {
   const cWaist= mkChip(D.waistS, D.waistE, 'down', 'ס״מ', 1);
   const cWhtr = mkChip(whtrS, whtrE, 'down', '', 2);
   const cCalf = mkChip(D.calfS, D.calfE, 'preserve', 'ס״מ', 1);
-  const cHg   = mkChip(D.hgS, D.hgE, 'up', 'ק״ג', 1);
+  const cHgR  = mkChip(D.hgrS, D.hgrE, 'up', 'ק״ג', 1);
+  const cHgL  = mkChip(D.hglS, D.hglE, 'up', 'ק״ג', 1);
   const cSppb = mkChip(D.sppbS, D.sppbE, 'up', 'נק׳', 0);
   const cSts  = mkChip(D.stsS, D.stsE, 'up', 'חז׳', 0);
   const cWalk = mkChip(D.walkS, D.walkE, 'up', 'מ׳', 0);
@@ -1419,7 +1440,8 @@ window.generateReport = () => {
   const iWaist= mkInterp(D.waistS, D.waistE, 'down', T.waist);
   const iWhtr = mkInterp(whtrS, whtrE, 'down', T.whtr);
   const iCalf = mkInterp(D.calfS, D.calfE, 'preserve', T.calf);
-  const iHg   = mkInterp(D.hgS, D.hgE, 'up', T.hg);
+  const iHgR  = mkInterp(D.hgrS, D.hgrE, 'up', T.hg);
+  const iHgL  = mkInterp(D.hglS, D.hglE, 'up', T.hg);
   const iSppb = mkInterp(D.sppbS, D.sppbE, 'up', T.sppb);
   const iSts  = mkInterp(D.stsS, D.stsE, 'up', T.sts);
   const iWalk = mkInterp(D.walkS, D.walkE, 'up', T.walk);
@@ -1576,13 +1598,22 @@ window.generateReport = () => {
     <div class="csub">בדיקות תפקודיות</div>
     <div class="cgrid g4">
       <div class="ccard">
-        <div class="cl">כוח לפיתה (Handgrip)</div>
+        <div class="cl">כוח לפיתה — יד ימין</div>
         <div class="crow">
-          <div class="cside"><div class="ct">התחלה</div><div class="cv s">${n(D.hgS,1)}<span class="ex">ק״ג</span></div></div>
-          ${cHg}
-          <div class="cside"><div class="ct">סוף</div><div class="cv e">${n(D.hgE,1)}<span class="ex">ק״ג</span></div></div>
+          <div class="cside"><div class="ct">התחלה</div><div class="cv s">${n(D.hgrS,1)}<span class="ex">ק״ג</span></div></div>
+          ${cHgR}
+          <div class="cside"><div class="ct">סוף</div><div class="cv e">${n(D.hgrE,1)}<span class="ex">ק״ג</span></div></div>
         </div>
-        <div class="cinterp">${iHg}</div>
+        <div class="cinterp">${iHgR}</div>
+      </div>
+      <div class="ccard">
+        <div class="cl">כוח לפיתה — יד שמאל</div>
+        <div class="crow">
+          <div class="cside"><div class="ct">התחלה</div><div class="cv s">${n(D.hglS,1)}<span class="ex">ק״ג</span></div></div>
+          ${cHgL}
+          <div class="cside"><div class="ct">סוף</div><div class="cv e">${n(D.hglE,1)}<span class="ex">ק״ג</span></div></div>
+        </div>
+        <div class="cinterp">${iHgL}</div>
       </div>
       <div class="ccard">
         <div class="cl">סוללת מבחנים קצרה <span dir="ltr">(SPPB)</span></div>

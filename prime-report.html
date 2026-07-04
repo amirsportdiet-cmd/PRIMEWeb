@@ -385,7 +385,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
         <select id="rc-select" style="display:none;" onchange="rcLoadParticipant(this.value)"></select>
         <div id="rc-status" class="rc-status"></div>
       </div>
-      <div class="rc-import-hint">ייצוא Report A (CSV raw) → כאן בוחרים נחקר → הטופס מתמלא אוטומטית (t0=התחלה, t6/followup=סוף, ואם ריק אז t3).</div>
+      <div class="rc-import-hint">ייצוא Report A (CSV raw) → כאן בוחרים נחקר → הטופס מתמלא אוטומטית (T0=התחלה, T6/followup=סוף, ואם ריק אז T3).</div>
     </div>
 
     <div class="form-body no-print">
@@ -1143,7 +1143,7 @@ function rcParse(text){
   sel.innerHTML = '<option value="">— בחר נחקר —</option>';
   const DECO = {
     green:  { dot:'🟢', color:'#16a34a', note:'' },
-    yellow: { dot:'🟡', color:'#b45309', note:' — חסר T6 (הסוף לפי t3)' },
+    yellow: { dot:'🟡', color:'#b45309', note:' — חסר T6 (הסוף לפי T3)' },
     red:    { dot:'🔴', color:'#dc2626', note:' — התחלה בלבד' }
   };
   let ng=0, ny=0, nr=0;
@@ -1195,7 +1195,7 @@ window.rcLoadParticipant = (id) => {
   const code = document.getElementById('f-code').value;
   document.getElementById('rc-status').textContent =
     st.level === 'green'  ? '🟢 נטען קוד ' + code + ' (מלא) — בדוק ולחץ הפקת דו״ח.' :
-    st.level === 'yellow' ? '🟡 נטען קוד ' + code + ' — אין T6, הסוף נלקח מ-t3. בדוק ולחץ הפקת דו״ח.' :
+    st.level === 'yellow' ? '🟡 נטען קוד ' + code + ' — אין T6, הסוף נלקח מ-T3. בדוק ולחץ הפקת דו״ח.' :
                             '🔴 נטען קוד ' + code + ' — התחלה בלבד, אין נתוני סוף; יש להשלים ידנית.';
   // גלילה חזרה לראש הטופס כדי לראות את השדות שהתמלאו
   document.querySelector('.form-body')?.scrollIntoView({ behavior:'smooth', block:'start' });

@@ -1122,21 +1122,33 @@ function rcParse(text){
     }
   }
   RC_BY_ID = byId;
-  const sel = document.getElementById('rc-select');
-  sel.innerHTML = '<option value="">— בחר נחקר —</option>';
-  let n = 0;
+  // איסוף הנחקרים עם מדידת t0
+  const list = [];
   Object.keys(byId).forEach(id => {
     const t0 = byId[id]['t0_arm_1'];
     if(!(t0 && (t0[H['rmr_measured']]||'').trim())) return;
     const code = (t0[H['code_participant']]||'').trim() || id;
-    const endRow = rcEndRow(byId[id], H);
+    list.push({ id, code, endRow: rcEndRow(byId[id], H) });
+  });
+  // מיון מספרי לפי קוד (1,2,3...); לא-מספריים בסוף לפי א״ב
+  list.sort((a,b) => {
+    const na = parseFloat(a.code), nb = parseFloat(b.code);
+    const aNum = !isNaN(na), bNum = !isNaN(nb);
+    if(aNum && bNum) return na - nb;
+    if(aNum) return -1;
+    if(bNum) return 1;
+    return a.code.localeCompare(b.code);
+  });
+  const sel = document.getElementById('rc-select');
+  sel.innerHTML = '<option value="">— בחר נחקר —</option>';
+  list.forEach(p => {
     const opt = document.createElement('option');
-    opt.value = id;
-    opt.textContent = 'קוד ' + code + (endRow ? '' : ' — התחלה בלבד');
-    sel.appendChild(opt); n++;
+    opt.value = p.id;
+    opt.textContent = 'קוד ' + p.code + (p.endRow ? '' : ' — התחלה בלבד');
+    sel.appendChild(opt);
   });
   sel.style.display = 'block';
-  status.textContent = n ? ('נטענו ' + n + ' נחקרים עם מדידות — בחר מהרשימה.') : 'לא נמצאו נחקרים עם מדידות t0 בקובץ.';
+  status.textContent = list.length ? ('נטענו ' + list.length + ' נחקרים עם מדידות — בחר מהרשימה.') : 'לא נמצאו נחקרים עם מדידות t0 בקובץ.';
 }
 
 window.rcLoadParticipant = (id) => {

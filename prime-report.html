@@ -127,6 +127,10 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
 .btn-gen:hover { transform:translateY(-1px); box-shadow:0 6px 20px rgba(13,148,136,.45); }
 .btn-clear-form { background:#fff; border:2px solid #e2e8f0; border-radius:12px; padding:15px 28px; font-size:15px; font-weight:700; color:#64748b; cursor:pointer; font-family:inherit; transition:.15s; }
 .btn-clear-form:hover { border-color:#f87171; color:#dc2626; background:#fff5f5; }
+.btn-today { width:100%; margin-top:8px; background:#f0fdfa; border:1px dashed #5eead4; border-radius:8px; padding:8px; font-size:13px; font-weight:600; color:#0d9488; cursor:pointer; font-family:inherit; transition:.15s; }
+.btn-today:hover { background:#ccfbf1; border-color:#0d9488; }
+.btn-sample { background:none; border:none; color:#0d9488; font-size:13px; font-weight:600; text-decoration:underline; cursor:pointer; font-family:inherit; padding:4px; }
+.btn-sample:hover { color:#0f766e; }
 .error-msg { background:#fef2f2; border:1px solid #fca5a5; border-radius:10px; color:#b91c1c; font-size:12.5px; padding:12px 16px; margin:0 24px 16px; display:none; line-height:1.8; }
 
 /* ===== Report ===== */
@@ -394,13 +398,14 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
         </div>
         <div class="form-row" style="margin-top:14px;">
           <div class="field-card">
-            <div class="field-label">תאריך מדידה <span style="font-weight:500;color:#94a3b8;font-size:11px;">(אופציונלי)</span></div>
+            <div class="field-label">תאריך מדידה</div>
             <div class="field-tab-row">
               <button type="button" class="field-tab start active" onclick="switchTab(this,'f-date','s')">התחלה</button>
               <button type="button" class="field-tab end" onclick="switchTab(this,'f-date','e')">סוף</button>
             </div>
             <input type="date" class="field-active-input" data-field="f-date" data-side="s"
               data-ph-s="" data-ph-e="" oninput="storeVal(this)">
+            <button type="button" class="btn-today" onclick="setDateToday(this)">📅 קבע לתאריך היום</button>
             <input type="hidden" id="f-date-s"><input type="hidden" id="f-date-e">
           </div>
         </div>
@@ -635,7 +640,8 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
           <button class="btn-gen" onclick="generateReport()">לחיצה להפקת דו״ח</button>
           <button class="btn-clear-form" onclick="clearForm()">ניקוי שדות</button>
         </div>
-        <p style="margin:10px 0 0; font-size:12px; color:#94a3b8;">*הדוחות לא נשמרים, יש להוריד ולשלוח או להדפיס מיד לאחר הפקת הדו״ח</p>
+        <p style="margin:10px 0 0;"><button type="button" class="btn-sample" onclick="loadSample()">👁 צפייה בדוח לדוגמה (ללא הזנת נתונים)</button></p>
+        <p style="margin:6px 0 0; font-size:12px; color:#94a3b8;">*הדוחות לא נשמרים, יש להוריד ולשלוח או להדפיס מיד לאחר הפקת הדו״ח</p>
       </div>
     </div>
   </div>
@@ -1023,6 +1029,59 @@ window.backToForm = () => {
   document.getElementById('report-screen').style.display = 'none';
 };
 
+window.setDateToday = (btn) => {
+  const card = btn.closest('.field-card');
+  const inp = card.querySelector('.field-active-input');
+  const d = new Date();
+  const iso = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  inp.value = iso;
+  storeVal(inp);
+  markTab(card, inp.dataset.side, true);
+};
+
+window.loadSample = () => {
+  const startMap = {
+    'f-ree':'1500','f-rer':'0.82','f-fatburn':'55','f-chburn':'45',
+    'f-wt':'88','f-fm':'28','f-smm':'30','f-tbw':'40','f-icw':'25','f-ecw':'15',
+    'f-waist':'100','f-calf':'36',
+    'f-hgr':'38','f-hgl':'36','f-sppb':'11','f-sts':'15','f-walk':'178'
+  };
+  const endMap = {
+    'f-ree':'1550','f-rer':'0.80','f-fatburn':'60','f-chburn':'40',
+    'f-wt':'82','f-fm':'24','f-smm':'31','f-tbw':'41','f-icw':'26','f-ecw':'15',
+    'f-waist':'94','f-calf':'36',
+    'f-hgr':'40','f-hgl':'39','f-sppb':'12','f-sts':'17','f-walk':'190'
+  };
+  document.querySelectorAll('.field-active-input').forEach(inp => {
+    const df = inp.dataset.field;
+    if (df === 'f-date' || startMap[df] === undefined) return;
+    inp.dataset.side = 's';
+    inp.value = startMap[df];
+    storeVal(inp);
+    const card = inp.closest('.field-card');
+    markTab(card, 's', true);
+    const he = document.getElementById(df + '-e');
+    if (he && endMap[df] !== undefined) { he.value = endMap[df]; markTab(card, 'e', true); }
+  });
+  // dates: start = 3 months ago, end = today
+  const iso = d => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  const today = new Date();
+  const start = new Date(today); start.setMonth(start.getMonth() - 3);
+  const dateInp = document.querySelector('.field-active-input[data-field="f-date"]');
+  if (dateInp) { dateInp.dataset.side = 's'; dateInp.value = iso(start); markTab(dateInp.closest('.field-card'), 's', true); markTab(dateInp.closest('.field-card'), 'e', true); }
+  document.getElementById('f-date-s').value = iso(start);
+  document.getElementById('f-date-e').value = iso(today);
+  // simple fields
+  [['f-code','לדוגמה','code'],['f-age','65','age'],['f-height','172','height']].forEach(([id,val,chk]) => {
+    const el = document.getElementById(id);
+    el.value = val;
+    setFieldCheck(chk, 'ok');
+    el.closest('.simple-field')?.classList.add('sf-filled');
+  });
+  setSex('m');
+  generateReport();
+};
+
 window.generateReport = () => {
   flushActiveInputs();
 
@@ -1031,6 +1090,8 @@ window.generateReport = () => {
     { id:'f-age',      label:'גיל' },
     { id:'f-sex',      label:'מין' },
     { id:'f-height',   label:'גובה' },
+    { id:'f-date-s',   label:'תאריך מדידה — התחלה' },
+    { id:'f-date-e',   label:'תאריך מדידה — סוף' },
     { id:'f-ree-s',    label:'REE — התחלה' },
     { id:'f-ree-e',    label:'REE — סוף' },
     { id:'f-rer-s',    label:'RER — התחלה' },

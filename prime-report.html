@@ -1084,12 +1084,12 @@ function rcCSV(text){
   return rows;
 }
 
-function rcEndRow(rec, H){
-  const fu = rec['followup_arm_1'];
-  if(fu && (fu[H['rmr_measured']]||'').trim()) return fu;   // T6 = ברירת מחדל
-  const t3 = rec['t3_arm_1'];
-  if(t3 && (t3[H['rmr_measured']]||'').trim()) return t3;   // נפילה ל-t3
-  return null;
+function rcStatus(rec, H){
+  const has = ev => rec[ev] && (rec[ev][H['rmr_measured']]||'').trim();
+  const start = has('t0_arm_1'), mid = has('t3_arm_1'), end = has('followup_arm_1');
+  if(end)  return { level:'green',  endRow:rec['followup_arm_1'], endSource:'T6', start, mid, end };
+  if(mid)  return { level:'yellow', endRow:rec['t3_arm_1'],       endSource:'t3', start, mid, end };
+  return       { level:'red',    endRow:null,                  endSource:null, start, mid, end };
 }
 
 window.rcHandleFile = (inp) => {
@@ -1128,7 +1128,7 @@ function rcParse(text){
     const t0 = byId[id]['t0_arm_1'];
     if(!(t0 && (t0[H['rmr_measured']]||'').trim())) return;
     const code = (t0[H['code_participant']]||'').trim() || id;
-    list.push({ id, code, endRow: rcEndRow(byId[id], H) });
+    list.push({ id, code, st: rcStatus(byId[id], H) });
   });
   // מיון מספרי לפי קוד (1,2,3...); לא-מספריים בסוף לפי א״ב
   list.sort((a,b) => {
@@ -1141,14 +1141,25 @@ function rcParse(text){
   });
   const sel = document.getElementById('rc-select');
   sel.innerHTML = '<option value="">— בחר נחקר —</option>';
+  const DECO = {
+    green:  { dot:'🟢', color:'#16a34a', note:'' },
+    yellow: { dot:'🟡', color:'#b45309', note:' — חסר T6 (הסוף לפי t3)' },
+    red:    { dot:'🔴', color:'#dc2626', note:' — התחלה בלבד' }
+  };
+  let ng=0, ny=0, nr=0;
   list.forEach(p => {
+    const d = DECO[p.st.level];
+    if(p.st.level==='green') ng++; else if(p.st.level==='yellow') ny++; else nr++;
     const opt = document.createElement('option');
     opt.value = p.id;
-    opt.textContent = 'קוד ' + p.code + (p.endRow ? '' : ' — התחלה בלבד');
+    opt.textContent = d.dot + ' קוד ' + p.code + d.note;
+    opt.style.color = d.color;
     sel.appendChild(opt);
   });
   sel.style.display = 'block';
-  status.textContent = list.length ? ('נטענו ' + list.length + ' נחקרים עם מדידות — בחר מהרשימה.') : 'לא נמצאו נחקרים עם מדידות t0 בקובץ.';
+  status.innerHTML = list.length
+    ? ('נטענו ' + list.length + ' נחקרים — 🟢 ' + ng + ' מלאים · 🟡 ' + ny + ' חסר T6 · 🔴 ' + nr + ' התחלה בלבד')
+    : 'לא נמצאו נחקרים עם מדידות t0 בקובץ.';
 }
 
 window.rcLoadParticipant = (id) => {
@@ -1157,7 +1168,8 @@ window.rcLoadParticipant = (id) => {
   const cell = (row, name) => (row && H[name] != null) ? (row[H[name]]||'').trim() : '';
   const scr = rec['screening_arm_1'] || null;
   const t0  = rec['t0_arm_1'] || null;
-  const endRow = rcEndRow(rec, H);
+  const st = rcStatus(rec, H);
+  const endRow = st.endRow;
   for(const key in RC_MAP){
     const col = RC_MAP[key];
     rcSet('f-'+key+'-s', cell(t0, col));
@@ -1180,8 +1192,11 @@ window.rcLoadParticipant = (id) => {
   const sx = cell(scr,'cand_sex');
   if(sx === '1') setSex('m'); else if(sx === '2') setSex('f');
   rcSyncVisible();
-  document.getElementById('rc-status').textContent = 'נטען קוד ' + document.getElementById('f-code').value +
-    (endRow ? ' — בדוק ולחץ הפקת דו״ח.' : ' — אין נתוני סוף (t3/followup); יש להשלים ידנית.');
+  const code = document.getElementById('f-code').value;
+  document.getElementById('rc-status').textContent =
+    st.level === 'green'  ? '🟢 נטען קוד ' + code + ' (מלא) — בדוק ולחץ הפקת דו״ח.' :
+    st.level === 'yellow' ? '🟡 נטען קוד ' + code + ' — אין T6, הסוף נלקח מ-t3. בדוק ולחץ הפקת דו״ח.' :
+                            '🔴 נטען קוד ' + code + ' — התחלה בלבד, אין נתוני סוף; יש להשלים ידנית.';
   // גלילה חזרה לראש הטופס כדי לראות את השדות שהתמלאו
   document.querySelector('.form-body')?.scrollIntoView({ behavior:'smooth', block:'start' });
 };

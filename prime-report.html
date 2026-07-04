@@ -48,6 +48,14 @@ body { font-family:"Rubik","Assistant","Heebo",sans-serif; direction:rtl; margin
   background:#fefce8; border:1px solid #fde68a; border-radius:10px;
   margin:0 24px 16px; padding:12px 16px; font-size:13px; color:#92400e; font-weight:600; text-align:center;
 }
+.rc-import { margin:0 24px 18px; border:2px dashed #99f6e4; border-radius:14px; background:#f0fdfa; padding:16px 18px; text-align:center; }
+.rc-import-head { font-size:15px; font-weight:800; color:#0f766e; margin-bottom:12px; }
+.rc-import-body { display:flex; flex-direction:column; align-items:center; gap:10px; }
+.btn-redcap { background:#0d9488; color:#fff; border:none; border-radius:10px; padding:12px 24px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit; transition:.15s; }
+.btn-redcap:hover { background:#0f766e; transform:translateY(-1px); }
+#rc-select { width:100%; max-width:420px; padding:11px 12px; font-size:15px; border:2px solid #5eead4; border-radius:10px; font-family:inherit; text-align:center; background:#fff; }
+.rc-status { font-size:13px; font-weight:600; color:#0f766e; min-height:16px; }
+.rc-import-hint { margin-top:12px; font-size:11.5px; color:#5e9a92; line-height:1.7; }
 
 /* Sections */
 .form-body { padding:0 24px; }
@@ -367,6 +375,17 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
 
     <div class="form-researcher-note no-print">
       &#9432; יש להזין את כל השדות, כולל ערכי תחילת המחקר וסוף המחקר
+    </div>
+
+    <div class="rc-import no-print">
+      <div class="rc-import-head">📤 טעינה אוטומטית מ-REDCap</div>
+      <div class="rc-import-body">
+        <input type="file" id="rc-file" accept=".csv" style="display:none;" onchange="rcHandleFile(this)">
+        <button type="button" class="btn-redcap" onclick="document.getElementById('rc-file').click()">בחירת קובץ CSV שיוצא מ-REDCap</button>
+        <select id="rc-select" style="display:none;" onchange="rcLoadParticipant(this.value)"></select>
+        <div id="rc-status" class="rc-status"></div>
+      </div>
+      <div class="rc-import-hint">ייצוא Report A (CSV raw) → כאן בוחרים נחקר → הטופס מתמלא אוטומטית (t0=התחלה, t6/followup=סוף, ואם ריק אז t3).</div>
     </div>
 
     <div class="form-body no-print">
@@ -1034,6 +1053,139 @@ window.backToForm = () => {
   document.getElementById('report-screen').style.display = 'none';
 };
 
+// ===== REDCap CSV import =====
+const RC_MAP = {
+  ree:'rmr_measured', rer:'rmr_rq', fatburn:'rmr_fat_use', chburn:'rmr_cho_use',
+  wt:'bia_weight', smm:'bia_smm',
+  waist:'bc_avg_waistc_anthro', calf:'bc_avg_rcalf_anthro',
+  hgr:'hgrip_top_right', hgl:'hgrip_top_left',
+  sppb:'sppb_total_score', sts:'chair_stand_total', walk:'walk_total_distance',
+  tbw:'bia_tbw', icw:'bia_icw', ecw:'bia_ecw'
+};
+let RC_HEADER = null, RC_BY_ID = null;
+
+function rcCSV(text){
+  if(text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const rows = []; let row = [], cur = '', q = false;
+  for(let i=0;i<text.length;i++){
+    const c = text[i];
+    if(q){
+      if(c === '"'){ if(text[i+1] === '"'){ cur+='"'; i++; } else q = false; }
+      else cur += c;
+    } else {
+      if(c === '"') q = true;
+      else if(c === ','){ row.push(cur); cur=''; }
+      else if(c === '\n'){ row.push(cur); rows.push(row); row=[]; cur=''; }
+      else if(c === '\r'){ /* skip */ }
+      else cur += c;
+    }
+  }
+  if(cur !== '' || row.length){ row.push(cur); rows.push(row); }
+  return rows;
+}
+
+function rcEndRow(rec, H){
+  const fu = rec['followup_arm_1'];
+  if(fu && (fu[H['rmr_measured']]||'').trim()) return fu;   // T6 = ברירת מחדל
+  const t3 = rec['t3_arm_1'];
+  if(t3 && (t3[H['rmr_measured']]||'').trim()) return t3;   // נפילה ל-t3
+  return null;
+}
+
+window.rcHandleFile = (inp) => {
+  const file = inp.files && inp.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => { try { rcParse(e.target.result); } catch(err){ document.getElementById('rc-status').textContent = 'שגיאה בקריאת הקובץ: ' + err.message; } };
+  reader.readAsText(file, 'utf-8');
+};
+
+function rcParse(text){
+  const rows = rcCSV(text);
+  const status = document.getElementById('rc-status');
+  if(rows.length < 2){ status.textContent = 'הקובץ ריק או לא תקין.'; return; }
+  const header = rows[0].map(h => h.trim());
+  const H = {}; header.forEach((h,i) => H[h] = i);
+  if(H['record_id'] == null || H['redcap_event_name'] == null){
+    status.textContent = 'לא נמצאו העמודות record_id / redcap_event_name — ודא שייצאת CSV raw data.'; return;
+  }
+  RC_HEADER = H;
+  const byId = {};
+  for(let r=1;r<rows.length;r++){
+    const row = rows[r]; const id = (row[H['record_id']]||'').trim(); if(!id) continue;
+    const ev = (row[H['redcap_event_name']]||'').trim();
+    byId[id] = byId[id] || {};
+    if(!byId[id][ev]){ byId[id][ev] = row.slice(); }
+    else {
+      // מיזוג שורות של אותו אירוע (instruments חוזרים מפוצלים למספר שורות)
+      const ex = byId[id][ev];
+      for(let c=0;c<row.length;c++){ if((!ex[c] || !ex[c].trim()) && row[c] && row[c].trim()) ex[c] = row[c]; }
+    }
+  }
+  RC_BY_ID = byId;
+  const sel = document.getElementById('rc-select');
+  sel.innerHTML = '<option value="">— בחר נחקר —</option>';
+  let n = 0;
+  Object.keys(byId).forEach(id => {
+    const t0 = byId[id]['t0_arm_1'];
+    if(!(t0 && (t0[H['rmr_measured']]||'').trim())) return;
+    const code = (t0[H['code_participant']]||'').trim() || id;
+    const endRow = rcEndRow(byId[id], H);
+    const opt = document.createElement('option');
+    opt.value = id;
+    opt.textContent = 'קוד ' + code + (endRow ? '' : ' — התחלה בלבד');
+    sel.appendChild(opt); n++;
+  });
+  sel.style.display = 'block';
+  status.textContent = n ? ('נטענו ' + n + ' נחקרים עם מדידות — בחר מהרשימה.') : 'לא נמצאו נחקרים עם מדידות t0 בקובץ.';
+}
+
+window.rcLoadParticipant = (id) => {
+  if(!id || !RC_BY_ID) return;
+  const H = RC_HEADER, rec = RC_BY_ID[id];
+  const cell = (row, name) => (row && H[name] != null) ? (row[H[name]]||'').trim() : '';
+  const scr = rec['screening_arm_1'] || null;
+  const t0  = rec['t0_arm_1'] || null;
+  const endRow = rcEndRow(rec, H);
+  for(const key in RC_MAP){
+    const col = RC_MAP[key];
+    rcSet('f-'+key+'-s', cell(t0, col));
+    rcSet('f-'+key+'-e', endRow ? cell(endRow, col) : '');
+  }
+  // FM (ק״ג) = משקל × אחוז שומן / 100
+  rcSet('f-fm-s', rcFM(cell(t0,'bia_weight'), cell(t0,'bia_pbf')));
+  rcSet('f-fm-e', endRow ? rcFM(cell(endRow,'bia_weight'), cell(endRow,'bia_pbf')) : '');
+  // תאריכים
+  rcSet('f-date-s', cell(t0,'metabolism_date'));
+  rcSet('f-date-e', endRow ? cell(endRow,'metabolism_date') : '');
+  // שדות פשוטים
+  document.getElementById('f-code').value = cell(t0,'code_participant') || id;
+  document.getElementById('f-age').value = cell(scr,'cand_age');
+  document.getElementById('f-height').value = cell(t0,'baseline_inbody_height_avg');
+  const sx = cell(scr,'cand_sex');
+  if(sx === '1') setSex('m'); else if(sx === '2') setSex('f');
+  rcSyncVisible();
+  document.getElementById('rc-status').textContent = 'נטען קוד ' + document.getElementById('f-code').value +
+    (endRow ? ' — בדוק ולחץ הפקת דו״ח.' : ' — אין נתוני סוף (t3/followup); יש להשלים ידנית.');
+};
+
+function rcFM(w, pbf){ w = parseFloat(w); pbf = parseFloat(pbf); if(isNaN(w) || isNaN(pbf)) return ''; return (w * pbf / 100).toFixed(1); }
+function rcSet(id, val){ const h = document.getElementById(id); if(h) h.value = (val == null ? '' : val); }
+
+function rcSyncVisible(){
+  document.querySelectorAll('.field-active-input').forEach(inp => {
+    const df = inp.dataset.field, side = inp.dataset.side || 's';
+    const h = document.getElementById(df+'-'+side); if(h) inp.value = h.value;
+    const card = inp.closest('.field-card'); if(!card) return;
+    const sEl = document.getElementById(df+'-s'), eEl = document.getElementById(df+'-e');
+    markTab(card, 's', !!(sEl && sEl.value.trim()));
+    markTab(card, 'e', !!(eEl && eEl.value.trim()));
+  });
+  ['code','age','height'].forEach(chk => {
+    const el = document.getElementById('f-'+chk);
+    if(el && el.value.trim()){ setFieldCheck(chk, 'ok'); el.closest('.simple-field')?.classList.add('sf-filled'); }
+  });
+}
+
 window.setDateToday = (btn) => {
   const card = btn.closest('.field-card');
   const inp = card.querySelector('.field-active-input');
@@ -1111,12 +1263,7 @@ window.generateReport = () => {
     { id:'f-fm-e',     label:'מסת שומן FM — סוף' },
     { id:'f-smm-s',    label:'מסת שריר SMM — התחלה' },
     { id:'f-smm-e',    label:'מסת שריר SMM — סוף' },
-    { id:'f-tbw-s',    label:'TBW — התחלה' },
-    { id:'f-tbw-e',    label:'TBW — סוף' },
-    { id:'f-icw-s',    label:'ICW — התחלה' },
-    { id:'f-icw-e',    label:'ICW — סוף' },
-    { id:'f-ecw-s',    label:'ECW — התחלה' },
-    { id:'f-ecw-e',    label:'ECW — סוף' },
+    // TBW / ICW / ECW אינם חובה (חסרים לרוב ב-REDCap)
     { id:'f-waist-s',  label:'היקף מותניים — התחלה' },
     { id:'f-waist-e',  label:'היקף מותניים — סוף' },
     { id:'f-calf-s',   label:'היקף שוק — התחלה' },
@@ -1351,7 +1498,7 @@ window.generateReport = () => {
       </div>
       <div class="note"><span class="tag ok">בטווח תקין</span></div>
     </div>
-    <div class="card">
+    ${D.tbwE > 0 ? `<div class="card">
       <div class="label">נוזלים · Total Body Water&nbsp;<span class="nb">(TBW)</span></div>
       <div class="val">${n(D.tbwE,1)} <small>ליטר</small></div>
       <div class="split" style="height:26px; font-size:11.5px;">
@@ -1359,7 +1506,10 @@ window.generateReport = () => {
         <div class="b" style="width:${Math.round(D.ecwE/D.tbwE*100)}%; background:#7dd3fc; color:#0c4a6e;">ECW · ${n(D.ecwE,1)}</div>
       </div>
       <div class="desc"><b>סך</b> המים בגוף. יחס ECW/TBW: <b>${n(ecwTbwE,3)}</b>, תקין 0.360–0.390. ${tagOk(ecwTbwE, 0.360, 0.390)}</div>
-    </div>
+    </div>` : `<div class="card" style="opacity:.55;">
+      <div class="label">נוזלים · Total Body Water&nbsp;<span class="nb">(TBW)</span></div>
+      <div class="desc" style="margin-top:16px;">לא נמדד בבדיקה זו.</div>
+    </div>`}
   </div>
   <div class="qrule"><b>חוק הרבע:</b> בירידה במשקל ללא אימוני כוח, בממוצע כ-25% מהמשקל היורד מגיע ממסה רזה. לכן השילוב של חלבון ואימוני כוח במחקר נועד לשמר את השריר.</div>
 </div>

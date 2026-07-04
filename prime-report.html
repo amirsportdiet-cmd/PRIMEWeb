@@ -1172,12 +1172,18 @@ window.rcLoadParticipant = (id) => {
   // שדות פשוטים
   document.getElementById('f-code').value = cell(t0,'code_participant') || id;
   document.getElementById('f-age').value = cell(scr,'cand_age');
-  document.getElementById('f-height').value = cell(t0,'baseline_inbody_height_avg');
+  // גובה — שרשרת גיבוי בין עמודות ואירועים
+  let height = '';
+  const heightCols = ['baseline_inbody_height_avg','bia_height','dxa_inbody_height','baseline_inbody_height'];
+  for(const row of [t0, scr, endRow]){ if(height) break; for(const nm of heightCols){ const v = cell(row, nm); if(v){ height = v; break; } } }
+  document.getElementById('f-height').value = height;
   const sx = cell(scr,'cand_sex');
   if(sx === '1') setSex('m'); else if(sx === '2') setSex('f');
   rcSyncVisible();
   document.getElementById('rc-status').textContent = 'נטען קוד ' + document.getElementById('f-code').value +
     (endRow ? ' — בדוק ולחץ הפקת דו״ח.' : ' — אין נתוני סוף (t3/followup); יש להשלים ידנית.');
+  // גלילה חזרה לראש הטופס כדי לראות את השדות שהתמלאו
+  document.querySelector('.form-body')?.scrollIntoView({ behavior:'smooth', block:'start' });
 };
 
 function rcFM(w, pbf){ w = parseFloat(w); pbf = parseFloat(pbf); if(isNaN(w) || isNaN(pbf)) return ''; return (w * pbf / 100).toFixed(1); }

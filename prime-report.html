@@ -56,6 +56,13 @@ body { font-family:"Rubik","Assistant","Heebo",sans-serif; direction:rtl; margin
 #rc-select { width:100%; max-width:420px; padding:11px 12px; font-size:15px; border:2px solid #5eead4; border-radius:10px; font-family:inherit; text-align:center; background:#fff; }
 .rc-status { font-size:13px; font-weight:600; color:#0f766e; min-height:16px; }
 .rc-import-hint { margin-top:12px; font-size:11.5px; color:#5e9a92; line-height:1.7; }
+.rc-video { margin:0 24px 18px; border:2px solid #e2e8f0; border-radius:14px; background:#fff; overflow:hidden; }
+.rc-video > summary { cursor:pointer; list-style:none; padding:14px 18px; font-size:15px; font-weight:700; color:#0f766e; background:#f0fdfa; display:flex; align-items:center; justify-content:center; gap:8px; user-select:none; }
+.rc-video > summary::-webkit-details-marker { display:none; }
+.rc-video > summary:hover { background:#ccfbf1; }
+.rc-video[open] > summary { border-bottom:1px solid #e2e8f0; }
+.rc-video-body { padding:16px; text-align:center; }
+.rc-video-body video { width:100%; max-width:640px; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,.12); }
 
 /* Sections */
 .form-body { padding:0 24px; }
@@ -376,6 +383,16 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
     <div class="form-researcher-note no-print">
       &#9432; יש להזין את כל השדות, כולל ערכי תחילת המחקר וסוף המחקר
     </div>
+
+    <details class="rc-video no-print">
+      <summary>🎬 סרטון הסבר — איך למשוך את הקובץ מ-REDCap ולהעלות</summary>
+      <div class="rc-video-body">
+        <video controls preload="metadata">
+          <source src="videos/prime-guide.mp4" type="video/mp4">
+          הדפדפן שלך אינו תומך בהצגת וידאו. <a href="videos/prime-guide.mp4">להורדת הסרטון</a>
+        </video>
+      </div>
+    </details>
 
     <div class="rc-import no-print">
       <div class="rc-import-head">📤 טעינה אוטומטית מ-REDCap</div>

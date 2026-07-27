@@ -9,15 +9,49 @@ const SENDER_NAME = 'מחקר PRIME';
 
 // מזהה תיקיית ה-Drive שבה נמצאים הקבצים המצורפים לכל שלב.
 // כל קבצי ה-PDF שבתיקייה יצורפו אוטומטית. יתמלא אחרי יצירת התיקייה.
+// מפתח = site:phase[:group] — כמו fileKey() בעמוד
 const ATTACH_FOLDER = {
-  start: 'PASTE_START_FOLDER_ID'
+  'assuta:start':             'PASTE_T0_FOLDER_ID',
+  'assuta:end:control':       'PASTE_T6_CONTROL_FOLDER_ID',
+  'assuta:end:intervention':  'PASTE_T6_INTERVENTION_FOLDER_ID'
+  // אמצע-מחקר ואיכילוב — יתווספו בהמשך
 };
+
+// מיילים מורשים לשלוח (חייב להיות זהה לרשימה בעמוד)
+const ALLOWED_EMAILS = ['amirsportdiet@gmail.com', 'primerct2026@gmail.com'];
+// מפתח ה-Web API של פרויקט Firebase (ציבורי — משמש רק לאימות האסימון)
+const FIREBASE_API_KEY = 'AIzaSyCZR4jxDQ8hcmfslbgx06dlRQNIoTf3Wss';
+
+/**
+ * מאמת את אסימון הזהות מול Google ומחזיר את המייל, או null אם לא תקין.
+ * זו שכבת האבטחה האמיתית: המפתח הסודי גלוי בקוד העמוד, ולכן לבדו אינו מספיק.
+ */
+function verifiedEmail_(idToken) {
+  if (!idToken) return null;
+  const res = UrlFetchApp.fetch(
+    'https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=' + FIREBASE_API_KEY,
+    { method: 'post', contentType: 'application/json',
+      payload: JSON.stringify({ idToken: idToken }), muteHttpExceptions: true });
+  if (res.getResponseCode() !== 200) return null;
+  const users = (JSON.parse(res.getContentText()) || {}).users || [];
+  if (!users.length || !users[0].email) return null;
+  if (users[0].emailVerified === false) return null;
+  return String(users[0].email).toLowerCase();
+}
 
 // ===== נקודת הכניסה מהעמוד =====
 function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
     if (data.secret !== SECRET) return json({ ok: false, error: 'unauthorized' });
+
+    // אימות זהות אמיתי — מי באמת שולח את הבקשה
+    const email = verifiedEmail_(data.idToken);
+    if (!email) return json({ ok: false, error: 'לא זוהה משתמש מחובר' });
+    if (ALLOWED_EMAILS.indexOf(email) < 0) {
+      return json({ ok: false, error: 'החשבון ' + email + ' אינו מורשה' });
+    }
+    data.sentBy = email;
 
     if (data.mode === 'now') {
       sendMail_(data);
@@ -35,12 +69,12 @@ function doPost(e) {
 function sendMail_(data) {
   GmailApp.sendEmail(data.to.join(','), data.subject, data.body, {
     name: SENDER_NAME,
-    attachments: attachmentsForPhase_(data.phase)
+    attachments: attachmentsFor_(data.fileKey)
   });
 }
 
-function attachmentsForPhase_(phase) {
-  const folderId = ATTACH_FOLDER[phase];
+function attachmentsFor_(fileKey) {
+  const folderId = ATTACH_FOLDER[fileKey];
   if (!folderId || folderId.indexOf('PASTE_') === 0) return [];
   const files = DriveApp.getFolderById(folderId).getFiles();
   const out = [];

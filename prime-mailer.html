@@ -101,16 +101,25 @@
 
   <div class="phase-tabs">
     <button class="phase-tab active" data-phase="start" onclick="setPhase('start')">1️⃣ תחילת מחקר</button>
-    <button class="phase-tab disabled" title="בקרוב">2️⃣ אמצע מחקר</button>
-    <button class="phase-tab disabled" title="בקרוב">3️⃣ סוף מחקר</button>
+    <button class="phase-tab" data-phase="middle" onclick="setPhase('middle')">2️⃣ אמצע מחקר</button>
+    <button class="phase-tab" data-phase="end" onclick="setPhase('end')">3️⃣ סוף מחקר</button>
+  </div>
+  <div class="phase-tabs" style="margin-top:-8px;">
+    <button class="phase-tab" id="site-assuta" data-site="assuta" onclick="setSite('assuta')">🏥 אסותא רמת החייל</button>
+    <button class="phase-tab" id="site-ichilov" data-site="ichilov" onclick="setSite('ichilov')">🏥 איכילוב</button>
   </div>
 
   <div class="grid">
     <!-- Inputs -->
     <div class="card">
       <h2>👤 פרטי הנחקר/ת ויום המחקר</h2>
-      <label>שם הנחקר/ת</label>
+      <label>שם פרטי</label>
       <input type="text" id="m-name" placeholder="לדוגמה: קרן" oninput="render()">
+      <label>מין</label>
+      <div style="display:flex; gap:8px;">
+        <button type="button" class="phase-tab" id="gen-f" onclick="setGender('f')">נקבה</button>
+        <button type="button" class="phase-tab" id="gen-m" onclick="setGender('m')">זכר</button>
+      </div>
       <label>מייל הנחקר/ת</label>
       <input type="email" id="m-email" placeholder="name@example.com" oninput="render()">
       <div class="two">
@@ -128,13 +137,14 @@
       </div>
     </div>
 
-    <!-- Template -->
+    <!-- WhatsApp reminder -->
     <div class="card">
-      <h2>📝 תבנית המייל (ניתן לערוך)</h2>
-      <label>נושא</label>
-      <input type="text" id="m-subject" oninput="render()">
-      <label>תוכן</label>
-      <textarea id="m-body" oninput="render()"></textarea>
+      <h2>💬 תזכורת וואטסאפ (שבוע לפני)</h2>
+      <div class="preview" style="background:#f0fdf4; border-color:#bbf7d0;">
+        <div class="pv-body" id="wa-body">—</div>
+      </div>
+      <button type="button" class="btn-send" style="margin-top:12px; background:#25d366;" onclick="copyWA(this)">📋 העתקה להודעת וואטסאפ</button>
+      <input type="hidden" id="m-subject"><textarea id="m-body" style="display:none;"></textarea>
     </div>
 
     <!-- Preview -->
@@ -245,8 +255,123 @@ function diaryDays(research){
 }
 
 // ---------- Template ----------
+const SIGNATURE = `
+--
+תודה רבה על השתתפותך ותרומתך למחקר,
+צוות מחקר PRIME`;
+
+const RULES_COMMON = `מצורף דף הנחיות מפורט להכנה ליום המחקר.
+יום המחקר מתקיים ב- {{מיקום}}.
+משך כל הבדיקות צפוי להיות {{משך}} שעות, ולכן מומלץ להביא עמך ארוחה קלה ושתייה לאחר סיום הבדיקות הדורשות צום.
+לקראת יום המחקר, נבקש להקפיד על ההנחיות הבאות:
+
+1. להגיע בצום של 12 שעות. בבוקר יום המחקר ניתן לשתות מים בלבד (צום {{יום_צום}} מ-{{שעת_צום}}).
+2. לשמור על תזונה שגרתית ככל הניתן ביממה שלפני יום המחקר.
+3. להימנע מפעילות גופנית במשך 24 שעות לפני ההגעה.
+4. להימנע מצריכת אלכוהול במשך 24 שעות לפני ההגעה.
+5. להימנע מצריכת קפאין במשך 12 שעות לפני ההגעה.
+6. להימנע ממריחת קרמים או שמנים על הידיים והרגליים ביום המחקר.
+7. להגיע בביגוד נוח ונעליים סגורות, עדיפות לנעלי ספורט.
+8. להביא משקפי קריאה, אם יש צורך.
+9. להביא רשימת תרופות ותוספי תזונה עדכנית, או צילום שלהם.
+10. להביא יומן אכילה של 3 ימים, בהתאם להנחיות המצורפות.`;
+
+const DIARY_RULES = `יש לרשום 3 ימי אכילה מלאים, לא כולל שישי/שבת ולא כולל היום שלפני יום המחקר, משום שבאותו ערב מתחיל הצום.
+ניתן לרשום את היומן בטלפון הנייד, בדף או במחברת - לפי הנוחות שלך.
+חשוב לציין ככל האפשר את שעת האכילה, סוג המזון, הכמות, אופן ההכנה, כמה שיותר פרטים.`;
+
+const PARKING = `{{חניה}}`;
+
+const VISIT_HEAD = `{{שם}} [יקר|יקרה],
+לקראת הגעתך ליום מחקר {{מספר_יום}} במסגרת מחקר PRIME,
+הנך [מוזמן|מוזמנת] ליום המחקר בתאריך:
+יום {{יום_מחקר}}, {{תאריך_מחקר}}
+בשעה {{שעת_מחקר}}
+
+`;
+
+// ---- זנב לביקור אמצע (קצר, ללא איסוף שתן) ----
+const MIDDLE_TAIL = `
+לגבי יומן האכילה:
+${DIARY_RULES}
+
+* [מוזמן|מוזמנת] לשלוח למייל 3 ימי חול, בשבוע שלפני ההגעה לאסותא:
+{{יומן_אכילה}}
+
+${PARKING}${SIGNATURE}`;
+
+// ---- זנב לביקור סוף (מלא, כולל איסוף שתן) ----
+const FULL_VISIT_TAIL = `11. להביא מיכל/י חלבון ריק.
+12. בדיקות דם עדכניות (משלושת החודשים האחרונים).
+13. לקרוא היטב הנחיות לאיסוף שתן (איסוף 24 שעות) ולהגיע עם המיכל!
+את האיסוף יש לבצע בדיוק לפי ההנחיות המצורפות.
+[שים|שימי] לב: בערכה מצורף ברקוד/QR לסרטון הדרכה קצר.
+
+הנחיות ליומן האכילה:
+${DIARY_RULES}
+
+* תאריכי יומן אכילה: {{יומן_אכילה}}
+* תאריך איסוף שתן (24 שעות): {{איסוף_שתן}}
+
+* [שים|שימי] לב - ביום {{יום_צום}} ({{תאריך_צום}}), [אתה מתחיל|את מתחילה] צום בשעות הערב (לפחות 12 שעות), כלומר החל מהשעה {{שעת_צום}} - ניתן לשתות מים בלבד.
+** נשמח בבקשה לשלוח אלינו - בדיקות דם (משלושת החודשים האחרונים).
+נתראה ביום {{יום_מחקר}} {{תאריך_מחקר}} בשעה {{שעת_מחקר}}
+*נא לקרוא טוב את כל ההנחיות המצורפות :)
+${PARKING}${SIGNATURE}`;
+
+// ===== תזכורת וואטסאפ (שבוע לפני) =====
+function waTemplate(){
+  const withUrine = (PHASE !== 'middle');   // שתן רק בתחילת/סוף המחקר
+  return `היי {{שם}}
+
+תזכורת לקראת יום המחקר שמתקיים ב{{יום_מחקר}} ({{תאריך_קצר}} בשעה {{שעת_מחקר}})
+
+לקראת ההגעה, חשוב לוודא:
+
+🥗 יומן אכילה
+* לוודא שיומן האכילה מולא לפי ההנחיות ונשלח
+` + (withUrine ? `
+🧪 איסוף שתן
+* לוודא שאיסוף השתן (24 שעות) בוצע לפי ההנחיות
+* להביא את המיכל ביום המחקר
+` : '') + `
+⏳ צום
+* להתחיל צום בערב שלפני יום המחקר ({{שעת_צום}})
+* לאחר מכן – מים בלבד
+
+📍 הגעה
+* להגיע מעט לפני השעה שנקבעה ({{מיקום_קצר}}, בשעה {{שעת_מחקר}})
+* נא לבוא בבגדי ונעלי ספורט
+
+אנחנו כאן לכל שאלה או התייעצות 😊
+נתראה ב{{יום_מחקר}}🤍`;
+}
+
 const TEMPLATES = {
-  start: {
+  // ---------- אמצע מחקר — ביקורת (ביקור קצר, ללא איסוף שתן) ----------
+  'middle:control': {
+    subject: 'הכנה ליום מחקר {{מספר_יום}} - מחקר PRIME',
+    body: VISIT_HEAD + RULES_COMMON + '\n' + MIDDLE_TAIL
+  },
+  // ---------- אמצע מחקר — התערבות (כמו ביקורת + מיכל חלבון) ----------
+  'middle:intervention': {
+    subject: 'הכנה ליום מחקר {{מספר_יום}} - מחקר PRIME',
+    body: VISIT_HEAD + RULES_COMMON + '\n11. להביא מיכל חלבון ריק (במידה ויש)\n' + MIDDLE_TAIL
+  },
+  // ---------- סוף מחקר — ביקורת ----------
+  'end:control': {
+    subject: 'הכנה ליום מחקר {{מספר_יום}} - מחקר PRIME',
+    body: VISIT_HEAD + RULES_COMMON + `
+` + FULL_VISIT_TAIL
+  },
+  // ---------- סוף מחקר — התערבות ----------
+  'end:intervention': {
+    subject: 'הכנה ליום מחקר {{מספר_יום}} - מחקר PRIME',
+    body: VISIT_HEAD + RULES_COMMON + `
+` + FULL_VISIT_TAIL
+  },
+  // ---------- תחילת מחקר (זהה לכולם) ----------
+  'start': {
     subject: 'הכנה ליום מחקר 1 - מחקר PRIME',
     body:
 `היי {{שם}},
@@ -284,18 +409,72 @@ const TEMPLATES = {
 
 const SENDER = 'primerct2026@gmail.com';
 // קבצים מצורפים לכל שלב (השמות תואמים לקבצים ב-Drive של primerct2026)
+// מפתח התבנית: 'start' / 'middle:control' / 'end:intervention' ...
+function attachKey(){ return PHASE === 'start' ? 'start' : PHASE + ':' + GROUP; }
+// מפתח הקבצים כולל מוקד: 'assuta:start' / 'ichilov:end:control' ...
+function fileKey(){ return SITE + ':' + attachKey(); }
+
+// קבצים מצורפים לפי מוקד + שלב + קבוצה
 const ATTACHMENTS = {
-  start: [
+  'assuta:start': [
     'T0 - אסותא.pdf',
     'איסוף שתן 24 שעות - הנחיות ליום מחקר.pdf',
     'הסכמה מדעת אסותא.pdf'
+  ],
+  'assuta:end:control': [
+    'T6 - ביקורת אסותא.pdf',
+    'איסוף שתן 24 שעות - הנחיות ליום מחקר.pdf'
+  ],
+  'assuta:end:intervention': [
+    'T6 - התערבות אסותא.pdf',
+    'איסוף שתן 24 שעות - הנחיות ליום מחקר.pdf'
   ]
+  // ⚙️ אמצע-מחקר (אסותא) + כל שלבי איכילוב — יושלמו בהמשך
 };
 
 let PHASE = 'start';
 let GROUP = 'control';   // רלוונטי רק לאמצע/סוף
+let GENDER = 'f';        // f = נקבה, m = זכר
 let autoWhen = '';   // הערך האחרון שמולא אוטומטית לשדה התזמון
-window.setPhase = (p)=>{ PHASE=p; loadTemplate(); render(); };
+window.setPhase = (p)=>{
+  PHASE=p;
+  document.querySelectorAll('.phase-tab[data-phase]').forEach(b=>b.classList.toggle('active', b.dataset.phase===p));
+  loadTemplate(); render();
+};
+// ===== מוקדי המחקר =====
+const SITES = {
+  assuta: {
+    name: 'אסותא רמת החייל',
+    location: 'אסותא רמת החייל, רחוב הברזל 20, בניין אשפוז, קומה 1, חדר 140',
+    locationShort: 'המרכז הרפואי אסותא רמת החייל',
+    parking: '** ביום המחקר נסדיר עבורך חניה - יש לוודא שחנית בחניון בית החולים, ברחוב הברזל 20, רמת החייל.'
+  },
+  ichilov: {
+    // ⚙️ תשתית בלבד — ההנחיות יושלמו בהמשך
+    name: 'איכילוב',
+    location: 'איכילוב',
+    locationShort: 'איכילוב',
+    parking: ''
+  }
+};
+let SITE = 'assuta';
+window.setSite = (s)=>{
+  SITE = s;
+  document.getElementById('site-assuta').classList.toggle('active', s==='assuta');
+  document.getElementById('site-ichilov').classList.toggle('active', s==='ichilov');
+  render();
+};
+
+window.setGender = (g)=>{
+  GENDER = g;
+  document.getElementById('gen-m').classList.toggle('active', g==='m');
+  document.getElementById('gen-f').classList.toggle('active', g==='f');
+  render();
+};
+// [זכר|נקבה] → הצורה המתאימה
+function applyGender(text){
+  return (text||'').replace(/\[([^\[\]|]*)\|([^\[\]|]*)\]/g, (m,a,b)=> GENDER==='m' ? a : b);
+}
 window.setGroup = (g)=>{
   GROUP = g;
   document.getElementById('grp-control').classList.toggle('active', g==='control');
@@ -303,11 +482,14 @@ window.setGroup = (g)=>{
   loadTemplate(); render();
 };
 function loadTemplate(){
-  document.getElementById('m-subject').value = TEMPLATES[PHASE].subject;
-  document.getElementById('m-body').value = TEMPLATES[PHASE].body;
+  const t = TEMPLATES[attachKey()] || TEMPLATES['start'];
+  document.getElementById('m-subject').value = t.subject;
+  document.getElementById('m-body').value = t.body;
 }
 
 function initApp(){
+  setGender('f');
+  setGroup('control');
   loadTemplate();
   render();
 }
@@ -338,21 +520,31 @@ function computeTokens(){
   map['שעת_צום']   = pad(fast.getHours())+':'+pad(fast.getMinutes());
   map['איסוף_שתן'] = `${ddmm(urine)} (יום ${WD[urine.getDay()]} עד ${WD[urineNext.getDay()]} בבוקר)`;
   map['יומן_אכילה'] = diary.map(x=>`${ddmm(x)} (יום ${WD[x.getDay()]})`).join(' + ');
+  map['תאריך_קצר'] = `${d}.${m}`;
+  map['מיקום']    = SITES[SITE].location;
+  map['מיקום_קצר'] = SITES[SITE].locationShort;
+  map['חניה']     = SITES[SITE].parking;
+  map['מספר_יום'] = PHASE==='start' ? '1' : PHASE==='middle' ? '2' : '3';
+  map['משך']     = PHASE==='middle' ? 'כ-3' : '3-4';
   return { map, ok:true, research, fast, urine, diary };
 }
 
-function substitute(text, map){ return (text||'').replace(/\{\{\s*([^}]+?)\s*\}\}/g,(mm,k)=> (k in map)?map[k]:mm); }
+function substitute(text, map){
+  const withTokens = (text||'').replace(/\{\{\s*([^}]+?)\s*\}\}/g,(mm,k)=> (k in map)?map[k]:mm);
+  return applyGender(withTokens);
+}
 
 window.render = ()=>{
   const { map, ok, research } = computeTokens();
-  // תזמון אוטומטי: שבוע לפני יום המחקר, בשעה 09:00
+  // תזמון אוטומטי: בדיוק שבוע לפני יום המחקר, באותה שעה של המחקר
   let schedText = '';
   if(ok){
-    const sched = addDays(research, -7); sched.setHours(9,0,0,0);
-    const val = `${sched.getFullYear()}-${pad(sched.getMonth()+1)}-${pad(sched.getDate())}T09:00`;
+    const sched = addDays(research, -7);   // שומר על שעת המחקר
+    const hhmm = `${pad(sched.getHours())}:${pad(sched.getMinutes())}`;
+    const val = `${sched.getFullYear()}-${pad(sched.getMonth()+1)}-${pad(sched.getDate())}T${hhmm}`;
     const whenEl = document.getElementById('m-when');
     if(whenEl.value === '' || whenEl.value === autoWhen){ whenEl.value = val; autoWhen = val; }
-    schedText = `יום ${WD[sched.getDay()]} · ${ddmmyyyy(sched)} · 09:00`;
+    schedText = `יום ${WD[sched.getDay()]} · ${ddmmyyyy(sched)} · ${hhmm}`;
   }
   // derived box
   const dbox = document.getElementById('derived');
@@ -362,21 +554,31 @@ window.render = ()=>{
       `<div class="drow"><span class="dk">תחילת צום (12ש׳ לפני)</span><span class="dv">יום ${map['יום_צום']} · ${map['תאריך_צום']} · ${map['שעת_צום']}</span></div>`+
       `<div class="drow"><span class="dk">איסוף שתן</span><span class="dv">${map['איסוף_שתן']}</span></div>`+
       `<div class="drow"><span class="dk">יומן אכילה (3 ימים)</span><span class="dv">${map['יומן_אכילה']}</span></div>`+
-      `<div class="drow"><span class="dk">📅 שליחה אוטומטית (שבוע לפני)</span><span class="dv">${schedText}</span></div>`;
+      `<div class="drow"><span class="dk">📅 שליחה אוטומטית (שבוע לפני, באותה שעה)</span><span class="dv">${schedText}</span></div>`;
   } else {
     dbox.innerHTML = '<div style="color:#94a3b8;">הזן תאריך יום מחקר כדי לחשב את שאר התאריכים…</div>';
   }
   // attachments + group visibility
   document.getElementById('group-select').style.display = (PHASE==='start') ? 'none' : 'block';
-  const files = ATTACHMENTS[PHASE] || [];
+  const files = ATTACHMENTS[fileKey()] || [];
   document.getElementById('attach-list').innerHTML = files.length
     ? files.map(f=>`📄 ${f}`).join('<br>')
-    : '<span style="color:#94a3b8;">אין קבצים מצורפים לשלב זה.</span>';
+    : '<span style="color:#b45309;">⚠️ עדיין לא הוגדרו קבצים לשלב/מוקד הזה.</span>';
 
   const to = document.getElementById('m-email').value.trim();
   document.getElementById('pv-to').textContent = 'אל: ' + (to || '—');
   document.getElementById('pv-subject').textContent = substitute(document.getElementById('m-subject').value, map) || '—';
   document.getElementById('pv-body').textContent = substitute(document.getElementById('m-body').value, map) || '—';
+  document.getElementById('wa-body').textContent = substitute(waTemplate(), map);
+};
+
+window.copyWA = (btn) => {
+  const txt = document.getElementById('wa-body').textContent;
+  navigator.clipboard.writeText(txt).then(()=>{
+    const old = btn.textContent;
+    btn.textContent = '✅ הועתק!';
+    setTimeout(()=>{ btn.textContent = old; }, 1800);
+  }).catch(()=>{ alert('לא הצלחתי להעתיק — סמן ידנית והעתק.'); });
 };
 
 function buildPayload(mode){
@@ -384,12 +586,14 @@ function buildPayload(mode){
   return {
     phase: PHASE,
     group: PHASE==='start' ? null : GROUP,
+    site: SITE,
+    fileKey: fileKey(),
     from: SENDER,
     to: [document.getElementById('m-email').value.trim()].filter(Boolean),
     name: document.getElementById('m-name').value.trim(),
     subject: substitute(document.getElementById('m-subject').value, map),
     body: substitute(document.getElementById('m-body').value, map),
-    attachments: ATTACHMENTS[PHASE] || [],
+    attachments: ATTACHMENTS[fileKey()] || [],
     sendAt: mode==='schedule' ? document.getElementById('m-when').value : null
   };
 }
@@ -411,12 +615,16 @@ window.sendJob = (mode)=>{
   if(mode==='schedule' && !confirm('לתזמן מייל אל '+p.to.join(', ')+'\nלתאריך '+p.sendAt+'?')) return;
 
   status.style.color='#0f766e'; status.textContent='שולח...';
-  // text/plain כדי להימנע מ-preflight של CORS (Apps Script לא תומך ב-OPTIONS)
-  fetch(BACKEND_URL,{
-    method:'POST',
-    headers:{'Content-Type':'text/plain;charset=utf-8'},
-    body: JSON.stringify({mode, secret: BACKEND_SECRET, ...p})
-  })
+  // מצרפים אסימון זהות חתום של Google — השרת מאמת אותו ובודק שהמייל מורשה
+  const user = auth.currentUser;
+  if(!user){ status.style.color='#dc2626'; status.textContent='נדרשת התחברות מחדש.'; return; }
+  user.getIdToken()
+    .then(idToken => fetch(BACKEND_URL,{
+      method:'POST',
+      // text/plain כדי להימנע מ-preflight של CORS (Apps Script לא תומך ב-OPTIONS)
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({mode, secret: BACKEND_SECRET, idToken, ...p})
+    }))
     .then(r=>r.json())
     .then(res=>{
       if(res && res.ok){

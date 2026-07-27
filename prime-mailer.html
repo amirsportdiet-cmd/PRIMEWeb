@@ -155,8 +155,14 @@
     <div class="card">
       <h2>👤 פרטי הנחקר/ת ויום המחקר</h2>
       <label>שם מלא <span style="font-weight:500;color:#94a3b8;">(עברית בלבד · בהודעות יופיע רק השם הפרטי)</span></label>
-      <input type="text" id="m-name" placeholder="לדוגמה: קרן לוי" oninput="cleanName(this); render()">
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="m-name" placeholder="לדוגמה: קרן לוי" oninput="cleanName(this); render()"
+               onkeydown="if(event.key==='Enter'){event.preventDefault();calSearch();}">
+        <button type="button" onclick="calSearch()" title="חיפוש ביומן PRIME"
+          style="white-space:nowrap;background:#0d9488;color:#fff;border:none;border-radius:9px;padding:0 16px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;">🔍 מהיומן</button>
+      </div>
       <div id="name-warn" class="fld-warn"></div>
+      <div id="cal-result"></div>
       <label>מין</label>
       <div style="display:flex; gap:8px;">
         <button type="button" class="phase-tab" id="gen-f" onclick="setGender('f')">נקבה</button>
@@ -735,6 +741,53 @@ function checkEmail(v){
   const dom = s.split('@')[1].toLowerCase();
   if(DOMAIN_FIX[dom]) return { ok:true, msg:`האם התכוונת ל-${s.split('@')[0]}@${DOMAIN_FIX[dom]}?`, suggest:true };
   return { ok:true, msg:'' };
+}
+
+// ===== חיפוש ביומן PRIME =====
+window.calSearch = () => {
+  const box = document.getElementById('cal-result');
+  const q = document.getElementById('m-name').value.trim();
+  if(!q){ box.innerHTML = '<div class="fld-warn err">יש להזין שם לחיפוש</div>'; return; }
+  box.innerHTML = '<div class="fld-warn">מחפש ביומן…</div>';
+  callApi({ mode:'calendar', name:q }).then(res=>{
+    if(!res || !res.ok){ box.innerHTML = `<div class="fld-warn err">${(res&&res.error)||'שגיאה בחיפוש'}</div>`; return; }
+    const items = res.items || [];
+    if(!items.length){ box.innerHTML = '<div class="fld-warn err">לא נמצא אירוע עתידי ביומן PRIME עבור "'+q+'"</div>'; return; }
+    if(items.length === 1){ applyCalEvent(items[0]); return; }
+    box.innerHTML = '<div class="hist"><div class="ht">📅 נמצאו ' + items.length + ' אירועים — בחר:</div>' +
+      items.map((it,i)=>{
+        const d = new Date(it.start);
+        return `<div class="hrow" style="cursor:pointer;" onclick="applyCalEventIdx(${i})">
+          <span>${it.name} · ${PHASE_HE[it.phase]||it.phase||'?'}</span>
+          <span style="color:#64748b;">${pad(d.getDate())}/${pad(d.getMonth()+1)} ${pad(d.getHours())}:${pad(d.getMinutes())}</span></div>`;
+      }).join('') + '</div>';
+    window.__calItems = items;
+  }).catch(e=>{ box.innerHTML = `<div class="fld-warn err">שגיאה: ${e.message}</div>`; });
+};
+window.applyCalEventIdx = (i) => applyCalEvent((window.__calItems||[])[i]);
+
+function applyCalEvent(ev){
+  if(!ev) return;
+  const [d,t] = (ev.start||'T').split('T');
+  if(ev.name)  document.getElementById('m-name').value = ev.name;
+  if(ev.email) document.getElementById('m-email').value = ev.email;
+  if(d) document.getElementById('m-date').value = d;
+  if(t) document.getElementById('m-time').value = t;
+  if(ev.site)  setSite(ev.site);
+  if(ev.phase) setPhase(ev.phase);
+  render();
+  loadHistory();
+  const miss = [];
+  if(!ev.email) miss.push('מייל');
+  if(!ev.phase) miss.push('שלב');
+  if(!ev.site)  miss.push('מוקד');
+  document.getElementById('cal-result').innerHTML =
+    `<div class="hist" style="background:#f0fdf4;border-color:#bbf7d0;">
+       <div class="ht" style="color:#15803d;">✅ נטען מהיומן: ${ev.title||ev.name}</div>
+       <div class="hrow"><span>מועד</span><span style="color:#64748b;">${(ev.start||'').replace('T',' · ')}</span></div>
+       ${ev.location?`<div class="hrow"><span>מיקום</span><span style="color:#64748b;">${ev.location}</span></div>`:''}
+       ${miss.length?`<div class="hrow"><span style="color:#b45309;font-weight:700;">⚠️ לא זוהה: ${miss.join(', ')} — יש להשלים ידנית</span></div>`:''}
+     </div>`;
 }
 
 // ===== היסטוריית נחקר =====

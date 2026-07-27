@@ -231,10 +231,25 @@ function primeCalendar_() {
 /** מזהה שלב מתוך טקסט האירוע: T0 / T3 / T6 */
 function phaseFromText_(t) {
   const s = String(t || '').toUpperCase();
-  if (/\bT0\b/.test(s)) return 'start';
-  if (/\bT3\b/.test(s)) return 'middle';
-  if (/\bT6\b/.test(s)) return 'end';
+  if (/T0/.test(s)) return 'start';
+  if (/T3/.test(s)) return 'middle';
+  if (/T6/.test(s)) return 'end';
   return '';
+}
+
+/** שם הנחקר: מתוך "Invitee:" בתיאור, או מהכותרת שלפני ":" */
+function nameFromEvent_(title, desc) {
+  const m = String(desc || '').match(/Invitee\s*:\s*([^\r\n]+)/i);
+  if (m && m[1].trim()) return m[1].trim();
+  const t = String(title || '');
+  const i = t.indexOf(':');
+  return (i > 0 ? t.slice(0, i) : t).trim();
+}
+
+/** מייל הנחקר: מתוך "Invitee Email:" בתיאור */
+function emailFromEvent_(desc) {
+  const m = String(desc || '').match(/Invitee\s*Email\s*:\s*([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/i);
+  return m ? m[1] : '';
 }
 
 /** מזהה מוקד מתוך טקסט: אסותא / איכילוב */
@@ -259,22 +274,23 @@ function lookupCalendar_(name) {
     const title = ev.getTitle() || '';
     const desc = ev.getDescription() || '';
     const loc = ev.getLocation() || '';
-    if (q && title.indexOf(q) < 0 && desc.indexOf(q) < 0) continue;
-    var guests = [];
-    try { guests = ev.getGuestList().map(function (g) { return g.getEmail(); }); } catch (e) {}
-    // מייל: מהאורחים, ואם אין — מתוך הכותרת/התיאור
-    var email = guests.filter(function (g) { return ALLOWED_EMAILS.indexOf(String(g).toLowerCase()) < 0; })[0] || '';
+    const person = nameFromEvent_(title, desc);
+    if (q && person.indexOf(q) < 0 && title.indexOf(q) < 0) continue;
+    var email = emailFromEvent_(desc);
     if (!email) {
-      const m = (title + ' ' + desc).match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/);
-      if (m) email = m[0];
+      try {
+        email = ev.getGuestList().map(function (g) { return g.getEmail(); })
+          .filter(function (g) { return ALLOWED_EMAILS.indexOf(String(g).toLowerCase()) < 0; })[0] || '';
+      } catch (e) {}
     }
     out.push({
       title: title,
+      name: person,
       start: Utilities.formatDate(ev.getStartTime(), Session.getScriptTimeZone(), "yyyy-MM-dd'T'HH:mm"),
       location: loc,
       email: email,
-      phase: phaseFromText_(title + ' ' + desc),
-      site: siteFromText_(title + ' ' + loc + ' ' + desc)
+      phase: phaseFromText_(loc + ' ' + title + ' ' + desc),
+      site: siteFromText_(loc + ' ' + title + ' ' + desc)
     });
   }
   return { ok: true, items: out };

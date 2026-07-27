@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מערכת מיילים PRIME</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Heebo',sans-serif; background:#f1f5f9; color:#0f172a; line-height:1.6; }
+
+  /* ---- Auth ---- */
+  #auth-screen { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; background:linear-gradient(135deg,#0f2942,#134e4a); }
+  .auth-box, .no-access { background:#fff; border-radius:20px; padding:40px 34px; max-width:420px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.3); }
+  .auth-box h2, .no-access h2 { font-size:22px; margin-bottom:8px; color:#0f2942; }
+  .auth-box p, .no-access p { font-size:14px; color:#64748b; margin-bottom:22px; }
+  .btn-google { display:inline-flex; align-items:center; gap:10px; background:#fff; border:2px solid #e2e8f0; border-radius:12px; padding:13px 22px; font-size:15px; font-weight:700; color:#334155; cursor:pointer; font-family:inherit; transition:.15s; }
+  .btn-google:hover { border-color:#0d9488; box-shadow:0 4px 14px rgba(13,148,136,.15); }
+  .btn-google svg { width:20px; height:20px; }
+  .btn-signout { background:#fff; border:2px solid #e2e8f0; border-radius:10px; padding:10px 20px; font-size:14px; font-weight:700; color:#64748b; cursor:pointer; font-family:inherit; }
+
+  /* ---- App ---- */
+  #app-screen { display:none; max-width:1100px; margin:0 auto; padding:20px; }
+  .app-header { background:linear-gradient(135deg,#0f2942,#134e4a); color:#fff; border-radius:18px; padding:22px 26px; display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
+  .app-header h1 { font-size:22px; font-weight:800; }
+  .app-header .sub { font-size:13px; opacity:.8; margin-top:2px; }
+  .app-header .user { font-size:12px; opacity:.85; }
+  .app-header .user button { margin-right:8px; background:rgba(255,255,255,.15); color:#fff; border:none; border-radius:8px; padding:6px 12px; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; }
+
+  .phase-tabs { display:flex; gap:8px; margin-bottom:18px; }
+  .phase-tab { flex:1; padding:11px; border:2px solid #e2e8f0; border-radius:11px; background:#fff; font-size:14px; font-weight:700; color:#64748b; cursor:pointer; font-family:inherit; text-align:center; }
+  .phase-tab.active { border-color:#0d9488; background:#0d9488; color:#fff; }
+  .phase-tab.disabled { opacity:.45; cursor:not-allowed; }
+
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  @media (max-width:860px){ .grid { grid-template-columns:1fr; } }
+
+  .card { background:#fff; border-radius:16px; padding:20px; box-shadow:0 2px 12px rgba(0,0,0,.05); }
+  .card h2 { font-size:15px; font-weight:800; color:#0f766e; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+  label { display:block; font-size:12.5px; font-weight:700; color:#475569; margin:12px 0 5px; }
+  input[type=text], input[type=email], input[type=date], input[type=time], input[type=datetime-local], textarea, select {
+    width:100%; border:2px solid #e2e8f0; border-radius:9px; padding:10px 12px; font-size:14px; font-family:inherit; color:#0f172a; }
+  input:focus, textarea:focus, select:focus { outline:none; border-color:#0d9488; }
+  textarea { resize:vertical; min-height:320px; line-height:1.7; font-size:13.5px; }
+  .two { display:flex; gap:10px; }
+  .two > div { flex:1; }
+
+  .derived { background:#f0fdfa; border:1px solid #99f6e4; border-radius:12px; padding:14px 16px; font-size:13px; }
+  .derived .drow { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed #cbd5e1; }
+  .derived .drow:last-child { border-bottom:none; }
+  .derived .dk { color:#0f766e; font-weight:700; }
+  .derived .dv { color:#0f172a; font-weight:600; }
+
+  .preview { background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:16px; }
+  .preview .pv-to { font-size:12px; color:#64748b; margin-bottom:8px; }
+  .preview .pv-subject { font-size:15px; font-weight:800; color:#0f172a; border-bottom:1px solid #e2e8f0; padding-bottom:10px; margin-bottom:10px; }
+  .preview .pv-body { font-size:13.5px; color:#334155; white-space:pre-wrap; line-height:1.8; }
+
+  .actions { grid-column:1/-1; background:#fff; border-radius:16px; padding:20px; box-shadow:0 2px 12px rgba(0,0,0,.05); display:flex; flex-wrap:wrap; gap:14px; align-items:flex-end; }
+  .actions .col { flex:1; min-width:220px; }
+  .btn-send { background:#0d9488; color:#fff; border:none; border-radius:11px; padding:13px 24px; font-size:15px; font-weight:800; cursor:pointer; font-family:inherit; width:100%; transition:.15s; }
+  .btn-send:hover { background:#0f766e; }
+  .btn-schedule { background:#1d4ed8; }
+  .btn-schedule:hover { background:#1e40af; }
+
+  .notice { grid-column:1/-1; background:#fffbeb; border:1px solid #fde68a; border-radius:12px; padding:12px 16px; font-size:12.5px; color:#92400e; font-weight:600; text-align:center; }
+  #send-status { grid-column:1/-1; text-align:center; font-size:13px; font-weight:700; min-height:18px; }
+</style>
+</head>
+<body>
+
+<!-- ===== AUTH ===== -->
+<div id="auth-screen">
+  <div id="auth-box" class="auth-box">
+    <div style="font-size:42px; margin-bottom:12px;">✉️</div>
+    <h2>מערכת מיילים PRIME</h2>
+    <p>כלי פנימי למחקר. יש להתחבר עם חשבון Google מורשה.</p>
+    <button class="btn-google" id="btn-signin" onclick="signInWithGoogle()">
+      <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      <span id="btn-signin-text">התחברות עם Google</span>
+    </button>
+    <div id="auth-loading" style="color:#64748b; font-size:13px; margin-top:16px;">מאמת...</div>
+  </div>
+  <div id="no-access-box" class="no-access" style="display:none;">
+    <div style="font-size:42px; margin-bottom:12px;">🔒</div>
+    <h2>אין הרשאה</h2>
+    <p id="no-access-msg">החשבון שלך אינו מורשה לגשת לכלי זה.</p>
+    <button class="btn-signout" onclick="signOut()">התנתק</button>
+  </div>
+</div>
+
+<!-- ===== APP ===== -->
+<div id="app-screen">
+  <div class="app-header">
+    <div>
+      <h1>✉️ מערכת מיילים PRIME</h1>
+      <div class="sub">גזירה אוטומטית של כל התאריכים מיום המחקר · שליחה מיידית או מתוזמנת</div>
+    </div>
+    <div class="user"><span id="user-email-display"></span><button onclick="signOut()">התנתק</button></div>
+  </div>
+
+  <div class="phase-tabs">
+    <button class="phase-tab active" data-phase="start" onclick="setPhase('start')">1️⃣ תחילת מחקר</button>
+    <button class="phase-tab disabled" title="בקרוב">2️⃣ אמצע מחקר</button>
+    <button class="phase-tab disabled" title="בקרוב">3️⃣ סוף מחקר</button>
+  </div>
+
+  <div class="grid">
+    <!-- Inputs -->
+    <div class="card">
+      <h2>👤 פרטי הנחקר/ת ויום המחקר</h2>
+      <label>שם הנחקר/ת</label>
+      <input type="text" id="m-name" placeholder="לדוגמה: קרן" oninput="render()">
+      <label>מייל הנחקר/ת</label>
+      <input type="email" id="m-email" placeholder="name@example.com" oninput="render()">
+      <div class="two">
+        <div>
+          <label>תאריך יום המחקר</label>
+          <input type="date" id="m-date" oninput="render()">
+        </div>
+        <div>
+          <label>שעת יום המחקר</label>
+          <input type="time" id="m-time" value="07:00" oninput="render()">
+        </div>
+      </div>
+      <div style="margin-top:14px;">
+        <div class="derived" id="derived"></div>
+      </div>
+    </div>
+
+    <!-- Template -->
+    <div class="card">
+      <h2>📝 תבנית המייל (ניתן לערוך)</h2>
+      <label>נושא</label>
+      <input type="text" id="m-subject" oninput="render()">
+      <label>תוכן</label>
+      <textarea id="m-body" oninput="render()"></textarea>
+    </div>
+
+    <!-- Preview -->
+    <div class="card" style="grid-column:1/-1;">
+      <h2>👁 תצוגה מקדימה (עם התאריכים שחושבו)</h2>
+      <div class="preview">
+        <div class="pv-to" id="pv-to">אל: —</div>
+        <div class="pv-subject" id="pv-subject">—</div>
+        <div class="pv-body" id="pv-body">—</div>
+      </div>
+    </div>
+
+    <!-- Attachments + group -->
+    <div class="card" style="grid-column:1/-1;">
+      <h2>📎 קבצים מצורפים ושולח</h2>
+      <div id="group-select" style="display:none; margin-bottom:14px;">
+        <label>קבוצת המחקר (משנה את תוכן המייל)</label>
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="phase-tab" id="grp-control" onclick="setGroup('control')">קבוצת ביקורת</button>
+          <button type="button" class="phase-tab" id="grp-interv" onclick="setGroup('intervention')">קבוצת התערבות</button>
+        </div>
+      </div>
+      <div id="attach-list" style="font-size:13px; color:#334155; line-height:2;"></div>
+      <div style="font-size:12.5px; color:#64748b; margin-top:10px;">📧 נשלח מהחשבון: <b>primerct2026@gmail.com</b></div>
+    </div>
+
+    <!-- Actions -->
+    <div class="actions">
+      <div class="col">
+        <label>שליחה מיידית</label>
+        <button class="btn-send" onclick="sendJob('now')">📤 שלח עכשיו</button>
+      </div>
+      <div class="col">
+        <label>שליחה מתוזמנת (תאריך ושעה)</label>
+        <div style="display:flex; gap:8px;">
+          <input type="datetime-local" id="m-when">
+          <button class="btn-send btn-schedule" style="width:auto; white-space:nowrap;" onclick="sendJob('schedule')">🕒 תזמן</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="notice">
+      ⚙️ התשתית + הגזירה האוטומטית מוכנות. <b>השליחה בפועל (וצירוף הקבצים) עדיין לא מחוברת</b> — כרגע הכפתורים מציגים מה יישלח. נחבר שליחה אמיתית אחרי בחירת שכבת השליחה.
+    </div>
+    <div id="send-status"></div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut as fbSignOut }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyCZR4jxDQ8hcmfslbgx06dlRQNIoTf3Wss",
+  authDomain:        "wellnessprojectar.firebaseapp.com",
+  projectId:         "wellnessprojectar",
+  storageBucket:     "wellnessprojectar.firebasestorage.app",
+  messagingSenderId: "665866758826",
+  appId:             "1:665866758826:web:ce53c50d2a4e3e161b7ed3"
+};
+const ALLOWED_EMAILS = ["amirsportdiet@gmail.com","primerct2026@gmail.com"];
+const BACKEND_URL = ""; // ⚙️ יתמלא בשלב הבא (Apps Script / Function)
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+
+function handleUser(user){
+  document.getElementById('auth-loading').style.display='none';
+  if(!user){ showAuth(); return; }
+  const email=(user.email||'').toLowerCase();
+  if(ALLOWED_EMAILS.map(e=>e.toLowerCase()).includes(email)){
+    document.getElementById('user-email-display').textContent=user.email;
+    document.getElementById('auth-screen').style.display='none';
+    document.getElementById('app-screen').style.display='block';
+    initApp();
+  } else {
+    document.getElementById('no-access-msg').textContent=`החשבון ${user.email} אינו מורשה לגשת לכלי זה.`;
+    document.getElementById('auth-box').style.display='none';
+    document.getElementById('no-access-box').style.display='block';
+  }
+}
+function showAuth(){
+  document.getElementById('app-screen').style.display='none';
+  document.getElementById('auth-screen').style.display='flex';
+  document.getElementById('auth-box').style.display='block';
+  document.getElementById('no-access-box').style.display='none';
+}
+window.signInWithGoogle=()=>{ document.getElementById('auth-loading').style.display='block'; signInWithPopup(auth,provider).catch(()=>{document.getElementById('auth-loading').style.display='none';}); };
+window.signOut=()=>fbSignOut(auth);
+onAuthStateChanged(auth, handleUser);
+
+// ---------- Date helpers ----------
+const WD = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+function pad(n){ return String(n).padStart(2,'0'); }
+function ddmm(d){ return pad(d.getDate())+'/'+pad(d.getMonth()+1); }
+function ddmmyyyy(d){ return pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear(); }
+function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+
+// 3 ימי יומן אכילה: 3 הימים האחרונים א׳–ה׳ (בלי שישי/שבת) המסתיימים ביום איסוף השתן (יום המחקר −2)
+function diaryDays(research){
+  const out=[]; let d=addDays(research,-2);
+  while(out.length<3){ const wd=d.getDay(); if(wd>=0 && wd<=4) out.push(new Date(d)); d=addDays(d,-1); }
+  return out.reverse();
+}
+
+// ---------- Template ----------
+const TEMPLATES = {
+  start: {
+    subject: 'הכנה ליום מחקר 1 - מחקר PRIME',
+    body:
+`היי {{שם}},
+
+שמחים מאוד שהצטרפת אלינו למחקר PRIME - תודה רבה על שיתוף הפעולה.
+כחלק מההכנה ליום המחקר הראשון, חשוב לנו שתקראי בעיון את דף ההנחיות המצורף ותפעלי לפיו.
+בדף תמצאי הנחיות לגבי:
+
+1) הנחיות הגעה ליום המחקר
+תאריך: {{תאריך_מחקר}} יום {{יום_מחקר}}
+בשעה: {{שעת_מחקר}}
+מיקום: אסותא רמת החייל (רחוב הברזל 20. בניין אשפוז - קומה 1, חדר 140)
+*מומלץ להגיע 10-15 דקות לפני.
+**ניתן לחנות בבניין - יש הסדר חנייה.
+
+2) טופס הסכמה מדעת - לקריאה מראש (חתימה תתבצע ביום המחקר)
+
+3) הנחיות לאיסוף שתן (איסוף 24 שעות)
+את האיסוף יש לבצע בדיוק לפי ההנחיות המצורפות.
+שימי לב: בערכה מצורף ברקוד/QR לסרטון הדרכה קצר.
+
+4) הנחיות ליומן אכילה
+ההנחיות ליומן אכילה מופיעות בתוך דף ההנחיות הכללי המצורף.
+
+* תאריכי יומן אכילה: {{יומן_אכילה}}
+* תאריך איסוף שתן (24 שעות): {{איסוף_שתן}}
+
+* שימי לב - ביום {{יום_צום}} ({{תאריך_צום}}), את אמורה להתחיל צום בשעות הערב (לפחות 12 שעות), כלומר החל מהשעה {{שעת_צום}} - ניתן לשתות מים בלבד.
+** אשמח בבקשה לשלוח אליי - בדיקות דם (3 חודשים האחרונים) + אישור פעילות גופנית (לבקש מרופא/ת המשפחה) + צילומים של תרופות/ויטמינים שנוטלת (כל אלו מופיעים בדף ההנחיות).
+
+נתראה ביום {{יום_מחקר}} {{תאריך_מחקר}} בשעה {{שעת_מחקר}} (להגיע בבקשה עם תעודת זהות/רישיון)
+*נא לקרוא טוב טוב את כל ההנחיות המצורפות :)`
+  }
+};
+
+const SENDER = 'primerct2026@gmail.com';
+// קבצים מצורפים לכל שלב (השמות תואמים לקבצים ב-Drive של primerct2026)
+const ATTACHMENTS = {
+  start: [
+    'T0 - אסותא.pdf',
+    'איסוף שתן 24 שעות - הנחיות ליום מחקר.pdf',
+    'הסכמה מדעת אסותא.pdf'
+  ]
+};
+
+let PHASE = 'start';
+let GROUP = 'control';   // רלוונטי רק לאמצע/סוף
+let autoWhen = '';   // הערך האחרון שמולא אוטומטית לשדה התזמון
+window.setPhase = (p)=>{ PHASE=p; loadTemplate(); render(); };
+window.setGroup = (g)=>{
+  GROUP = g;
+  document.getElementById('grp-control').classList.toggle('active', g==='control');
+  document.getElementById('grp-interv').classList.toggle('active', g==='intervention');
+  loadTemplate(); render();
+};
+function loadTemplate(){
+  document.getElementById('m-subject').value = TEMPLATES[PHASE].subject;
+  document.getElementById('m-body').value = TEMPLATES[PHASE].body;
+}
+
+function initApp(){
+  loadTemplate();
+  render();
+}
+
+function computeTokens(){
+  const name = document.getElementById('m-name').value.trim();
+  const dateVal = document.getElementById('m-date').value;
+  const timeVal = document.getElementById('m-time').value || '07:00';
+  const map = { 'שם': name || '____' };
+  if(!dateVal){ return { map, ok:false }; }
+  const [y,m,d] = dateVal.split('-').map(Number);
+  const [hh,mm] = timeVal.split(':').map(Number);
+  const research = new Date(y, m-1, d, hh, mm);
+
+  // fast start = 12h before research time (evening before)
+  const fast = new Date(research.getTime() - 12*60*60*1000);
+  // urine = research − 2 days; "עד למחרת בבוקר"
+  const urine = addDays(research, -2);
+  const urineNext = addDays(research, -1);
+  // diary
+  const diary = diaryDays(research);
+
+  map['תאריך_מחקר'] = ddmmyyyy(research);
+  map['יום_מחקר']  = WD[research.getDay()];
+  map['שעת_מחקר']  = pad(hh)+':'+pad(mm);
+  map['יום_צום']   = WD[fast.getDay()];
+  map['תאריך_צום'] = ddmmyyyy(fast);
+  map['שעת_צום']   = pad(fast.getHours())+':'+pad(fast.getMinutes());
+  map['איסוף_שתן'] = `${ddmm(urine)} (יום ${WD[urine.getDay()]} עד ${WD[urineNext.getDay()]} בבוקר)`;
+  map['יומן_אכילה'] = diary.map(x=>`${ddmm(x)} (יום ${WD[x.getDay()]})`).join(' + ');
+  return { map, ok:true, research, fast, urine, diary };
+}
+
+function substitute(text, map){ return (text||'').replace(/\{\{\s*([^}]+?)\s*\}\}/g,(mm,k)=> (k in map)?map[k]:mm); }
+
+window.render = ()=>{
+  const { map, ok, research } = computeTokens();
+  // תזמון אוטומטי: שבוע לפני יום המחקר, בשעה 09:00
+  let schedText = '';
+  if(ok){
+    const sched = addDays(research, -7); sched.setHours(9,0,0,0);
+    const val = `${sched.getFullYear()}-${pad(sched.getMonth()+1)}-${pad(sched.getDate())}T09:00`;
+    const whenEl = document.getElementById('m-when');
+    if(whenEl.value === '' || whenEl.value === autoWhen){ whenEl.value = val; autoWhen = val; }
+    schedText = `יום ${WD[sched.getDay()]} · ${ddmmyyyy(sched)} · 09:00`;
+  }
+  // derived box
+  const dbox = document.getElementById('derived');
+  if(ok){
+    dbox.innerHTML =
+      `<div class="drow"><span class="dk">יום המחקר</span><span class="dv">${map['יום_מחקר']} · ${map['תאריך_מחקר']} · ${map['שעת_מחקר']}</span></div>`+
+      `<div class="drow"><span class="dk">תחילת צום (12ש׳ לפני)</span><span class="dv">יום ${map['יום_צום']} · ${map['תאריך_צום']} · ${map['שעת_צום']}</span></div>`+
+      `<div class="drow"><span class="dk">איסוף שתן</span><span class="dv">${map['איסוף_שתן']}</span></div>`+
+      `<div class="drow"><span class="dk">יומן אכילה (3 ימים)</span><span class="dv">${map['יומן_אכילה']}</span></div>`+
+      `<div class="drow"><span class="dk">📅 שליחה אוטומטית (שבוע לפני)</span><span class="dv">${schedText}</span></div>`;
+  } else {
+    dbox.innerHTML = '<div style="color:#94a3b8;">הזן תאריך יום מחקר כדי לחשב את שאר התאריכים…</div>';
+  }
+  // attachments + group visibility
+  document.getElementById('group-select').style.display = (PHASE==='start') ? 'none' : 'block';
+  const files = ATTACHMENTS[PHASE] || [];
+  document.getElementById('attach-list').innerHTML = files.length
+    ? files.map(f=>`📄 ${f}`).join('<br>')
+    : '<span style="color:#94a3b8;">אין קבצים מצורפים לשלב זה.</span>';
+
+  const to = document.getElementById('m-email').value.trim();
+  document.getElementById('pv-to').textContent = 'אל: ' + (to || '—');
+  document.getElementById('pv-subject').textContent = substitute(document.getElementById('m-subject').value, map) || '—';
+  document.getElementById('pv-body').textContent = substitute(document.getElementById('m-body').value, map) || '—';
+};
+
+function buildPayload(mode){
+  const { map } = computeTokens();
+  return {
+    phase: PHASE,
+    group: PHASE==='start' ? null : GROUP,
+    from: SENDER,
+    to: [document.getElementById('m-email').value.trim()].filter(Boolean),
+    name: document.getElementById('m-name').value.trim(),
+    subject: substitute(document.getElementById('m-subject').value, map),
+    body: substitute(document.getElementById('m-body').value, map),
+    attachments: ATTACHMENTS[PHASE] || [],
+    sendAt: mode==='schedule' ? document.getElementById('m-when').value : null
+  };
+}
+
+window.sendJob = (mode)=>{
+  const status = document.getElementById('send-status');
+  const p = buildPayload(mode);
+  if(!p.to.length){ status.style.color='#dc2626'; status.textContent='יש להזין מייל של הנחקר/ת.'; return; }
+  if(!document.getElementById('m-date').value){ status.style.color='#dc2626'; status.textContent='יש להזין תאריך יום מחקר.'; return; }
+  if(mode==='schedule' && !p.sendAt){ status.style.color='#dc2626'; status.textContent='יש לבחור תאריך ושעה לתזמון.'; return; }
+
+  if(!BACKEND_URL){
+    status.style.color='#b45309';
+    status.textContent = (mode==='now'?'🔎 תצוגה בלבד (שליחה לא מחוברת): ':'🔎 תצוגה בלבד (תזמון ל-'+p.sendAt+'): ')+'אל '+p.to.join(', ')+' · '+p.subject;
+    console.log('MAIL PAYLOAD (not sent):', p);
+    return;
+  }
+  status.style.color='#0f766e'; status.textContent='שולח...';
+  fetch(BACKEND_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode,...p})})
+    .then(r=>r.json())
+    .then(()=>{ status.style.color='#16a34a'; status.textContent = mode==='now'?'✅ נשלח בהצלחה.':'✅ תוזמן ל-'+p.sendAt; })
+    .catch(err=>{ status.style.color='#dc2626'; status.textContent='שגיאה בשליחה: '+err.message; });
+};
+</script>
+</body>
+</html>

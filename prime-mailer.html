@@ -177,7 +177,8 @@
     </div>
 
     <div class="notice">
-      ⚙️ התשתית + הגזירה האוטומטית מוכנות. <b>השליחה בפועל (וצירוף הקבצים) עדיין לא מחוברת</b> — כרגע הכפתורים מציגים מה יישלח. נחבר שליחה אמיתית אחרי בחירת שכבת השליחה.
+      ✅ השליחה מחוברת ופעילה — מיילים נשלחים מ-<b>primerct2026@gmail.com</b>. תופיע בקשת אישור לפני כל שליחה.<br>
+      📎 <b>הקבצים המצורפים עדיין לא מחוברים</b> — יש להעלות אותם ל-Drive של החשבון (שלב אחרון).
     </div>
     <div id="send-status"></div>
   </div>
@@ -197,7 +198,8 @@ const firebaseConfig = {
   appId:             "1:665866758826:web:ce53c50d2a4e3e161b7ed3"
 };
 const ALLOWED_EMAILS = ["amirsportdiet@gmail.com","primerct2026@gmail.com"];
-const BACKEND_URL = ""; // ⚙️ יתמלא בשלב הבא (Apps Script / Function)
+const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxZig3eFYNztCmhuzqUpJ7iZvSw37M07MXd-Mn80sEz_9pFS9TxJpKNxs77cj1dVJgcbw/exec";
+const BACKEND_SECRET = "lgGnSJZnAsfIs4W822y0k7F6";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -405,10 +407,26 @@ window.sendJob = (mode)=>{
     console.log('MAIL PAYLOAD (not sent):', p);
     return;
   }
+  if(mode==='now' && !confirm('לשלוח עכשיו מייל אל '+p.to.join(', ')+'?\n\nנושא: '+p.subject)) return;
+  if(mode==='schedule' && !confirm('לתזמן מייל אל '+p.to.join(', ')+'\nלתאריך '+p.sendAt+'?')) return;
+
   status.style.color='#0f766e'; status.textContent='שולח...';
-  fetch(BACKEND_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode,...p})})
+  // text/plain כדי להימנע מ-preflight של CORS (Apps Script לא תומך ב-OPTIONS)
+  fetch(BACKEND_URL,{
+    method:'POST',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify({mode, secret: BACKEND_SECRET, ...p})
+  })
     .then(r=>r.json())
-    .then(()=>{ status.style.color='#16a34a'; status.textContent = mode==='now'?'✅ נשלח בהצלחה.':'✅ תוזמן ל-'+p.sendAt; })
+    .then(res=>{
+      if(res && res.ok){
+        status.style.color='#16a34a';
+        status.textContent = mode==='now' ? '✅ נשלח בהצלחה אל '+p.to.join(', ') : '✅ תוזמן ל-'+p.sendAt;
+      } else {
+        status.style.color='#dc2626';
+        status.textContent='שגיאה: '+((res&&res.error)||'לא ידועה');
+      }
+    })
     .catch(err=>{ status.style.color='#dc2626'; status.textContent='שגיאה בשליחה: '+err.message; });
 };
 </script>

@@ -6,7 +6,7 @@
  * היא יוצרת את תיקיית הקבצים, מתקינה את טריגר התזמון, ומדפיסה את הקישור לתיקייה.
  */
 
-const CODE_VERSION = 'v11-calendar';
+const CODE_VERSION = 'v12-allevents';
 const SECRET = 'lgGnSJZnAsfIs4W822y0k7F6';
 const SENDER_NAME = 'מחקר PRIME';
 const FOLDER_NAME = 'PRIME Mailer Files';
@@ -313,7 +313,7 @@ function lookupCalendar_(name) {
     const hit = !q || words.some(function (w) { return hay.indexOf(w) >= 0; });
     if (all.length < 15) all.push({ title: title, name: person, loc: loc });
     if (!hit) continue;
-    if (out.length >= 10) continue;
+    if (out.length >= 60) continue;
     var email = emailFromEvent_(desc);
     if (!email) {
       try {

@@ -63,6 +63,27 @@
   .btn-schedule { background:#1d4ed8; }
   .btn-schedule:hover { background:#1e40af; }
 
+  /* ---- לוח שנה של מיילים מתוזמנים ---- */
+  .cal-bar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:12px; }
+  .cal-view { display:flex; gap:6px; }
+  .cal-view button { border:2px solid #e2e8f0; background:#fff; border-radius:9px; padding:6px 14px; font-size:12.5px; font-weight:700; color:#64748b; cursor:pointer; font-family:inherit; }
+  .cal-view button.active { border-color:#0d9488; background:#0d9488; color:#fff; }
+  .cal-nav { display:flex; gap:6px; align-items:center; margin-right:auto; }
+  .cal-nav button { border:1px solid #e2e8f0; background:#f8fafc; border-radius:8px; padding:5px 11px; font-size:13px; font-weight:700; color:#475569; cursor:pointer; font-family:inherit; }
+  .cal-title { font-size:14px; font-weight:800; color:#0f172a; min-width:150px; text-align:center; }
+  .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:5px; }
+  .cal-head { text-align:center; font-size:11.5px; font-weight:800; color:#64748b; padding:4px 0; }
+  .cal-cell { min-height:70px; border:1px solid #e2e8f0; border-radius:8px; padding:5px; background:#fff; font-size:11px; }
+  .cal-cell.other { background:#f8fafc; opacity:.55; }
+  .cal-cell.today { border-color:#0d9488; border-width:2px; background:#f0fdfa; }
+  .cal-daynum { font-weight:800; color:#334155; font-size:12px; margin-bottom:3px; }
+  .cal-item { background:#e0f2fe; border:1px solid #7dd3fc; border-radius:5px; padding:2px 5px; margin-bottom:3px; cursor:pointer; color:#0369a1; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .cal-item:hover { background:#bae6fd; }
+  .cal-item.soon { background:#fef3c7; border-color:#fcd34d; color:#92400e; }
+  .cal-week { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
+  .cal-week .cal-cell { min-height:130px; }
+  .cal-daylist .cal-item { white-space:normal; padding:8px 10px; font-size:12.5px; }
+
   .notice { grid-column:1/-1; background:#fffbeb; border:1px solid #fde68a; border-radius:12px; padding:12px 16px; font-size:12.5px; color:#92400e; font-weight:600; text-align:center; }
   #send-status { grid-column:1/-1; text-align:center; font-size:13px; font-weight:700; min-height:18px; }
 </style>
@@ -176,6 +197,20 @@
       <h2>📅 ממתינים לשליחה
         <button type="button" onclick="loadPending()" style="margin-right:auto; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:8px; padding:5px 12px; font-size:12px; font-weight:700; color:#475569; cursor:pointer; font-family:inherit;">🔄 רענון</button>
       </h2>
+      <div class="cal-bar">
+        <div class="cal-view">
+          <button type="button" id="cv-list"  onclick="setCalView('list')">📋 רשימה</button>
+          <button type="button" id="cv-day"   onclick="setCalView('day')">יומי</button>
+          <button type="button" id="cv-week"  onclick="setCalView('week')">שבועי</button>
+          <button type="button" id="cv-month" onclick="setCalView('month')">חודשי</button>
+        </div>
+        <div class="cal-nav" id="cal-nav" style="display:none;">
+          <button type="button" onclick="calMove(-1)">▶</button>
+          <span class="cal-title" id="cal-title">—</span>
+          <button type="button" onclick="calMove(1)">◀</button>
+          <button type="button" onclick="calMove(0)">היום</button>
+        </div>
+      </div>
       <div id="pending-list" style="font-size:13px; color:#64748b;">לחץ "רענון" לטעינת הרשימה…</div>
     </div>
 
@@ -625,14 +660,105 @@ function callApi(payload){
   })).then(r=>r.json());
 }
 
-window.loadPending = () => {
+let PENDING = [];          // הרשימה האחרונה שנטענה
+let CAL_VIEW = 'list';     // list | day | week | month
+let CAL_REF = new Date();  // התאריך שסביבו מוצג הלוח
+
+window.setCalView = (v) => {
+  CAL_VIEW = v;
+  ['list','day','week','month'].forEach(x=>{
+    document.getElementById('cv-'+x).classList.toggle('active', x===v);
+  });
+  document.getElementById('cal-nav').style.display = (v==='list') ? 'none' : 'flex';
+  renderPending();
+};
+window.calMove = (dir) => {
+  if(dir === 0){ CAL_REF = new Date(); }
+  else if(CAL_VIEW==='day')   CAL_REF = addDays(CAL_REF, dir);
+  else if(CAL_VIEW==='week')  CAL_REF = addDays(CAL_REF, dir*7);
+  else if(CAL_VIEW==='month'){ CAL_REF = new Date(CAL_REF.getFullYear(), CAL_REF.getMonth()+dir, 1); }
+  renderPending();
+};
+
+const MONTH_HE = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+const sameDay = (a,b) => a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+const itemDate = it => new Date(it.sendAt);
+
+function itemChip(it, withTime){
+  const d = itemDate(it);
+  const soon = (d - new Date()) < 24*3600*1000;
+  const t = pad(d.getHours())+':'+pad(d.getMinutes());
+  const label = (withTime? t+' · ':'') + (it.name || it.to);
+  return `<div class="cal-item${soon?' soon':''}" title="${it.to} · ${PHASE_HE[it.phase]||''} ${it.group?('· '+(GROUP_HE[it.group]||'')):''} · ${SITE_HE[it.site]||''}"
+            onclick="openPending(${it.row})">${label}</div>`;
+}
+
+window.openPending = (row) => {
+  const it = PENDING.find(x=>x.row===row);
+  if(!it) return;
+  const d = itemDate(it);
+  const info = `${it.name||'—'} · ${it.to}\n${PHASE_HE[it.phase]||it.phase}` +
+    (it.group? ' · '+(GROUP_HE[it.group]||it.group):'') + ` · ${SITE_HE[it.site]||it.site||''}\n` +
+    `מועד: ${it.sendAt.replace('T',' ')}\n\nמה לעשות?\nאישור = שינוי מועד · ביטול = סגירה`;
+  if(confirm(info)) editPending(it.row, it.sendAt);
+};
+
+function renderPending(){
   const box = document.getElementById('pending-list');
-  box.textContent = 'טוען…';
-  callApi({ mode:'list' }).then(res=>{
-    if(!res || !res.ok){ box.textContent = 'שגיאה: ' + ((res&&res.error)||'לא ידועה'); return; }
-    const items = res.items || [];
-    if(!items.length){ box.innerHTML = '<span style="color:#94a3b8;">אין כרגע מיילים שממתינים לשליחה.</span>'; return; }
-    box.innerHTML = items.map(it=>{
+  const title = document.getElementById('cal-title');
+  if(!PENDING.length){
+    box.innerHTML = '<span style="color:#94a3b8;">אין כרגע מיילים שממתינים לשליחה.</span>';
+    if(title) title.textContent = '—';
+    return;
+  }
+  const now = new Date();
+
+  if(CAL_VIEW === 'day'){
+    title.textContent = `יום ${WD[CAL_REF.getDay()]} · ${ddmmyyyy(CAL_REF)}`;
+    const items = PENDING.filter(it=>sameDay(itemDate(it), CAL_REF))
+                         .sort((a,b)=>itemDate(a)-itemDate(b));
+    box.innerHTML = items.length
+      ? `<div class="cal-daylist">${items.map(it=>itemChip(it,true)).join('')}</div>`
+      : '<span style="color:#94a3b8;">אין מיילים מתוזמנים ביום זה.</span>';
+    return;
+  }
+
+  if(CAL_VIEW === 'week'){
+    const start = addDays(CAL_REF, -CAL_REF.getDay());
+    title.textContent = `${ddmm(start)} — ${ddmm(addDays(start,6))}`;
+    let html = '<div class="cal-week">';
+    for(let i=0;i<7;i++) html += `<div class="cal-head">${WD[i]}</div>`;
+    for(let i=0;i<7;i++){
+      const d = addDays(start,i);
+      const items = PENDING.filter(it=>sameDay(itemDate(it), d)).sort((a,b)=>itemDate(a)-itemDate(b));
+      html += `<div class="cal-cell${sameDay(d,now)?' today':''}">
+        <div class="cal-daynum">${d.getDate()}/${d.getMonth()+1}</div>
+        ${items.map(it=>itemChip(it,true)).join('')}</div>`;
+    }
+    box.innerHTML = html + '</div>';
+    return;
+  }
+
+  if(CAL_VIEW === 'month'){
+    const first = new Date(CAL_REF.getFullYear(), CAL_REF.getMonth(), 1);
+    title.textContent = `${MONTH_HE[first.getMonth()]} ${first.getFullYear()}`;
+    const start = addDays(first, -first.getDay());
+    let html = '<div class="cal-grid">';
+    for(let i=0;i<7;i++) html += `<div class="cal-head">${WD[i]}</div>`;
+    for(let i=0;i<42;i++){
+      const d = addDays(start,i);
+      const other = d.getMonth() !== first.getMonth();
+      const items = PENDING.filter(it=>sameDay(itemDate(it), d)).sort((a,b)=>itemDate(a)-itemDate(b));
+      html += `<div class="cal-cell${other?' other':''}${sameDay(d,now)?' today':''}">
+        <div class="cal-daynum">${d.getDate()}</div>
+        ${items.map(it=>itemChip(it,true)).join('')}</div>`;
+    }
+    box.innerHTML = html + '</div>';
+    return;
+  }
+
+  // ---- תצוגת רשימה ----
+  box.innerHTML = PENDING.map(it=>{
       const when = (it.sendAt||'').replace('T',' · ');
       const dt = it.sendAt ? new Date(it.sendAt) : null;
       const soon = dt && (dt - new Date()) < 24*3600*1000;
@@ -648,7 +774,16 @@ window.loadPending = () => {
         <button type="button" onclick="cancelPending(${it.row},'${(it.name||it.to).replace(/'/g,'')}')"
           style="background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;color:#dc2626;cursor:pointer;font-family:inherit;">🗑 ביטול</button>
       </div>`;
-    }).join('');
+  }).join('');
+}
+
+window.loadPending = () => {
+  const box = document.getElementById('pending-list');
+  box.textContent = 'טוען…';
+  callApi({ mode:'list' }).then(res=>{
+    if(!res || !res.ok){ box.textContent = 'שגיאה: ' + ((res&&res.error)||'לא ידועה'); return; }
+    PENDING = (res.items || []).filter(it=>it.sendAt);
+    renderPending();
   }).catch(e=>{ box.textContent = 'שגיאה: ' + e.message; });
 };
 

@@ -752,7 +752,7 @@ function checkEmail(v){
 
 // ===== חיפוש ביומן PRIME =====
 /** בדיקת חיבור לשרת + גישה ליומן — מוצג בכותרת */
-const APP_VERSION = 'app-v12';
+const APP_VERSION = 'app-v13';
 window.checkServer = () => {
   const el = document.getElementById('srv-status');
   fetch(BACKEND_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
@@ -957,11 +957,18 @@ function itemChip(it, withTime){
             onclick="openPending(${it.row})">${label}</div>`;
 }
 
-/** לחיצה על פריט בלוח — פותחת אותו בתצוגת הרשימה במצב עריכה */
+/** לחיצה על פריט בלוח — קופצת לשורה שלו ברשימה (עם כפתורי עריכה/וואטסאפ/ביטול) */
 window.openPending = (row) => {
-  EDITING = row;
+  EDITING = null;
   setCalView('list');
-  setTimeout(()=>{ document.getElementById('ed-date-'+row)?.scrollIntoView({block:'center'}); }, 60);
+  setTimeout(()=>{
+    const el = document.getElementById('pend-row-'+row);
+    if(el){
+      el.scrollIntoView({block:'center'});
+      el.style.boxShadow = '0 0 0 3px #0d9488';
+      setTimeout(()=>{ el.style.boxShadow=''; }, 2500);
+    }
+  }, 80);
 };
 
 function renderPending(){
@@ -1040,7 +1047,7 @@ function renderPending(){
           <div id="ed-msg-${it.row}" style="font-size:12px;font-weight:700;color:#dc2626;margin-top:7px;min-height:15px;"></div>
         </div>`;
       }
-      return `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 12px;margin-bottom:8px;
+      return `<div id="pend-row-${it.row}" style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 12px;margin-bottom:8px;transition:box-shadow .4s;
                    border:1px solid ${soon?'#fde68a':'#e2e8f0'};border-radius:10px;background:${soon?'#fffbeb':'#f8fafc'};">
         <div style="flex:1;min-width:230px;">
           <div style="font-weight:800;color:#0f172a;">${it.name||'—'} · ${it.to}</div>
@@ -1067,10 +1074,8 @@ window.loadPending = () => {
   }).catch(e=>{ box.textContent = 'שגיאה: ' + e.message; });
 };
 
-/** בונה ומעתיק את הודעת הוואטסאפ עבור מייל מתוזמן קיים */
-window.copyWAFor = (row, btn) => {
-  const it = PENDING.find(x=>x.row===row);
-  if(!it) return;
+/** בונה את הודעת הוואטסאפ עבור מייל מתוזמן (בלי איסוף שתן ב-T3) */
+window.buildWAFor = (it) => {
   // מועד המחקר: מהנתונים אם קיים, אחרת שבוע אחרי מועד השליחה
   let r;
   if(it.researchAt && /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(it.researchAt)) r = new Date(it.researchAt);
@@ -1104,6 +1109,13 @@ window.copyWAFor = (row, btn) => {
 
 אנחנו כאן לכל שאלה או התייעצות 😊
 נתראה ב${WD[r.getDay()]}🤍`;
+  return txt;
+};
+
+window.copyWAFor = (row, btn) => {
+  const it = PENDING.find(x=>x.row===row);
+  if(!it) return;
+  const txt = buildWAFor(it);
   navigator.clipboard.writeText(txt).then(()=>{
     const old = btn.textContent; btn.textContent = '✅ הועתק!';
     setTimeout(()=>{ btn.textContent = old; }, 1800);

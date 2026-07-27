@@ -9,13 +9,9 @@ const SENDER_NAME = 'מחקר PRIME';
 
 // מזהה תיקיית ה-Drive שבה נמצאים הקבצים המצורפים לכל שלב.
 // כל קבצי ה-PDF שבתיקייה יצורפו אוטומטית. יתמלא אחרי יצירת התיקייה.
-// מפתח = site:phase[:group] — כמו fileKey() בעמוד
-const ATTACH_FOLDER = {
-  'assuta:start':             'PASTE_T0_FOLDER_ID',
-  'assuta:end:control':       'PASTE_T6_CONTROL_FOLDER_ID',
-  'assuta:end:intervention':  'PASTE_T6_INTERVENTION_FOLDER_ID'
-  // אמצע-מחקר ואיכילוב — יתווספו בהמשך
-};
+// מזהה תיקייה אחת ב-Drive שמכילה את כל קובצי ההנחיות (לפי שם).
+// להעתיק מכתובת התיקייה: drive.google.com/drive/folders/<<המזהה כאן>>
+const FILES_FOLDER_ID = 'PASTE_FOLDER_ID';
 
 // מיילים מורשים לשלוח (חייב להיות זהה לרשימה בעמוד)
 const ALLOWED_EMAILS = ['amirsportdiet@gmail.com', 'primerct2026@gmail.com'];
@@ -69,16 +65,21 @@ function doPost(e) {
 function sendMail_(data) {
   GmailApp.sendEmail(data.to.join(','), data.subject, data.body, {
     name: SENDER_NAME,
-    attachments: attachmentsFor_(data.fileKey)
+    attachments: attachmentsFor_(data.attachments)
   });
 }
 
-function attachmentsFor_(fileKey) {
-  const folderId = ATTACH_FOLDER[fileKey];
-  if (!folderId || folderId.indexOf('PASTE_') === 0) return [];
-  const files = DriveApp.getFolderById(folderId).getFiles();
+/** מאתר בתיקייה את הקבצים לפי שמם ומחזיר אותם לצירוף. */
+function attachmentsFor_(names) {
+  if (!names || !names.length) return [];
+  if (!FILES_FOLDER_ID || FILES_FOLDER_ID.indexOf('PASTE_') === 0) return [];
+  const folder = DriveApp.getFolderById(FILES_FOLDER_ID);
   const out = [];
-  while (files.hasNext()) out.push(files.next().getBlob());
+  for (var i = 0; i < names.length; i++) {
+    const it = folder.getFilesByName(names[i]);
+    if (it.hasNext()) out.push(it.next().getBlob());
+    else throw new Error('לא נמצא קובץ בתיקייה: ' + names[i]);
+  }
   return out;
 }
 

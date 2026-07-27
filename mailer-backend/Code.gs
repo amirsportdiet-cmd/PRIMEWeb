@@ -6,7 +6,7 @@
  * היא יוצרת את תיקיית הקבצים, מתקינה את טריגר התזמון, ומדפיסה את הקישור לתיקייה.
  */
 
-const CODE_VERSION = 'v9-calendar-diag';
+const CODE_VERSION = 'v10-probe';
 const SECRET = 'lgGnSJZnAsfIs4W822y0k7F6';
 const SENDER_NAME = 'מחקר PRIME';
 const FOLDER_NAME = 'PRIME Mailer Files';
@@ -93,7 +93,13 @@ function doPost(e) {
           cal = { name: null, available: CalendarApp.getAllCalendars().map(function (x) { return x.getName(); }) };
         }
       } catch (e) { cal = { error: String(e) }; }
-      return json({ ok: true, version: CODE_VERSION, calendar: cal });
+      // בדיקת הפונקציה עצמה — ספירות בלבד, ללא פרטי נחקרים
+      var probe = {};
+      try {
+        var p = lookupCalendar_(data.probe || '');
+        probe = { ok: p.ok, items: (p.items || []).length, total: p.total, name: p.calendarName, err: p.error };
+      } catch (e2) { probe = { thrown: String(e2) }; }
+      return json({ ok: true, version: CODE_VERSION, calendar: cal, probe: probe });
     }
 
     const v = verifiedEmail_(data.idToken);

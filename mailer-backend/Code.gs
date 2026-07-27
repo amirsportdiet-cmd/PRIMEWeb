@@ -6,6 +6,7 @@
  * היא יוצרת את תיקיית הקבצים, מתקינה את טריגר התזמון, ומדפיסה את הקישור לתיקייה.
  */
 
+const CODE_VERSION = 'v9-calendar-diag';
 const SECRET = 'lgGnSJZnAsfIs4W822y0k7F6';
 const SENDER_NAME = 'מחקר PRIME';
 const FOLDER_NAME = 'PRIME Mailer Files';
@@ -79,6 +80,9 @@ function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
     if (data.secret !== SECRET) return json({ ok: false, error: 'unauthorized' });
+
+    // בדיקת גרסה — מאפשרת לוודא שהפריסה מריצה את הקוד העדכני
+    if (data.mode === 'ping') return json({ ok: true, version: CODE_VERSION });
 
     const v = verifiedEmail_(data.idToken);
     if (!v.email) return json({ ok: false, error: 'זיהוי נכשל — ' + v.err });

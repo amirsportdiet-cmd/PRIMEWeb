@@ -663,16 +663,28 @@ window.sendJob = (mode)=>{
   const user = auth.currentUser;
   if(!user){ status.style.color='#dc2626'; status.textContent='נדרשת התחברות מחדש.'; return; }
 
-  const post = (m, idToken) => fetch(BACKEND_URL,{
+  // שולח, ואם השרת מדווח על כפילות — שואל את המשתמש ושולח שוב עם אישור
+  const post = (m, idToken, force) => fetch(BACKEND_URL,{
       method:'POST',
       // text/plain כדי להימנע מ-preflight של CORS (Apps Script לא תומך ב-OPTIONS)
       headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({mode:m, secret: BACKEND_SECRET, idToken, ...buildPayload(m)})
-    }).then(r=>r.json());
+      body: JSON.stringify({mode:m, secret: BACKEND_SECRET, idToken, force: !!force, ...buildPayload(m)})
+    }).then(r=>r.json())
+     .then(res=>{
+       if(res && res.duplicate && !force){
+         const what = m==='now' ? 'מייל מיידי' : 'תזכורת מתוזמנת';
+         const okDup = confirm('⚠️ כבר נשלח ' + what + ' לנחקר/ת הזה/זו בשלב הזה\n\n' +
+           'בתאריך: ' + res.when + '\nע״י: ' + (res.by||'—') + '\n\nלשלוח שוב בכל זאת?');
+         if(!okDup) return { ok:false, skipped:true };
+         return post(m, idToken, true);
+       }
+       return res;
+     });
 
   user.getIdToken().then(idToken => {
     if(mode !== 'both'){
       return post(mode, idToken).then(res=>{
+        if(res && res.skipped){ status.style.color='#64748b'; status.textContent='בוטל — לא נשלח.'; return; }
         if(!res || !res.ok) throw new Error((res&&res.error)||'שגיאה לא ידועה');
         status.style.color='#16a34a';
         status.textContent = mode==='now' ? '✅ נשלח בהצלחה אל '+to : '✅ תוזמן ל-'+p.sendAt;
@@ -680,6 +692,7 @@ window.sendJob = (mode)=>{
     }
     // שליחה מלאה: קודם מיידי, ואז תזמון
     return post('now', idToken).then(r1=>{
+      if(r1 && r1.skipped){ status.style.color='#64748b'; status.textContent='בוטל — לא נשלח.'; return; }
       if(!r1 || !r1.ok) throw new Error('המייל המיידי נכשל: '+((r1&&r1.error)||'שגיאה'));
       if(skipSchedule){
         status.style.color='#16a34a';
@@ -687,6 +700,11 @@ window.sendJob = (mode)=>{
         return;
       }
       return post('schedule', idToken).then(r2=>{
+        if(r2 && r2.skipped){
+          status.style.color='#16a34a';
+          status.textContent='✅ נשלח אל '+to+' · התזמון בוטל לבקשתך';
+          return;
+        }
         if(!r2 || !r2.ok){
           status.style.color='#b45309';
           status.textContent='✅ המייל נשלח, אך התזמון נכשל: '+((r2&&r2.error)||'שגיאה');

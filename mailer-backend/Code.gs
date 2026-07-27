@@ -21,7 +21,8 @@ function setup() {
   Logger.log('✅ הכל מוכן!');
   Logger.log('תיקיית הקבצים: ' + url);
   Logger.log('יש להעלות לתיקייה את 7 קובצי ה-PDF.');
-  Logger.log('קבצים שכבר בתיקייה: ' + listFiles_().join(', ') || '(ריקה)');
+  Logger.log('קבצים שכבר בתיקייה: ' + (listFiles_().join(', ') || '(ריקה)'));
+  Logger.log('יומן שליחות: https://docs.google.com/spreadsheets/d/' + logSheet_().getParent().getId());
   return url;
 }
 
@@ -77,11 +78,22 @@ function doPost(e) {
     }
     data.sentBy = email;
 
+    // --- בדיקת כפילות: אותו נחקר + אותו שלב + אותו סוג שליחה ---
+    if (!data.force) {
+      const dup = findDuplicate_(data);
+      if (dup) {
+        return json({ ok: false, duplicate: true,
+          when: dup.when, by: dup.by, mode: dup.mode });
+      }
+    }
+
     if (data.mode === 'now') {
       sendMail_(data);
+      logSend_(data, 'נשלח');
       return json({ ok: true, sent: true });
     }
     queueScheduled_(data);
+    logSend_(data, 'תוזמן');
     return json({ ok: true, scheduled: true, sendAt: data.sendAt });
   } catch (err) {
     return json({ ok: false, error: String(err) });
@@ -118,6 +130,54 @@ function attachmentsFor_(names) {
   }
   return out;
 }
+
+// ===================== יומן שליחות + כפילויות =====================
+const LOG_HEADERS = ['מתי', 'אל', 'שם', 'שלב', 'קבוצה', 'מוקד', 'סוג', 'מועד מתוזמן', 'נשלח ע״י', 'נושא'];
+
+function logSheet_() {
+  const props = PropertiesService.getScriptProperties();
+  const id = props.getProperty('LOG_SHEET_ID');
+  let ss;
+  if (id) {
+    try { ss = SpreadsheetApp.openById(id); } catch (e) { ss = null; }
+  }
+  if (!ss) {
+    ss = SpreadsheetApp.create('PRIME Mailer — יומן שליחות');
+    props.setProperty('LOG_SHEET_ID', ss.getId());
+    ss.getSheets()[0].appendRow(LOG_HEADERS);
+    ss.getSheets()[0].setFrozenRows(1);
+  }
+  return ss.getSheets()[0];
+}
+
+/** מפתח ייחודי לשליחה: נמען + שלב + סוג */
+function sendKey_(d) {
+  return String((d.to || []).join(',')).toLowerCase() + '|' + d.phase + '|' + d.mode;
+}
+
+/** מחזיר את הרשומה הקודמת אם כבר בוצעה שליחה זהה, אחרת null */
+function findDuplicate_(d) {
+  const sh = logSheet_();
+  const rows = sh.getDataRange().getValues();
+  const key = sendKey_(d);
+  for (let i = rows.length - 1; i >= 1; i--) {
+    const r = rows[i];
+    const rowKey = String(r[1]).toLowerCase() + '|' + r[3] + '|' + (r[6] === 'תוזמן' ? 'schedule' : 'now');
+    if (rowKey === key) {
+      return { when: Utilities.formatDate(new Date(r[0]), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm'),
+               by: r[8], mode: r[6] };
+    }
+  }
+  return null;
+}
+
+function logSend_(d, kind) {
+  logSheet_().appendRow([new Date(), (d.to || []).join(','), d.name || '', d.phase || '',
+    d.group || '—', d.site || '', kind, d.sendAt || '', d.sentBy || '', d.subject || '']);
+}
+
+/** פתיחת היומן — הרץ ידנית כדי לקבל את הקישור */
+function openLog() { Logger.log('https://docs.google.com/spreadsheets/d/' + logSheet_().getParent().getId()); }
 
 // ===================== תזמון =====================
 function queueScheduled_(data) {

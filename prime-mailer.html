@@ -172,18 +172,30 @@
     </div>
 
     <!-- Actions -->
-    <div class="actions">
-      <div class="col">
-        <label>שליחה מיידית</label>
-        <button class="btn-send" onclick="sendJob('now')">📤 שלח עכשיו</button>
-      </div>
-      <div class="col">
-        <label>שליחה מתוזמנת (תאריך ושעה)</label>
-        <div style="display:flex; gap:8px;">
-          <input type="datetime-local" id="m-when">
-          <button class="btn-send btn-schedule" style="width:auto; white-space:nowrap;" onclick="sendJob('schedule')">🕒 תזמן</button>
+    <div class="actions" style="flex-direction:column; align-items:stretch;">
+      <button class="btn-send" style="font-size:17px; padding:17px;" onclick="sendJob('both')">
+        🚀 שליחה מלאה — מייל עכשיו + תזכורת מתוזמנת
+      </button>
+      <p style="margin:8px 0 0; font-size:12.5px; color:#64748b; text-align:center;">
+        נשלח מייל מיידי, ובנוסף תתוזמן אוטומטית תזכורת ל־<b id="sched-label">—</b>
+      </p>
+
+      <details style="margin-top:14px; border-top:1px solid #e2e8f0; padding-top:12px;">
+        <summary style="cursor:pointer; font-size:13px; font-weight:700; color:#64748b;">אפשרויות נוספות (שליחה נפרדת)</summary>
+        <div style="display:flex; flex-wrap:wrap; gap:14px; align-items:flex-end; margin-top:12px;">
+          <div class="col">
+            <label>שליחה מיידית בלבד</label>
+            <button class="btn-send" style="background:#64748b;" onclick="sendJob('now')">📤 שלח עכשיו</button>
+          </div>
+          <div class="col">
+            <label>תזמון בלבד (ניתן לשנות תאריך ושעה)</label>
+            <div style="display:flex; gap:8px;">
+              <input type="datetime-local" id="m-when">
+              <button class="btn-send btn-schedule" style="width:auto; white-space:nowrap;" onclick="sendJob('schedule')">🕒 תזמן</button>
+            </div>
+          </div>
         </div>
-      </div>
+      </details>
     </div>
 
     <div class="notice">
@@ -430,8 +442,23 @@ const ATTACHMENTS = {
   'assuta:end:intervention': [
     'T6 - התערבות אסותא.pdf',
     'איסוף שתן 24 שעות - הנחיות ליום מחקר.pdf'
+  ],
+  // ---- איכילוב ----
+  'ichilov:start': [
+    'T0 - איכילוב.pdf',
+    'איסוף שתן 24 שעות - הנחיות ליום מחקר.pdf',
+    'הסכמה מדעת אסותא.pdf'   // ⚠️ טופס הסכמה — יש להחליף בגרסת איכילוב מאושרת
+  ],
+  'ichilov:middle:control':      ['T3 - ביקורת איכילוב.pdf'],
+  'ichilov:middle:intervention': ['T3 - התערבות איכילוב.pdf'],
+  'ichilov:end:control': [
+    'T6 - ביקורת איכילוב.pdf',
+    'איסוף שתן 24 שעות - הנחיות ליום מחקר.pdf'
+  ],
+  'ichilov:end:intervention': [
+    'T6 - התערבות איכילוב.pdf',
+    'איסוף שתן 24 שעות - הנחיות ליום מחקר.pdf'
   ]
-  // ⚙️ אמצע-מחקר (אסותא) + כל שלבי איכילוב — יושלמו בהמשך
 };
 
 let PHASE = 'start';
@@ -452,11 +479,10 @@ const SITES = {
     parking: '** ביום המחקר נסדיר עבורך חניה - יש לוודא שחנית בחניון בית החולים, ברחוב הברזל 20, רמת החייל.'
   },
   ichilov: {
-    // ⚙️ תשתית בלבד — ההנחיות יושלמו בהמשך
     name: 'איכילוב',
-    location: 'איכילוב',
-    locationShort: 'איכילוב',
-    parking: ''
+    location: 'המרכז הרפואי תל אביב ע״ש סוראסקי (איכילוב), דרך וייצמן 6, מגדל האשפוז ע״ש אריסון, קומה 13 - המכון האנדוקריני',
+    locationShort: 'איכילוב, מגדל אריסון קומה 13',
+    parking: '** ביום המחקר נסדיר עבורך חניה - יש לוודא שחנית בחניון בית החולים, דרך וייצמן 6, תל אביב.'
   }
 };
 let SITE = 'assuta';
@@ -492,6 +518,7 @@ function loadTemplate(){
 function initApp(){
   setGender('f');
   setGroup('control');
+  setSite('assuta');   // ברירת מחדל
   loadTemplate();
   render();
 }
@@ -547,6 +574,8 @@ window.render = ()=>{
     const whenEl = document.getElementById('m-when');
     if(whenEl.value === '' || whenEl.value === autoWhen){ whenEl.value = val; autoWhen = val; }
     schedText = `יום ${WD[sched.getDay()]} · ${ddmmyyyy(sched)} · ${hhmm}`;
+    const lbl = document.getElementById('sched-label');
+    if(lbl) lbl.textContent = schedText + (sched <= new Date() ? ' (המועד עבר — תישלח רק ההודעה המיידית)' : '');
   }
   // derived box
   const dbox = document.getElementById('derived');
@@ -602,10 +631,10 @@ function buildPayload(mode){
 
 window.sendJob = (mode)=>{
   const status = document.getElementById('send-status');
-  const p = buildPayload(mode);
+  const p = buildPayload(mode === 'both' ? 'schedule' : mode);
   if(!p.to.length){ status.style.color='#dc2626'; status.textContent='יש להזין מייל של הנחקר/ת.'; return; }
   if(!document.getElementById('m-date').value){ status.style.color='#dc2626'; status.textContent='יש להזין תאריך יום מחקר.'; return; }
-  if(mode==='schedule' && !p.sendAt){ status.style.color='#dc2626'; status.textContent='יש לבחור תאריך ושעה לתזמון.'; return; }
+  if((mode==='schedule'||mode==='both') && !p.sendAt){ status.style.color='#dc2626'; status.textContent='יש לבחור תאריך ושעה לתזמון.'; return; }
 
   if(!BACKEND_URL){
     status.style.color='#b45309';
@@ -613,31 +642,61 @@ window.sendJob = (mode)=>{
     console.log('MAIL PAYLOAD (not sent):', p);
     return;
   }
-  if(mode==='now' && !confirm('לשלוח עכשיו מייל אל '+p.to.join(', ')+'?\n\nנושא: '+p.subject)) return;
-  if(mode==='schedule' && !confirm('לתזמן מייל אל '+p.to.join(', ')+'\nלתאריך '+p.sendAt+'?')) return;
+  const to = p.to.join(', ');
+  // תזמון שכבר עבר — במצב "שליחה מלאה" נשלח רק את המיידי
+  let skipSchedule = false;
+  if((mode==='both'||mode==='schedule') && p.sendAt && new Date(p.sendAt) <= new Date()){
+    if(mode==='schedule'){ status.style.color='#dc2626'; status.textContent='מועד התזמון כבר עבר — יש לבחור מועד עתידי.'; return; }
+    skipSchedule = true;
+  }
+  const ask = mode==='both'
+    ? ('לשלוח עכשיו מייל אל '+to + (skipSchedule
+        ? '?\n\n⚠️ מועד התזכורת כבר עבר — תישלח רק ההודעה המיידית.'
+        : '\nובנוסף לתזמן תזכורת ל-'+p.sendAt+'?'))
+    : mode==='now'
+      ? ('לשלוח עכשיו מייל אל '+to+'?\n\nנושא: '+p.subject)
+      : ('לתזמן מייל אל '+to+'\nלתאריך '+p.sendAt+'?');
+  if(!confirm(ask)) return;
 
   status.style.color='#0f766e'; status.textContent='שולח...';
   // מצרפים אסימון זהות חתום של Google — השרת מאמת אותו ובודק שהמייל מורשה
   const user = auth.currentUser;
   if(!user){ status.style.color='#dc2626'; status.textContent='נדרשת התחברות מחדש.'; return; }
-  user.getIdToken()
-    .then(idToken => fetch(BACKEND_URL,{
+
+  const post = (m, idToken) => fetch(BACKEND_URL,{
       method:'POST',
       // text/plain כדי להימנע מ-preflight של CORS (Apps Script לא תומך ב-OPTIONS)
       headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({mode, secret: BACKEND_SECRET, idToken, ...p})
-    }))
-    .then(r=>r.json())
-    .then(res=>{
-      if(res && res.ok){
+      body: JSON.stringify({mode:m, secret: BACKEND_SECRET, idToken, ...buildPayload(m)})
+    }).then(r=>r.json());
+
+  user.getIdToken().then(idToken => {
+    if(mode !== 'both'){
+      return post(mode, idToken).then(res=>{
+        if(!res || !res.ok) throw new Error((res&&res.error)||'שגיאה לא ידועה');
         status.style.color='#16a34a';
-        status.textContent = mode==='now' ? '✅ נשלח בהצלחה אל '+p.to.join(', ') : '✅ תוזמן ל-'+p.sendAt;
-      } else {
-        status.style.color='#dc2626';
-        status.textContent='שגיאה: '+((res&&res.error)||'לא ידועה');
+        status.textContent = mode==='now' ? '✅ נשלח בהצלחה אל '+to : '✅ תוזמן ל-'+p.sendAt;
+      });
+    }
+    // שליחה מלאה: קודם מיידי, ואז תזמון
+    return post('now', idToken).then(r1=>{
+      if(!r1 || !r1.ok) throw new Error('המייל המיידי נכשל: '+((r1&&r1.error)||'שגיאה'));
+      if(skipSchedule){
+        status.style.color='#16a34a';
+        status.textContent='✅ נשלח אל '+to+' · ⚠️ תזכורת לא תוזמנה (המועד עבר)';
+        return;
       }
-    })
-    .catch(err=>{ status.style.color='#dc2626'; status.textContent='שגיאה בשליחה: '+err.message; });
+      return post('schedule', idToken).then(r2=>{
+        if(!r2 || !r2.ok){
+          status.style.color='#b45309';
+          status.textContent='✅ המייל נשלח, אך התזמון נכשל: '+((r2&&r2.error)||'שגיאה');
+          return;
+        }
+        status.style.color='#16a34a';
+        status.textContent='✅ נשלח אל '+to+' · 🕒 תזכורת תוזמנה ל-'+p.sendAt;
+      });
+    });
+  }).catch(e=>{ status.style.color='#dc2626'; status.textContent='שגיאה: '+e.message; });
 };
 </script>
 </body>

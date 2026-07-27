@@ -741,7 +741,8 @@ window.loadHistory = () => {
   if(!em || !checkEmail(em).ok){ box.innerHTML=''; return; }
   callApi({ mode:'history', email: em }).then(res=>{
     if(!res || !res.ok || !res.items || !res.items.length){ box.innerHTML=''; return; }
-    box.innerHTML = `<div class="hist"><div class="ht">📜 היסטוריית הנחקר/ת (${res.items.length})</div>` +
+    const who = (res.items.find(h=>h.name && h.name.trim()) || {}).name || '';
+    box.innerHTML = `<div class="hist"><div class="ht">📜 היסטוריה${who ? ' · ' + who : ''} (${res.items.length})</div>` +
       res.items.slice(0,6).map(h=>{
         const what = (PHASE_HE[h.phase]||h.phase) + (h.group&&h.group!=='—' ? ' · '+(GROUP_HE[h.group]||h.group) : '');
         const extra = h.kind==='תוזמן' && h.sendAt ? ' → ' + h.sendAt.replace('T',' ') : '';

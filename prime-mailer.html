@@ -607,7 +607,14 @@ function substitute(text, map){
 }
 
 window.render = ()=>{
-  const { map, ok, research } = computeTokens();
+  const info = computeTokens();
+  const { map, ok, research } = info;
+  // טעינת חגים לשנים הרלוונטיות (פעם אחת לכל שנה), ורענון התצוגה כשמגיעים
+  if(ok){
+    const yrs = [research.getFullYear(), info.diary[0].getFullYear()];
+    const missing = yrs.filter(y=>!HOLIDAY_YEARS[y]);
+    if(missing.length) Promise.all(missing.map(loadHolidays)).then(()=>render());
+  }
   // תזמון אוטומטי: בדיוק שבוע לפני יום המחקר, באותה שעה של המחקר
   let schedText = '';
   if(ok){
@@ -629,6 +636,12 @@ window.render = ()=>{
       `<div class="drow"><span class="dk">איסוף שתן</span><span class="dv">${map['איסוף_שתן']}</span></div>`+
       `<div class="drow"><span class="dk">יומן אכילה (3 ימים)</span><span class="dv">${map['יומן_אכילה']}</span></div>`+
       `<div class="drow"><span class="dk">📅 שליחה אוטומטית (שבוע לפני, באותה שעה)</span><span class="dv">${schedText}</span></div>`;
+    const warns = dateWarnings(info);
+    dbox.innerHTML += warns.length
+      ? `<div style="margin-top:10px;background:#fffbeb;border:1px solid #fcd34d;border-radius:9px;padding:9px 12px;color:#92400e;font-weight:700;font-size:12.5px;line-height:1.7;">
+           ⚠️ שימו לב:<br>${warns.map(x=>'• '+x).join('<br>')}
+           <div style="font-weight:500;margin-top:5px;">אפשר לשלוח בכל זאת — זו אזהרה בלבד.</div></div>`
+      : '';
   } else {
     dbox.innerHTML = '<div style="color:#94a3b8;">הזן תאריך יום מחקר כדי לחשב את שאר התאריכים…</div>';
   }
@@ -645,6 +658,40 @@ window.render = ()=>{
   document.getElementById('pv-body').textContent = substitute(document.getElementById('m-body').value, map) || '—';
   document.getElementById('wa-body').textContent = substitute(waTemplate(), map);
 };
+
+// ===== בדיקת תאריכים: שבת וחגים =====
+const HOLIDAYS = {};          // 'YYYY-MM-DD' -> שם החג
+const HOLIDAY_YEARS = {};     // שנים שכבר נטענו
+// חגים שבהם באמת אין פעילות (יום מנוחה מלא)
+const NO_WORK = /פֶּסַח|פסח|שָׁבוּעוֹת|שבועות|רֹאשׁ הַשָּׁנָה|ראש השנה|יוֹם כִּפּוּר|יום כיפור|סֻכּוֹת|סוכות|שְׁמִינִי|שמיני|שִׂמְחַת|שמחת|יוֹם הָעַצְמָאוּת|יום העצמאות|יוֹם הַזִּכָּרוֹן|יום הזיכרון|תִּשְׁעָה|תשעה באב/;
+
+function loadHolidays(year){
+  if(HOLIDAY_YEARS[year]) return Promise.resolve();
+  HOLIDAY_YEARS[year] = true;
+  return fetch(`https://www.hebcal.com/hebcal?v=1&cfg=json&maj=on&mod=on&nx=off&year=${year}&month=x&ss=off&mf=off&c=off&geo=none&lg=h`)
+    .then(r=>r.json())
+    .then(j=>{ (j.items||[]).forEach(i=>{ if(i.category==='holiday') HOLIDAYS[i.date] = i.title; }); })
+    .catch(()=>{ HOLIDAY_YEARS[year] = false; });   // כשל רשת — נבדוק רק שבת
+}
+
+const isoOf = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+
+/** מחזיר רשימת אזהרות על התאריכים שחושבו */
+function dateWarnings(info){
+  if(!info || !info.ok) return [];
+  const w = [];
+  const flag = (d, label) => {
+    if(d.getDay() === 6) w.push(`${label} נופל בשבת (${ddmm(d)})`);
+    const h = HOLIDAYS[isoOf(d)];
+    if(h && NO_WORK.test(h)) w.push(`${label} נופל ב${h} (${ddmm(d)})`);
+    else if(h) w.push(`${label} נופל ב${h} (${ddmm(d)})`);
+  };
+  flag(info.research, 'יום המחקר');
+  flag(info.fast, 'תחילת הצום');
+  if(PHASE !== 'middle') flag(info.urine, 'איסוף השתן');
+  info.diary.forEach(d => flag(d, 'יום יומן אכילה'));
+  return w;
+}
 
 // ===== ניהול מיילים ממתינים =====
 const PHASE_HE = { start:'תחילת מחקר', middle:'אמצע מחקר', end:'סוף מחקר' };
@@ -859,7 +906,11 @@ window.sendJob = (mode)=>{
     : mode==='now'
       ? ('לשלוח עכשיו מייל אל '+to+'?\n\nנושא: '+p.subject)
       : ('לתזמן מייל אל '+to+'\nלתאריך '+p.sendAt+'?');
-  if(!confirm(ask)) return;
+  const warns = dateWarnings(computeTokens());
+  const askFull = warns.length
+    ? '⚠️ שימו לב:\n' + warns.map(x=>'• '+x).join('\n') + '\n\n' + ask
+    : ask;
+  if(!confirm(askFull)) return;
 
   status.style.color='#0f766e'; status.textContent='שולח...';
   // מצרפים אסימון זהות חתום של Google — השרת מאמת אותו ובודק שהמייל מורשה

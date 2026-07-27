@@ -6,7 +6,7 @@
  * היא יוצרת את תיקיית הקבצים, מתקינה את טריגר התזמון, ומדפיסה את הקישור לתיקייה.
  */
 
-const CODE_VERSION = 'v10-probe';
+const CODE_VERSION = 'v11-calendar';
 const SECRET = 'lgGnSJZnAsfIs4W822y0k7F6';
 const SENDER_NAME = 'מחקר PRIME';
 const FOLDER_NAME = 'PRIME Mailer Files';
@@ -109,6 +109,9 @@ function doPost(e) {
     }
     data.sentBy = v.email;
 
+    // --- חיפוש ביומן PRIME ---
+    if (data.mode === 'calendar')   return json(lookupCalendar_(data.name));
+
     // --- ניהול מיילים ממתינים ---
     if (data.mode === 'history')    return json({ ok: true, items: historyFor_(data.email) });
     if (data.mode === 'list')       return json({ ok: true, items: listPending_() });
@@ -129,9 +132,12 @@ function doPost(e) {
       logSend_(data, 'נשלח');
       return json({ ok: true, sent: true });
     }
-    queueScheduled_(data);
-    logSend_(data, 'תוזמן');
-    return json({ ok: true, scheduled: true, sendAt: data.sendAt });
+    if (data.mode === 'schedule') {
+      queueScheduled_(data);
+      logSend_(data, 'תוזמן');
+      return json({ ok: true, scheduled: true, sendAt: data.sendAt });
+    }
+    return json({ ok: false, error: 'mode לא מוכר: ' + data.mode });
   } catch (err) {
     return json({ ok: false, error: String(err) });
   }

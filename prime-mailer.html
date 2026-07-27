@@ -92,6 +92,10 @@
   .cal-item { background:#e0f2fe; border:1px solid #7dd3fc; border-radius:5px; padding:2px 5px; margin-bottom:3px; cursor:pointer; color:#0369a1; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .cal-item:hover { background:#bae6fd; }
   .cal-item.soon { background:#fef3c7; border-color:#fcd34d; color:#92400e; }
+  .cal-item.meet { background:#ede9fe; border-color:#c4b5fd; color:#6d28d9; }
+  .cal-item.meet:hover { background:#ddd6fe; }
+  .cal-legend { display:flex; gap:14px; font-size:11px; color:#64748b; margin-top:8px; align-items:center; }
+  .cal-legend .sw { display:inline-block; width:11px; height:11px; border-radius:3px; margin-left:4px; vertical-align:-1px; }
   .cal-week { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
   .cal-week .cal-cell { min-height:130px; }
   .cal-daylist .cal-item { white-space:normal; padding:8px 10px; font-size:12.5px; }
@@ -243,13 +247,18 @@
     </div>
 
     <!-- Upcoming from calendar -->
-    <div class="card" style="grid-column:1/-1;">
-      <h2>📆 פגישות קרובות מהיומן
-        <button type="button" onclick="loadUpcoming()" style="margin-right:auto; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:8px; padding:5px 12px; font-size:12px; font-weight:700; color:#475569; cursor:pointer; font-family:inherit;">🔄 רענון</button>
-      </h2>
-      <p style="font-size:12px; color:#94a3b8; margin:-6px 0 10px;">כל פגישה ביומן PRIME — גם אם לא נשלח מייל דרך המערכת. אפשר להעתיק תזכורת וואטסאפ או לטעון לטופס.</p>
-      <div id="upcoming-list" style="font-size:13px; color:#64748b;">טוען…</div>
-    </div>
+    <details class="card" style="grid-column:1/-1; padding:0; overflow:hidden;" id="upcoming-card">
+      <summary style="cursor:pointer; list-style:none; padding:16px 20px; display:flex; align-items:center; gap:8px; user-select:none;">
+        <h2 style="margin:0;">📆 פגישות קרובות מהיומן <span id="upcoming-count" style="color:#64748b; font-weight:600;"></span></h2>
+        <span style="margin-right:auto; font-size:12px; color:#94a3b8;">לחץ להרחבה ▼</span>
+      </summary>
+      <div style="padding:0 20px 16px;">
+        <p style="font-size:12px; color:#94a3b8; margin:0 0 10px;">כל פגישה ביומן PRIME — גם אם לא נשלח מייל דרך המערכת. אפשר להעתיק תזכורת וואטסאפ או לטעון לטופס.
+          <button type="button" onclick="loadUpcoming()" style="margin-right:8px; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:8px; padding:3px 10px; font-size:11px; font-weight:700; color:#475569; cursor:pointer; font-family:inherit;">🔄 רענון</button>
+        </p>
+        <div id="upcoming-list" style="font-size:13px; color:#64748b;">טוען…</div>
+      </div>
+    </details>
 
     <!-- Actions -->
     <div class="actions" style="flex-direction:column; align-items:stretch;">
@@ -762,7 +771,7 @@ function checkEmail(v){
 
 // ===== חיפוש ביומן PRIME =====
 /** בדיקת חיבור לשרת + גישה ליומן — מוצג בכותרת */
-const APP_VERSION = 'app-v14';
+const APP_VERSION = 'app-v15';
 window.checkServer = () => {
   const el = document.getElementById('srv-status');
   fetch(BACKEND_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
@@ -981,23 +990,58 @@ window.openPending = (row) => {
   }, 80);
 };
 
+// פגישות מהיומן — לשילוב בלוח
+const meets = () => window.__upcoming || [];
+const meetsOn = d => meets().map((ev,i)=>({ev,i}))
+  .filter(x=>x.ev.start && sameDay(new Date(x.ev.start), d))
+  .sort((a,b)=>new Date(a.ev.start)-new Date(b.ev.start));
+
+function meetChip(x, withTime){
+  const d = new Date(x.ev.start);
+  const t = pad(d.getHours())+':'+pad(d.getMinutes());
+  const label = (withTime? t+' · ':'') + (x.ev.name || x.ev.title);
+  return `<div class="cal-item meet" title="פגישה מהיומן · ${PHASE_HE[x.ev.phase]||''} · ${SITE_HE[x.ev.site]||''} · לחיצה מעתיקה וואטסאפ"
+            onclick="copyWAMeet(${x.i}, this)">📆 ${label}</div>`;
+}
+window.copyWAMeet = (i, el) => {
+  const ev = meets()[i];
+  if(!ev) return;
+  const txt = buildWAFor({ name: ev.name, phase: ev.phase, site: ev.site, researchAt: ev.start, sendAt: ev.start });
+  navigator.clipboard.writeText(txt).then(()=>{
+    const old = el.innerHTML; el.innerHTML = '✅ וואטסאפ הועתק!';
+    setTimeout(()=>{ el.innerHTML = old; }, 1600);
+  }).catch(()=>{ prompt('העתק ידנית:', txt); });
+};
+const CAL_LEGEND = `<div class="cal-legend">
+  <span><span class="sw" style="background:#e0f2fe;border:1px solid #7dd3fc;"></span>מייל מתוזמן</span>
+  <span><span class="sw" style="background:#fef3c7;border:1px solid #fcd34d;"></span>נשלח בפחות מ-24ש׳</span>
+  <span><span class="sw" style="background:#ede9fe;border:1px solid #c4b5fd;"></span>פגישה מהיומן (לחיצה מעתיקה וואטסאפ)</span>
+</div>`;
+
 function renderPending(){
   const box = document.getElementById('pending-list');
   const title = document.getElementById('cal-title');
-  if(!PENDING.length){
-    box.innerHTML = '<span style="color:#94a3b8;">אין כרגע מיילים שממתינים לשליחה.</span>';
+  const now = new Date();
+
+  if(CAL_VIEW === 'list'){
+    if(!PENDING.length){
+      box.innerHTML = '<span style="color:#94a3b8;">אין כרגע מיילים שממתינים לשליחה.</span>';
+      return;
+    }
+  } else if(!PENDING.length && !meets().length){
+    box.innerHTML = '<span style="color:#94a3b8;">אין מיילים מתוזמנים או פגישות ביומן.</span>';
     if(title) title.textContent = '—';
     return;
   }
-  const now = new Date();
 
   if(CAL_VIEW === 'day'){
     title.textContent = `יום ${WD[CAL_REF.getDay()]} · ${ddmmyyyy(CAL_REF)}`;
     const items = PENDING.filter(it=>sameDay(itemDate(it), CAL_REF))
                          .sort((a,b)=>itemDate(a)-itemDate(b));
-    box.innerHTML = items.length
-      ? `<div class="cal-daylist">${items.map(it=>itemChip(it,true)).join('')}</div>`
-      : '<span style="color:#94a3b8;">אין מיילים מתוזמנים ביום זה.</span>';
+    const dayMeets = meetsOn(CAL_REF);
+    box.innerHTML = (items.length || dayMeets.length)
+      ? `<div class="cal-daylist">${items.map(it=>itemChip(it,true)).join('')}${dayMeets.map(x=>meetChip(x,true)).join('')}</div>` + CAL_LEGEND
+      : '<span style="color:#94a3b8;">אין מיילים או פגישות ביום זה.</span>';
     return;
   }
 
@@ -1011,9 +1055,9 @@ function renderPending(){
       const items = PENDING.filter(it=>sameDay(itemDate(it), d)).sort((a,b)=>itemDate(a)-itemDate(b));
       html += `<div class="cal-cell${sameDay(d,now)?' today':''}">
         <div class="cal-daynum">${d.getDate()}/${d.getMonth()+1}</div>
-        ${items.map(it=>itemChip(it,true)).join('')}</div>`;
+        ${items.map(it=>itemChip(it,true)).join('')}${meetsOn(d).map(x=>meetChip(x,true)).join('')}</div>`;
     }
-    box.innerHTML = html + '</div>';
+    box.innerHTML = html + '</div>' + CAL_LEGEND;
     return;
   }
 
@@ -1029,9 +1073,9 @@ function renderPending(){
       const items = PENDING.filter(it=>sameDay(itemDate(it), d)).sort((a,b)=>itemDate(a)-itemDate(b));
       html += `<div class="cal-cell${other?' other':''}${sameDay(d,now)?' today':''}">
         <div class="cal-daynum">${d.getDate()}</div>
-        ${items.map(it=>itemChip(it,true)).join('')}</div>`;
+        ${items.map(it=>itemChip(it,true)).join('')}${meetsOn(d).map(x=>meetChip(x,true)).join('')}</div>`;
     }
-    box.innerHTML = html + '</div>';
+    box.innerHTML = html + '</div>' + CAL_LEGEND;
     return;
   }
 
@@ -1090,8 +1134,12 @@ window.loadUpcoming = () => {
   box.textContent = 'טוען…';
   callApi({ mode:'calendar', name:'' }).then(res=>{
     if(!res || !res.ok){ box.textContent = 'שגיאה: ' + ((res&&res.error)||'לא ידועה'); return; }
-    const items = (res.items || []).filter(it=>it.start);
+    const items = (res.items || []).filter(it=>it.start)
+      .sort((a,b)=> a.start < b.start ? -1 : 1);
     window.__upcoming = items;
+    const cnt = document.getElementById('upcoming-count');
+    if(cnt) cnt.textContent = items.length ? `(${items.length})` : '';
+    renderPending();   // רענון הלוח כדי שהפגישות יופיעו בו
     if(!items.length){ box.innerHTML = '<span style="color:#94a3b8;">אין פגישות עתידיות ביומן PRIME.</span>'; return; }
     box.innerHTML = items.map((it,i)=>{
       const d = new Date(it.start);

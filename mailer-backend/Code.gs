@@ -263,19 +263,29 @@ function siteFromText_(t) {
 /** מחפש ביומן PRIME את האירוע הקרוב שמתאים לשם */
 function lookupCalendar_(name) {
   const cal = primeCalendar_();
-  if (!cal) return { ok: false, error: 'לא נמצא יומן בשם ' + CALENDAR_NAME };
+  if (!cal) {
+    const names = CalendarApp.getAllCalendars().map(function (c) { return c.getName(); });
+    return { ok: false, error: 'לא נמצא יומן בשם ' + CALENDAR_NAME + '. יומנים זמינים: ' + names.join(' · ') };
+  }
   const now = new Date();
   const end = new Date(now.getTime() + 400 * 24 * 3600 * 1000);
   const q = String(name || '').trim();
+  const words = q.split(/\s+/).filter(function (w) { return w.length >= 2; });
   const evs = cal.getEvents(now, end);
   const out = [];
-  for (var i = 0; i < evs.length && out.length < 10; i++) {
+  const all = [];   // כל האירועים — לגיבוי אם אין התאמה
+  for (var i = 0; i < evs.length; i++) {
     const ev = evs[i];
     const title = ev.getTitle() || '';
     const desc = ev.getDescription() || '';
     const loc = ev.getLocation() || '';
     const person = nameFromEvent_(title, desc);
-    if (q && person.indexOf(q) < 0 && title.indexOf(q) < 0) continue;
+    const hay = (person + ' ' + title + ' ' + desc);
+    // התאמה אם אחת ממילות החיפוש מופיעה
+    const hit = !q || words.some(function (w) { return hay.indexOf(w) >= 0; });
+    if (all.length < 15) all.push({ title: title, name: person, loc: loc });
+    if (!hit) continue;
+    if (out.length >= 10) continue;
     var email = emailFromEvent_(desc);
     if (!email) {
       try {
@@ -293,7 +303,12 @@ function lookupCalendar_(name) {
       site: siteFromText_(loc + ' ' + title + ' ' + desc)
     });
   }
-  return { ok: true, items: out };
+  return {
+    ok: true, items: out,
+    calendarName: cal.getName(),
+    total: evs.length,
+    sample: out.length ? [] : all.slice(0, 8)   // אם אין התאמה — מציגים מה כן קיים
+  };
 }
 
 /** הרץ ידנית — מציג את מבנה 10 האירועים הקרובים ביומן PRIME */

@@ -752,7 +752,19 @@ window.calSearch = () => {
   callApi({ mode:'calendar', name:q }).then(res=>{
     if(!res || !res.ok){ box.innerHTML = `<div class="fld-warn err">${(res&&res.error)||'שגיאה בחיפוש'}</div>`; return; }
     const items = res.items || [];
-    if(!items.length){ box.innerHTML = '<div class="fld-warn err">לא נמצא אירוע עתידי ביומן PRIME עבור "'+q+'"</div>'; return; }
+    if(!items.length){
+      const s = res.sample || [];
+      box.innerHTML = `<div class="hist" style="background:#fff5f5;border-color:#fca5a5;">
+        <div class="ht" style="color:#b91c1c;">לא נמצא אירוע עבור "${q}"</div>
+        <div class="hrow"><span>יומן</span><span style="color:#64748b;">${res.calendarName||'?'} · ${res.total||0} אירועים עתידיים</span></div>
+        ${s.length ? '<div style="margin-top:6px;font-weight:700;color:#475569;">האירועים הקרובים ביומן — לחץ לבחירה:</div>' +
+          s.map((x,i)=>`<div class="hrow" style="cursor:pointer;" onclick="pickByTitle(${i})">
+              <span>${x.name||x.title}</span><span style="color:#64748b;">${x.loc||''}</span></div>`).join('')
+          : '<div style="margin-top:6px;color:#64748b;">אין אירועים עתידיים ביומן.</div>'}
+      </div>`;
+      window.__calSample = s;
+      return;
+    }
     if(items.length === 1){ applyCalEvent(items[0]); return; }
     box.innerHTML = '<div class="hist"><div class="ht">📅 נמצאו ' + items.length + ' אירועים — בחר:</div>' +
       items.map((it,i)=>{
@@ -765,6 +777,13 @@ window.calSearch = () => {
   }).catch(e=>{ box.innerHTML = `<div class="fld-warn err">שגיאה: ${e.message}</div>`; });
 };
 window.applyCalEventIdx = (i) => applyCalEvent((window.__calItems||[])[i]);
+/** בחירה מרשימת האירועים הקרובים — מחפש שוב לפי שם האירוע המדויק */
+window.pickByTitle = (i) => {
+  const s = (window.__calSample||[])[i];
+  if(!s) return;
+  document.getElementById('m-name').value = s.name || s.title;
+  calSearch();
+};
 
 function applyCalEvent(ev){
   if(!ev) return;

@@ -130,9 +130,9 @@
   </div>
 
   <div class="phase-tabs">
-    <button class="phase-tab active" data-phase="start" onclick="setPhase('start')">1️⃣ תחילת מחקר</button>
-    <button class="phase-tab" data-phase="middle" onclick="setPhase('middle')">2️⃣ אמצע מחקר</button>
-    <button class="phase-tab" data-phase="end" onclick="setPhase('end')">3️⃣ סוף מחקר</button>
+    <button class="phase-tab active" data-phase="start" onclick="setPhase('start')">1️⃣ תחילת מחקר · T0</button>
+    <button class="phase-tab" data-phase="middle" onclick="setPhase('middle')">2️⃣ אמצע מחקר · T3</button>
+    <button class="phase-tab" data-phase="end" onclick="setPhase('end')">3️⃣ סוף מחקר · T6</button>
   </div>
   <div class="phase-tabs" style="margin-top:-8px;">
     <button class="phase-tab" id="site-assuta" data-site="assuta" onclick="setSite('assuta')">🏥 אסותא רמת החייל</button>
@@ -795,7 +795,8 @@ function dateWarnings(info){
 }
 
 // ===== ניהול מיילים ממתינים =====
-const PHASE_HE = { start:'תחילת מחקר', middle:'אמצע מחקר', end:'סוף מחקר' };
+// תוויות פנימיות בלבד — לא מופיעות במיילים או בוואטסאפ
+const PHASE_HE = { start:'תחילת מחקר (T0)', middle:'אמצע מחקר (T3)', end:'סוף מחקר (T6)' };
 const GROUP_HE = { control:'ביקורת', intervention:'התערבות' };
 const SITE_HE  = { assuta:'אסותא', ichilov:'איכילוב' };
 
@@ -809,6 +810,7 @@ function callApi(payload){
 }
 
 let PENDING = [];          // הרשימה האחרונה שנטענה
+let EDITING = null;        // מספר השורה שנמצאת כרגע בעריכת מועד
 let CAL_VIEW = 'list';     // list | day | week | month
 let CAL_REF = new Date();  // התאריך שסביבו מוצג הלוח
 
@@ -841,14 +843,11 @@ function itemChip(it, withTime){
             onclick="openPending(${it.row})">${label}</div>`;
 }
 
+/** לחיצה על פריט בלוח — פותחת אותו בתצוגת הרשימה במצב עריכה */
 window.openPending = (row) => {
-  const it = PENDING.find(x=>x.row===row);
-  if(!it) return;
-  const d = itemDate(it);
-  const info = `${it.name||'—'} · ${it.to}\n${PHASE_HE[it.phase]||it.phase}` +
-    (it.group? ' · '+(GROUP_HE[it.group]||it.group):'') + ` · ${SITE_HE[it.site]||it.site||''}\n` +
-    `מועד: ${it.sendAt.replace('T',' ')}\n\nמה לעשות?\nאישור = שינוי מועד · ביטול = סגירה`;
-  if(confirm(info)) editPending(it.row, it.sendAt);
+  EDITING = row;
+  setCalView('list');
+  setTimeout(()=>{ document.getElementById('ed-date-'+row)?.scrollIntoView({block:'center'}); }, 60);
 };
 
 function renderPending(){
@@ -910,6 +909,23 @@ function renderPending(){
       const when = (it.sendAt||'').replace('T',' · ');
       const dt = it.sendAt ? new Date(it.sendAt) : null;
       const soon = dt && (dt - new Date()) < 24*3600*1000;
+      const [dPart, tPart] = (it.sendAt||'T').split('T');
+      if(EDITING === it.row){
+        return `<div style="padding:12px;margin-bottom:8px;border:2px solid #0d9488;border-radius:10px;background:#f0fdfa;">
+          <div style="font-weight:800;color:#0f172a;margin-bottom:8px;">${it.name||'—'} · ${it.to}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;">
+            <div><label style="margin:0 0 4px;">תאריך</label>
+              <input type="date" id="ed-date-${it.row}" value="${dPart}" style="padding:8px;"></div>
+            <div><label style="margin:0 0 4px;">שעה</label>
+              <input type="time" id="ed-time-${it.row}" value="${tPart}" style="padding:8px;"></div>
+            <button type="button" onclick="saveEdit(${it.row})"
+              style="background:#0d9488;color:#fff;border:none;border-radius:9px;padding:9px 20px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;">✓ שמירה</button>
+            <button type="button" onclick="cancelEdit()"
+              style="background:#fff;border:1px solid #cbd5e1;border-radius:9px;padding:9px 18px;font-size:13px;font-weight:700;color:#64748b;cursor:pointer;font-family:inherit;">ביטול</button>
+          </div>
+          <div id="ed-msg-${it.row}" style="font-size:12px;font-weight:700;color:#dc2626;margin-top:7px;min-height:15px;"></div>
+        </div>`;
+      }
       return `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 12px;margin-bottom:8px;
                    border:1px solid ${soon?'#fde68a':'#e2e8f0'};border-radius:10px;background:${soon?'#fffbeb':'#f8fafc'};">
         <div style="flex:1;min-width:230px;">
@@ -917,7 +933,7 @@ function renderPending(){
           <div style="font-size:12px;color:#64748b;">${PHASE_HE[it.phase]||it.phase} ${it.group?'· '+(GROUP_HE[it.group]||it.group):''} · ${SITE_HE[it.site]||it.site||''}</div>
         </div>
         <div style="font-weight:700;color:#0f766e;white-space:nowrap;">🕒 ${when}</div>
-        <button type="button" onclick="editPending(${it.row},'${it.sendAt}')"
+        <button type="button" onclick="editPending(${it.row})"
           style="background:#e0f2fe;border:1px solid #7dd3fc;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;color:#0369a1;cursor:pointer;font-family:inherit;">✏️ שינוי מועד</button>
         <button type="button" onclick="copyWAFor(${it.row}, this)"
           style="background:#dcfce7;border:1px solid #86efac;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;color:#15803d;cursor:pointer;font-family:inherit;">💬 העתקת וואטסאפ</button>
@@ -980,15 +996,21 @@ window.copyWAFor = (row, btn) => {
   }).catch(()=>{ prompt('העתק ידנית:', txt); });
 };
 
-window.editPending = (row, current) => {
-  const v = prompt('מועד חדש לשליחה (בפורמט YYYY-MM-DDTHH:mm)\nלדוגמה: 2026-12-01T09:00', current||'');
-  if(!v) return;
-  if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v)){ alert('פורמט לא תקין. דוגמה: 2026-12-01T09:00'); return; }
-  if(new Date(v) <= new Date()){ alert('יש לבחור מועד עתידי.'); return; }
+window.editPending = (row) => { EDITING = row; renderPending(); };
+window.cancelEdit  = () => { EDITING = null; renderPending(); };
+
+window.saveEdit = (row) => {
+  const d = document.getElementById('ed-date-'+row).value;
+  const t = document.getElementById('ed-time-'+row).value;
+  const msg = document.getElementById('ed-msg-'+row);
+  if(!d || !t){ msg.textContent = 'יש לבחור תאריך ושעה'; return; }
+  const v = d + 'T' + t;
+  if(new Date(v) <= new Date()){ msg.textContent = 'המועד כבר עבר — יש לבחור מועד עתידי'; return; }
+  msg.textContent = 'שומר…';
   callApi({ mode:'reschedule', row, sendAt:v }).then(res=>{
-    if(res && res.ok){ loadPending(); }
-    else alert('שגיאה: ' + ((res&&res.error)||'לא ידועה'));
-  }).catch(e=>alert('שגיאה: '+e.message));
+    if(res && res.ok){ EDITING = null; loadPending(); }
+    else msg.textContent = 'שגיאה: ' + ((res&&res.error)||'לא ידועה');
+  }).catch(e=>{ msg.textContent = 'שגיאה: '+e.message; });
 };
 
 window.cancelPending = (row, who) => {

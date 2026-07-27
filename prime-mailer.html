@@ -63,6 +63,15 @@
   .btn-schedule { background:#1d4ed8; }
   .btn-schedule:hover { background:#1e40af; }
 
+  .fld-warn { font-size:11.5px; font-weight:700; color:#b45309; margin-top:4px; min-height:14px; }
+  .fld-warn.err { color:#dc2626; }
+  .hist { margin-top:10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:10px 12px; font-size:12px; }
+  .hist .ht { font-weight:800; color:#0f766e; margin-bottom:6px; }
+  .hist .hrow { display:flex; justify-content:space-between; gap:8px; padding:3px 0; border-bottom:1px dashed #e2e8f0; }
+  .hist .hrow:last-child { border-bottom:none; }
+  .lockbar { grid-column:1/-1; display:flex; align-items:center; gap:8px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:8px 14px; font-size:12.5px; font-weight:700; color:#15803d; }
+  .lockbar.changed { background:#fef2f2; border-color:#fca5a5; color:#b91c1c; }
+
   /* ---- לוח שנה של מיילים מתוזמנים ---- */
   .cal-bar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:12px; }
   .cal-view { display:flex; gap:6px; }
@@ -129,20 +138,27 @@
     <button class="phase-tab" id="site-assuta" data-site="assuta" onclick="setSite('assuta')">🏥 אסותא רמת החייל</button>
     <button class="phase-tab" id="site-ichilov" data-site="ichilov" onclick="setSite('ichilov')">🏥 איכילוב</button>
   </div>
+  <div class="phase-tabs" id="group-select" style="margin-top:-8px; display:none;">
+    <button type="button" class="phase-tab" id="grp-control" onclick="setGroup('control')">👥 קבוצת ביקורת</button>
+    <button type="button" class="phase-tab" id="grp-interv" onclick="setGroup('intervention')">💪 קבוצת התערבות</button>
+  </div>
 
   <div class="grid">
     <!-- Inputs -->
     <div class="card">
       <h2>👤 פרטי הנחקר/ת ויום המחקר</h2>
-      <label>שם פרטי</label>
-      <input type="text" id="m-name" placeholder="לדוגמה: קרן" oninput="render()">
+      <label>שם מלא <span style="font-weight:500;color:#94a3b8;">(עברית בלבד · בהודעות יופיע רק השם הפרטי)</span></label>
+      <input type="text" id="m-name" placeholder="לדוגמה: קרן לוי" oninput="cleanName(this); render()">
+      <div id="name-warn" class="fld-warn"></div>
       <label>מין</label>
       <div style="display:flex; gap:8px;">
         <button type="button" class="phase-tab" id="gen-f" onclick="setGender('f')">נקבה</button>
         <button type="button" class="phase-tab" id="gen-m" onclick="setGender('m')">זכר</button>
       </div>
       <label>מייל הנחקר/ת</label>
-      <input type="email" id="m-email" placeholder="name@example.com" oninput="render()">
+      <input type="email" id="m-email" placeholder="name@example.com" oninput="render()" onblur="loadHistory()">
+      <div id="email-warn" class="fld-warn"></div>
+      <div id="hist-box"></div>
       <div class="two">
         <div>
           <label>תאריך יום המחקר</label>
@@ -181,13 +197,6 @@
     <!-- Attachments + group -->
     <div class="card" style="grid-column:1/-1;">
       <h2>📎 קבצים מצורפים ושולח</h2>
-      <div id="group-select" style="display:none; margin-bottom:14px;">
-        <label>קבוצת המחקר (משנה את תוכן המייל)</label>
-        <div style="display:flex; gap:8px;">
-          <button type="button" class="phase-tab" id="grp-control" onclick="setGroup('control')">קבוצת ביקורת</button>
-          <button type="button" class="phase-tab" id="grp-interv" onclick="setGroup('intervention')">קבוצת התערבות</button>
-        </div>
-      </div>
       <div id="attach-list" style="font-size:13px; color:#334155; line-height:2;"></div>
       <div style="font-size:12.5px; color:#64748b; margin-top:10px;">📧 נשלח מהחשבון: <b>primerct2026@gmail.com</b></div>
     </div>
@@ -240,6 +249,8 @@
         </div>
       </details>
     </div>
+
+    <div class="lockbar" id="lockbar">🔒 בודק תבניות…</div>
 
     <div class="notice">
       ✅ המערכת פעילה — מיילים נשלחים מ-<b>primerct2026@gmail.com</b> עם הקבצים המצורפים. תופיע בקשת אישור לפני כל שליחה.
@@ -557,12 +568,36 @@ function loadTemplate(){
   document.getElementById('m-body').value = t.body;
 }
 
+// ===== נעילת תבניות: חתימה שמזהה שינוי לא מכוון =====
+const TEMPLATES_APPROVED = '860e9d1c';        // חתימת התבניות שאושרו
+const TEMPLATES_APPROVED_ON = '27/07/2026';
+function templatesHash(){
+  const src = Object.keys(TEMPLATES).sort().map(k=>k+TEMPLATES[k].subject+TEMPLATES[k].body).join('|')
+            + waTemplate();
+  let h = 0;
+  for(let i=0;i<src.length;i++){ h = (h*31 + src.charCodeAt(i)) | 0; }
+  return (h>>>0).toString(16).padStart(8,'0');
+}
+window.renderLock = function renderLock(){
+  const el = document.getElementById('lockbar');
+  const h = templatesHash();
+  if(h === TEMPLATES_APPROVED){
+    el.className = 'lockbar';
+    el.innerHTML = `🔒 התבניות נעולות ומאושרות (${TEMPLATES_APPROVED_ON}) · לא ניתן לערוך אותן מהמסך`;
+  } else {
+    el.className = 'lockbar changed';
+    el.innerHTML = `⚠️ <b>התבניות שונו מאז האישור</b> — חתימה נוכחית <code>${h}</code> במקום <code>${TEMPLATES_APPROVED}</code>. יש לאשר מחדש לפני שליחה לנחקרים.`;
+  }
+}
+
 function initApp(){
   setGender('f');
   setGroup('control');
   setSite('assuta');   // ברירת מחדל
   loadTemplate();
   render();
+  renderLock();
+  setCalView('list');
   loadPending();
 }
 
@@ -570,7 +605,9 @@ function computeTokens(){
   const name = document.getElementById('m-name').value.trim();
   const dateVal = document.getElementById('m-date').value;
   const timeVal = document.getElementById('m-time').value || '07:00';
-  const map = { 'שם': name || '____' };
+  // בהודעות משתמשים בשם הפרטי בלבד; השם המלא נשמר לזיהוי ברשימות
+  const first = (name || '').trim().split(/\s+/)[0] || '';
+  const map = { 'שם': first || '____' };
   if(!dateVal){ return { map, ok:false }; }
   const [y,m,d] = dateVal.split('-').map(Number);
   const [hh,mm] = timeVal.split(':').map(Number);
@@ -653,10 +690,64 @@ window.render = ()=>{
     : '<span style="color:#b45309;">⚠️ עדיין לא הוגדרו קבצים לשלב/מוקד הזה.</span>';
 
   const to = document.getElementById('m-email').value.trim();
+  const ev = checkEmail(to);
+  const ew = document.getElementById('email-warn');
+  ew.textContent = ev.msg || '';
+  ew.className = 'fld-warn' + (ev.ok ? '' : ' err');
   document.getElementById('pv-to').textContent = 'אל: ' + (to || '—');
   document.getElementById('pv-subject').textContent = substitute(document.getElementById('m-subject').value, map) || '—';
   document.getElementById('pv-body').textContent = substitute(document.getElementById('m-body').value, map) || '—';
   document.getElementById('wa-body').textContent = substitute(waTemplate(), map);
+};
+
+// ===== ולידציה של שם ומייל =====
+/** משאיר בשדה השם אותיות עבריות, רווח, גרש ומקף בלבד */
+window.cleanName = (inp) => {
+  const before = inp.value;
+  const after = before.replace(/[^֐-׿\s'"־-]/g, '');
+  if (after !== before) {
+    const pos = inp.selectionStart - (before.length - after.length);
+    inp.value = after;
+    try { inp.setSelectionRange(pos, pos); } catch(e){}
+    document.getElementById('name-warn').textContent = 'ניתן להזין שם בעברית בלבד';
+    clearTimeout(window.__nameT);
+    window.__nameT = setTimeout(()=>{ document.getElementById('name-warn').textContent=''; }, 2500);
+  }
+};
+
+const DOMAIN_FIX = {
+  'gmial.com':'gmail.com','gmai.com':'gmail.com','gmail.co':'gmail.com','gmaill.com':'gmail.com',
+  'gmail.con':'gmail.com','gmail.cmo':'gmail.com','gnail.com':'gmail.com','gmail.om':'gmail.com',
+  'hotmial.com':'hotmail.com','hotmail.co':'hotmail.com','walla.co':'walla.co.il',
+  'yahoo.co':'yahoo.com','outlok.com':'outlook.com','icloud.co':'icloud.com'
+};
+/** בודק תקינות מייל ומחזיר {ok, msg, suggest} */
+function checkEmail(v){
+  const s = (v||'').trim();
+  if(!s) return { ok:false, msg:'' };
+  if(/[֐-׿]/.test(s)) return { ok:false, msg:'כתובת המייל מכילה אותיות בעברית' };
+  if(/\s/.test(s))              return { ok:false, msg:'כתובת המייל מכילה רווח' };
+  if(!/^[^@]+@[^@]+$/.test(s))  return { ok:false, msg:'כתובת לא תקינה — חייב להופיע @ אחד' };
+  if(!/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(s)) return { ok:false, msg:'כתובת מייל לא תקינה' };
+  const dom = s.split('@')[1].toLowerCase();
+  if(DOMAIN_FIX[dom]) return { ok:true, msg:`האם התכוונת ל-${s.split('@')[0]}@${DOMAIN_FIX[dom]}?`, suggest:true };
+  return { ok:true, msg:'' };
+}
+
+// ===== היסטוריית נחקר =====
+window.loadHistory = () => {
+  const box = document.getElementById('hist-box');
+  const em = document.getElementById('m-email').value.trim();
+  if(!em || !checkEmail(em).ok){ box.innerHTML=''; return; }
+  callApi({ mode:'history', email: em }).then(res=>{
+    if(!res || !res.ok || !res.items || !res.items.length){ box.innerHTML=''; return; }
+    box.innerHTML = `<div class="hist"><div class="ht">📜 היסטוריית הנחקר/ת (${res.items.length})</div>` +
+      res.items.slice(0,6).map(h=>{
+        const what = (PHASE_HE[h.phase]||h.phase) + (h.group&&h.group!=='—' ? ' · '+(GROUP_HE[h.group]||h.group) : '');
+        const extra = h.kind==='תוזמן' && h.sendAt ? ' → ' + h.sendAt.replace('T',' ') : '';
+        return `<div class="hrow"><span>${what}</span><span style="color:#64748b;">${h.kind} ${h.when}${extra}</span></div>`;
+      }).join('') + '</div>';
+  }).catch(()=>{ box.innerHTML=''; });
 };
 
 // ===== בדיקת תאריכים: שבת וחגים =====
@@ -686,6 +777,15 @@ function dateWarnings(info){
     if(h && NO_WORK.test(h)) w.push(`${label} נופל ב${h} (${ddmm(d)})`);
     else if(h) w.push(`${label} נופל ב${h} (${ddmm(d)})`);
   };
+  // --- בדיקות "נראה חשוד" ---
+  const now = new Date();
+  const days = Math.round((info.research - now) / 864e5);
+  if(days < 0)        w.push(`תאריך יום המחקר כבר עבר (לפני ${Math.abs(days)} ימים)`);
+  else if(days < 7)   w.push(`יום המחקר בעוד ${days} ימים — התזכורת המתוזמנת (שבוע לפני) לא תישלח`);
+  if(days > 365)      w.push('התאריך רחוק מאוד (מעל שנה) — אולי טעות בשנה?');
+  const hh = info.research.getHours();
+  if(hh < 6 || hh > 12) w.push(`שעת מחקר חריגה (${pad(hh)}:${pad(info.research.getMinutes())})`);
+
   flag(info.research, 'יום המחקר');
   flag(info.fast, 'תחילת הצום');
   if(PHASE !== 'middle') flag(info.urine, 'איסוף השתן');
@@ -818,6 +918,8 @@ function renderPending(){
         <div style="font-weight:700;color:#0f766e;white-space:nowrap;">🕒 ${when}</div>
         <button type="button" onclick="editPending(${it.row},'${it.sendAt}')"
           style="background:#e0f2fe;border:1px solid #7dd3fc;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;color:#0369a1;cursor:pointer;font-family:inherit;">✏️ שינוי מועד</button>
+        <button type="button" onclick="copyWAFor(${it.row}, this)"
+          style="background:#dcfce7;border:1px solid #86efac;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;color:#15803d;cursor:pointer;font-family:inherit;">💬 העתקת וואטסאפ</button>
         <button type="button" onclick="cancelPending(${it.row},'${(it.name||it.to).replace(/'/g,'')}')"
           style="background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;color:#dc2626;cursor:pointer;font-family:inherit;">🗑 ביטול</button>
       </div>`;
@@ -832,6 +934,49 @@ window.loadPending = () => {
     PENDING = (res.items || []).filter(it=>it.sendAt);
     renderPending();
   }).catch(e=>{ box.textContent = 'שגיאה: ' + e.message; });
+};
+
+/** בונה ומעתיק את הודעת הוואטסאפ עבור מייל מתוזמן קיים */
+window.copyWAFor = (row, btn) => {
+  const it = PENDING.find(x=>x.row===row);
+  if(!it) return;
+  // מועד המחקר: מהנתונים אם קיים, אחרת שבוע אחרי מועד השליחה
+  let r;
+  if(it.researchAt && /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(it.researchAt)) r = new Date(it.researchAt);
+  else r = addDays(new Date(it.sendAt), 7);
+  const fast = new Date(r.getTime() - 12*3600*1000);
+  const first = (it.name||'').trim().split(/\s+/)[0] || '';
+  const withUrine = (it.phase !== 'middle');
+  const site = SITES[it.site] || SITES.assuta;
+  const hhmm = pad(r.getHours())+':'+pad(r.getMinutes());
+  const txt =
+`היי ${first}
+
+תזכורת לקראת יום המחקר שמתקיים ב${WD[r.getDay()]} (${pad(r.getDate())}.${pad(r.getMonth()+1)} בשעה ${hhmm})
+
+לקראת ההגעה, חשוב לוודא:
+
+🥗 יומן אכילה
+* לוודא שיומן האכילה מולא לפי ההנחיות ונשלח
+` + (withUrine ? `
+🧪 איסוף שתן
+* לוודא שאיסוף השתן (24 שעות) בוצע לפי ההנחיות
+* להביא את המיכל ביום המחקר
+` : '') + `
+⏳ צום
+* להתחיל צום בערב שלפני יום המחקר (${pad(fast.getHours())}:${pad(fast.getMinutes())})
+* לאחר מכן – מים בלבד
+
+📍 הגעה
+* להגיע מעט לפני השעה שנקבעה (${site.locationShort}, בשעה ${hhmm})
+* נא לבוא בבגדי ונעלי ספורט
+
+אנחנו כאן לכל שאלה או התייעצות 😊
+נתראה ב${WD[r.getDay()]}🤍`;
+  navigator.clipboard.writeText(txt).then(()=>{
+    const old = btn.textContent; btn.textContent = '✅ הועתק!';
+    setTimeout(()=>{ btn.textContent = old; }, 1800);
+  }).catch(()=>{ prompt('העתק ידנית:', txt); });
 };
 
 window.editPending = (row, current) => {
@@ -868,6 +1013,8 @@ function buildPayload(mode){
     phase: PHASE,
     group: PHASE==='start' ? null : GROUP,
     site: SITE,
+    gender: GENDER,
+    researchAt: (document.getElementById('m-date').value || '') + 'T' + (document.getElementById('m-time').value || ''),
     fileKey: fileKey(),
     from: SENDER,
     to: [document.getElementById('m-email').value.trim()].filter(Boolean),

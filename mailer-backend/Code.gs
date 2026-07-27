@@ -88,6 +88,7 @@ function doPost(e) {
     data.sentBy = v.email;
 
     // --- ניהול מיילים ממתינים ---
+    if (data.mode === 'history')    return json({ ok: true, items: historyFor_(data.email) });
     if (data.mode === 'list')       return json({ ok: true, items: listPending_() });
     if (data.mode === 'cancel')     return json(cancelPending_(data.row));
     if (data.mode === 'reschedule') return json(reschedulePending_(data.row, data.sendAt));
@@ -193,6 +194,26 @@ function logSend_(d, kind) {
 /** פתיחת היומן — הרץ ידנית כדי לקבל את הקישור */
 function openLog() { Logger.log('https://docs.google.com/spreadsheets/d/' + logSheet_().getParent().getId()); }
 
+/** היסטוריית השליחות של נחקר לפי כתובת מייל */
+function historyFor_(email) {
+  const e = String(email || '').toLowerCase().trim();
+  if (!e) return [];
+  const sh = logSheet_();
+  const rows = sh.getDataRange().getValues();
+  const out = [];
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][1]).toLowerCase().indexOf(e) < 0) continue;
+    out.push({
+      when: rows[i][0] instanceof Date
+        ? Utilities.formatDate(rows[i][0], Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm')
+        : String(rows[i][0]),
+      name: rows[i][2], phase: rows[i][3], group: rows[i][4],
+      site: rows[i][5], kind: rows[i][6], sendAt: normSendAt_(rows[i][7])
+    });
+  }
+  return out.reverse();   // החדש ביותר ראשון
+}
+
 // ===================== תזמון =====================
 function queueScheduled_(data) {
   queueSheet_().appendRow([new Date(), data.sendAt, 'pending', JSON.stringify(data)]);
@@ -223,6 +244,8 @@ function listPending_() {
       phase: d.phase || '',
       group: d.group || '',
       site: d.site || '',
+      gender: d.gender || 'f',
+      researchAt: d.researchAt || '',
       subject: d.subject || ''
     });
   }

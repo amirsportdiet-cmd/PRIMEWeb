@@ -54,15 +54,24 @@ function filesFolder_() {
  * זו שכבת האבטחה האמיתית — המפתח הסודי גלוי בקוד העמוד ולכן אינו מספיק לבדו.
  */
 function verifiedEmail_(idToken) {
-  if (!idToken) return null;
-  const res = UrlFetchApp.fetch(
-    'https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=' + FIREBASE_API_KEY,
-    { method: 'post', contentType: 'application/json',
-      payload: JSON.stringify({ idToken: idToken }), muteHttpExceptions: true });
-  if (res.getResponseCode() !== 200) return null;
-  const users = (JSON.parse(res.getContentText()) || {}).users || [];
-  if (!users.length || !users[0].email) return null;
-  return String(users[0].email).toLowerCase();
+  if (!idToken) return { err: 'האסימון לא הגיע לשרת' };
+  var res;
+  try {
+    res = UrlFetchApp.fetch(
+      'https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=' + FIREBASE_API_KEY,
+      { method: 'post', contentType: 'application/json',
+        payload: JSON.stringify({ idToken: idToken }), muteHttpExceptions: true });
+  } catch (e) {
+    return { err: 'הקריאה לגוגל נכשלה (ייתכן שחסרה הרשאה): ' + e };
+  }
+  const code = res.getResponseCode();
+  const txt = res.getContentText();
+  if (code !== 200) {
+    return { err: 'גוגל החזירה ' + code + ' — ' + txt.slice(0, 180) + ' | אורך אסימון: ' + idToken.length };
+  }
+  const users = (JSON.parse(txt) || {}).users || [];
+  if (!users.length || !users[0].email) return { err: 'לא נמצא מייל בתשובה של גוגל' };
+  return { email: String(users[0].email).toLowerCase() };
 }
 
 // ===================== נקודת הכניסה מהעמוד =====================
@@ -71,12 +80,12 @@ function doPost(e) {
     const data = JSON.parse(e.postData.contents);
     if (data.secret !== SECRET) return json({ ok: false, error: 'unauthorized' });
 
-    const email = verifiedEmail_(data.idToken);
-    if (!email) return json({ ok: false, error: 'לא זוהה משתמש מחובר' });
-    if (ALLOWED_EMAILS.indexOf(email) < 0) {
-      return json({ ok: false, error: 'החשבון ' + email + ' אינו מורשה' });
+    const v = verifiedEmail_(data.idToken);
+    if (!v.email) return json({ ok: false, error: 'זיהוי נכשל — ' + v.err });
+    if (ALLOWED_EMAILS.indexOf(v.email) < 0) {
+      return json({ ok: false, error: 'החשבון ' + v.email + ' אינו מורשה' });
     }
-    data.sentBy = email;
+    data.sentBy = v.email;
 
     // --- בדיקת כפילות: אותו נחקר + אותו שלב + אותו סוג שליחה ---
     if (!data.force) {

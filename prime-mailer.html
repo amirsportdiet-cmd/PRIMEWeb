@@ -156,7 +156,7 @@
       <h2>👤 פרטי הנחקר/ת ויום המחקר</h2>
       <label>שם מלא <span style="font-weight:500;color:#94a3b8;">(עברית בלבד · בהודעות יופיע רק השם הפרטי)</span></label>
       <div style="display:flex; gap:8px;">
-        <input type="text" id="m-name" placeholder="לדוגמה: קרן לוי" oninput="cleanName(this); render()"
+        <input type="text" id="m-name" placeholder="לדוגמה: קרן לוי" oninput="cleanName(this); render(); autoCalSearch()"
                onkeydown="if(event.key==='Enter'){event.preventDefault();calSearch();}">
         <button type="button" onclick="calSearch()" title="חיפוש ביומן PRIME"
           style="white-space:nowrap;background:#0d9488;color:#fff;border:none;border-radius:9px;padding:0 16px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;">🔍 מהיומן</button>
@@ -744,25 +744,40 @@ function checkEmail(v){
 }
 
 // ===== חיפוש ביומן PRIME =====
-window.calSearch = () => {
+/** חיפוש אוטומטי בזמן הקלדה — שקט, לא חוסם מילוי ידני */
+let __calT = null, __calLast = '';
+window.autoCalSearch = () => {
+  clearTimeout(__calT);
+  __calT = setTimeout(()=>{
+    const q = document.getElementById('m-name').value.trim();
+    if(q.length < 2 || q === __calLast) return;
+    __calLast = q;
+    calSearch(true);
+  }, 700);
+};
+
+window.calSearch = (auto) => {
   const box = document.getElementById('cal-result');
   const q = document.getElementById('m-name').value.trim();
-  if(!q){ box.innerHTML = '<div class="fld-warn err">יש להזין שם לחיפוש</div>'; return; }
+  if(!q){ if(!auto) box.innerHTML = '<div class="fld-warn err">יש להזין שם לחיפוש</div>'; return; }
   box.innerHTML = '<div class="fld-warn">מחפש ביומן…</div>';
   callApi({ mode:'calendar', name:q }).then(res=>{
-    if(!res || !res.ok){ box.innerHTML = `<div class="fld-warn err">${(res&&res.error)||'שגיאה בחיפוש'}</div>`; return; }
+    if(!res || !res.ok){
+      box.innerHTML = `<div class="fld-warn err">${(res&&res.error)||'שגיאה בחיפוש'} — אפשר להמשיך ולמלא ידנית</div>`;
+      return;
+    }
     const items = res.items || [];
     if(!items.length){
       const s = res.sample || [];
-      box.innerHTML = `<div class="hist" style="background:#fff5f5;border-color:#fca5a5;">
-        <div class="ht" style="color:#b91c1c;">לא נמצא אירוע עבור "${q}"</div>
-        <div class="hrow"><span>יומן</span><span style="color:#64748b;">${res.calendarName||'?'} · ${res.total||0} אירועים עתידיים</span></div>
-        ${s.length ? '<div style="margin-top:6px;font-weight:700;color:#475569;">האירועים הקרובים ביומן — לחץ לבחירה:</div>' +
-          s.map((x,i)=>`<div class="hrow" style="cursor:pointer;" onclick="pickByTitle(${i})">
-              <span>${x.name||x.title}</span><span style="color:#64748b;">${x.loc||''}</span></div>`).join('')
-          : '<div style="margin-top:6px;color:#64748b;">אין אירועים עתידיים ביומן.</div>'}
-      </div>`;
       window.__calSample = s;
+      box.innerHTML = `<div class="hist" style="background:#fffbeb;border-color:#fde68a;">
+        <div class="ht" style="color:#92400e;">לא נמצא אירוע ביומן עבור "${q}"</div>
+        <div style="color:#92400e;font-weight:600;margin-bottom:4px;">אפשר להמשיך ולמלא את הפרטים ידנית — אין חובה לבחור מהיומן.</div>
+        <div class="hrow"><span>יומן</span><span style="color:#64748b;">${res.calendarName||'—'} · ${res.total||0} אירועים עתידיים</span></div>
+        ${s.length ? '<div style="margin-top:6px;font-weight:700;color:#475569;">אירועים קרובים ביומן — לחץ לבחירה:</div>' +
+          s.map((x,i)=>`<div class="hrow" style="cursor:pointer;" onclick="pickByTitle(${i})">
+              <span>${x.name||x.title}</span><span style="color:#64748b;">${x.loc||''}</span></div>`).join('') : ''}
+      </div>`;
       return;
     }
     if(items.length === 1){ applyCalEvent(items[0]); return; }

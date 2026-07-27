@@ -81,8 +81,20 @@ function doPost(e) {
     const data = JSON.parse(e.postData.contents);
     if (data.secret !== SECRET) return json({ ok: false, error: 'unauthorized' });
 
-    // בדיקת גרסה — מאפשרת לוודא שהפריסה מריצה את הקוד העדכני
-    if (data.mode === 'ping') return json({ ok: true, version: CODE_VERSION });
+    // בדיקת גרסה + אבחון יומן (ללא פרטי נחקרים)
+    if (data.mode === 'ping') {
+      var cal = {};
+      try {
+        var c = primeCalendar_();
+        if (c) {
+          cal = { name: c.getName(),
+                  events: c.getEvents(new Date(), new Date(Date.now() + 400 * 24 * 3600 * 1000)).length };
+        } else {
+          cal = { name: null, available: CalendarApp.getAllCalendars().map(function (x) { return x.getName(); }) };
+        }
+      } catch (e) { cal = { error: String(e) }; }
+      return json({ ok: true, version: CODE_VERSION, calendar: cal });
+    }
 
     const v = verifiedEmail_(data.idToken);
     if (!v.email) return json({ ok: false, error: 'זיהוי נכשל — ' + v.err });

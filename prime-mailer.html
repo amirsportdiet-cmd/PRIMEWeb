@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>מערכת מיילים PRIME</title>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -133,7 +136,10 @@
         <div class="sub">גזירה אוטומטית של כל התאריכים מיום המחקר · שליחה מיידית או מתוזמנת</div>
       </div>
     </div>
-    <div class="user"><span id="user-email-display"></span><button onclick="signOut()">התנתק</button></div>
+    <div class="user">
+      <div id="srv-status" style="font-size:11px; opacity:.75; margin-bottom:3px;">בודק חיבור…</div>
+      <span id="user-email-display"></span><button onclick="signOut()">התנתק</button>
+    </div>
   </div>
 
   <div class="phase-tabs">
@@ -608,6 +614,7 @@ function initApp(){
   renderLock();
   setCalView('month');   // ברירת מחדל — פחות עומס
   loadPending();
+  checkServer();
 }
 
 function computeTokens(){
@@ -744,6 +751,23 @@ function checkEmail(v){
 }
 
 // ===== חיפוש ביומן PRIME =====
+/** בדיקת חיבור לשרת + גישה ליומן — מוצג בכותרת */
+const APP_VERSION = 'app-v10';
+window.checkServer = () => {
+  const el = document.getElementById('srv-status');
+  fetch(BACKEND_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify({ mode:'ping', secret: BACKEND_SECRET }) })
+    .then(r=>r.json())
+    .then(res=>{
+      if(!res || !res.ok){ el.textContent = '⚠️ השרת לא הגיב כצפוי'; return; }
+      const c = res.calendar || {};
+      el.textContent = c.name
+        ? `✅ ${APP_VERSION} · ${res.version} · יומן ${c.name} (${c.events} אירועים)`
+        : `⚠️ ${APP_VERSION} · ${res.version} · אין גישה ליומן`;
+    })
+    .catch(()=>{ el.textContent = '⚠️ אין חיבור לשרת'; });
+};
+
 /** חיפוש אוטומטי בזמן הקלדה — שקט, לא חוסם מילוי ידני */
 let __calT = null, __calLast = '';
 window.autoCalSearch = () => {

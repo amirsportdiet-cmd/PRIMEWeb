@@ -347,7 +347,7 @@ const DIARY_RULES = `יש לרשום 3 ימי אכילה מלאים, לא כול
 
 const PARKING = `{{חניה}}`;
 
-const VISIT_HEAD = `{{שם}} [יקר|יקרה],
+const VISIT_HEAD = `{{שם}} [היקר|היקרה],
 לקראת הגעתך ליום מחקר {{מספר_יום}} במסגרת מחקר PRIME,
 הנך [מוזמן|מוזמנת] ליום המחקר בתאריך:
 יום {{יום_מחקר}}, {{תאריך_מחקר}}
@@ -569,7 +569,7 @@ function loadTemplate(){
 }
 
 // ===== נעילת תבניות: חתימה שמזהה שינוי לא מכוון =====
-const TEMPLATES_APPROVED = '860e9d1c';        // חתימת התבניות שאושרו
+const TEMPLATES_APPROVED = '05df96dc';        // חתימת התבניות שאושרו
 const TEMPLATES_APPROVED_ON = '27/07/2026';
 function templatesHash(){
   const src = Object.keys(TEMPLATES).sort().map(k=>k+TEMPLATES[k].subject+TEMPLATES[k].body).join('|')

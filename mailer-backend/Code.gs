@@ -87,6 +87,11 @@ function doPost(e) {
     }
     data.sentBy = v.email;
 
+    // --- ניהול מיילים ממתינים ---
+    if (data.mode === 'list')       return json({ ok: true, items: listPending_() });
+    if (data.mode === 'cancel')     return json(cancelPending_(data.row));
+    if (data.mode === 'reschedule') return json(reschedulePending_(data.row, data.sendAt));
+
     // --- בדיקת כפילות: אותו נחקר + אותו שלב + אותו סוג שליחה ---
     if (!data.force) {
       const dup = findDuplicate_(data);
@@ -193,13 +198,68 @@ function queueScheduled_(data) {
   queueSheet_().appendRow([new Date(), data.sendAt, 'pending', JSON.stringify(data)]);
 }
 
+/** מנרמל את מועד השליחה למחרוזת YYYY-MM-DDTHH:mm */
+function normSendAt_(v) {
+  if (v instanceof Date) {
+    return Utilities.formatDate(v, Session.getScriptTimeZone(), "yyyy-MM-dd'T'HH:mm");
+  }
+  return String(v || '');
+}
+
+/** רשימת המיילים הממתינים לשליחה */
+function listPending_() {
+  const sh = queueSheet_();
+  const rows = sh.getDataRange().getValues();
+  const out = [];
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][2]) !== 'pending') continue;
+    var d = {};
+    try { d = JSON.parse(rows[i][3]) || {}; } catch (e) {}
+    out.push({
+      row: i + 1,
+      sendAt: normSendAt_(rows[i][1]),
+      to: (d.to || []).join(','),
+      name: d.name || '',
+      phase: d.phase || '',
+      group: d.group || '',
+      site: d.site || '',
+      subject: d.subject || ''
+    });
+  }
+  out.sort(function (a, b) { return a.sendAt < b.sendAt ? -1 : 1; });
+  return out;
+}
+
+/** ביטול מייל ממתין */
+function cancelPending_(row) {
+  const sh = queueSheet_();
+  if (!row || row < 2 || row > sh.getLastRow()) return { ok: false, error: 'שורה לא תקינה' };
+  if (String(sh.getRange(row, 3).getValue()) !== 'pending') return { ok: false, error: 'המייל כבר נשלח או בוטל' };
+  sh.getRange(row, 3).setValue('בוטל ' + new Date().toISOString());
+  return { ok: true, cancelled: true };
+}
+
+/** שינוי מועד של מייל ממתין */
+function reschedulePending_(row, sendAt) {
+  const sh = queueSheet_();
+  if (!row || row < 2 || row > sh.getLastRow()) return { ok: false, error: 'שורה לא תקינה' };
+  if (String(sh.getRange(row, 3).getValue()) !== 'pending') return { ok: false, error: 'המייל כבר נשלח או בוטל' };
+  if (!sendAt) return { ok: false, error: 'חסר מועד חדש' };
+  sh.getRange(row, 2).setValue(sendAt);
+  var d = {};
+  try { d = JSON.parse(sh.getRange(row, 4).getValue()) || {}; } catch (e) {}
+  d.sendAt = sendAt;
+  sh.getRange(row, 4).setValue(JSON.stringify(d));
+  return { ok: true, sendAt: sendAt };
+}
+
 function checkScheduled() {
   const sh = queueSheet_();
   const rows = sh.getDataRange().getValues();
   const now = new Date();
   for (let i = 1; i < rows.length; i++) {
-    if (rows[i][2] !== 'pending') continue;
-    if (new Date(rows[i][1]) <= now) {
+    if (String(rows[i][2]) !== 'pending') continue;
+    if (new Date(normSendAt_(rows[i][1])) <= now) {
       try {
         sendMail_(JSON.parse(rows[i][3]));
         sh.getRange(i + 1, 3).setValue('sent ' + new Date().toISOString());

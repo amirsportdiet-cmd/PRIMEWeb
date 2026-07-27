@@ -242,6 +242,15 @@
       <div id="pending-list" style="font-size:13px; color:#64748b;">לחץ "רענון" לטעינת הרשימה…</div>
     </div>
 
+    <!-- Upcoming from calendar -->
+    <div class="card" style="grid-column:1/-1;">
+      <h2>📆 פגישות קרובות מהיומן
+        <button type="button" onclick="loadUpcoming()" style="margin-right:auto; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:8px; padding:5px 12px; font-size:12px; font-weight:700; color:#475569; cursor:pointer; font-family:inherit;">🔄 רענון</button>
+      </h2>
+      <p style="font-size:12px; color:#94a3b8; margin:-6px 0 10px;">כל פגישה ביומן PRIME — גם אם לא נשלח מייל דרך המערכת. אפשר להעתיק תזכורת וואטסאפ או לטעון לטופס.</p>
+      <div id="upcoming-list" style="font-size:13px; color:#64748b;">טוען…</div>
+    </div>
+
     <!-- Actions -->
     <div class="actions" style="flex-direction:column; align-items:stretch;">
       <button class="btn-send" style="font-size:17px; padding:17px;" onclick="sendJob('both')">
@@ -614,6 +623,7 @@ function initApp(){
   renderLock();
   setCalView('month');   // ברירת מחדל — פחות עומס
   loadPending();
+  loadUpcoming();
   checkServer();
 }
 
@@ -752,7 +762,7 @@ function checkEmail(v){
 
 // ===== חיפוש ביומן PRIME =====
 /** בדיקת חיבור לשרת + גישה ליומן — מוצג בכותרת */
-const APP_VERSION = 'app-v13';
+const APP_VERSION = 'app-v14';
 window.checkServer = () => {
   const el = document.getElementById('srv-status');
   fetch(BACKEND_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
@@ -1072,6 +1082,45 @@ window.loadPending = () => {
     PENDING = (res.items || []).filter(it=>it.sendAt);
     renderPending();
   }).catch(e=>{ box.textContent = 'שגיאה: ' + e.message; });
+};
+
+// ===== פגישות קרובות מהיומן =====
+window.loadUpcoming = () => {
+  const box = document.getElementById('upcoming-list');
+  box.textContent = 'טוען…';
+  callApi({ mode:'calendar', name:'' }).then(res=>{
+    if(!res || !res.ok){ box.textContent = 'שגיאה: ' + ((res&&res.error)||'לא ידועה'); return; }
+    const items = (res.items || []).filter(it=>it.start);
+    window.__upcoming = items;
+    if(!items.length){ box.innerHTML = '<span style="color:#94a3b8;">אין פגישות עתידיות ביומן PRIME.</span>'; return; }
+    box.innerHTML = items.map((it,i)=>{
+      const d = new Date(it.start);
+      const soon = (d - new Date()) < 7*24*3600*1000;
+      return `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 12px;margin-bottom:8px;
+                   border:1px solid ${soon?'#fde68a':'#e2e8f0'};border-radius:10px;background:${soon?'#fffbeb':'#f8fafc'};">
+        <div style="flex:1;min-width:220px;">
+          <div style="font-weight:800;color:#0f172a;">${it.name||it.title}</div>
+          <div style="font-size:12px;color:#64748b;">${PHASE_HE[it.phase]||'שלב לא זוהה'} · ${SITE_HE[it.site]||it.location||''}</div>
+        </div>
+        <div style="font-weight:700;color:#0f766e;white-space:nowrap;">📅 יום ${WD[d.getDay()]} · ${pad(d.getDate())}/${pad(d.getMonth()+1)} · ${pad(d.getHours())}:${pad(d.getMinutes())}</div>
+        <button type="button" onclick="copyWAUpcoming(${i}, this)"
+          style="background:#dcfce7;border:1px solid #86efac;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;color:#15803d;cursor:pointer;font-family:inherit;">💬 העתקת וואטסאפ</button>
+        <button type="button" onclick="applyCalEvent(window.__upcoming[${i}]); document.querySelector('.grid').scrollIntoView({block:'start'});"
+          style="background:#e0f2fe;border:1px solid #7dd3fc;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;color:#0369a1;cursor:pointer;font-family:inherit;">📋 טעינה לטופס</button>
+      </div>`;
+    }).join('');
+  }).catch(e=>{ box.textContent = 'שגיאה: ' + e.message; });
+};
+
+window.copyWAUpcoming = (i, btn) => {
+  const ev = (window.__upcoming||[])[i];
+  if(!ev) return;
+  const txt = buildWAFor({ name: ev.name, phase: ev.phase, site: ev.site,
+                           researchAt: ev.start, sendAt: ev.start });
+  navigator.clipboard.writeText(txt).then(()=>{
+    const old = btn.textContent; btn.textContent = '✅ הועתק!';
+    setTimeout(()=>{ btn.textContent = old; }, 1800);
+  }).catch(()=>{ prompt('העתק ידנית:', txt); });
 };
 
 /** בונה את הודעת הוואטסאפ עבור מייל מתוזמן (בלי איסוף שתן ב-T3) */

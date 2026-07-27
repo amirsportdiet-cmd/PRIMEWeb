@@ -92,8 +92,18 @@ function doPost(e) {
 function sendMail_(data) {
   GmailApp.sendEmail(data.to.join(','), data.subject, data.body, {
     name: SENDER_NAME,
+    htmlBody: rtlHtml_(data.body),          // עברית מיושרת לימין
     attachments: attachmentsFor_(data.attachments)
   });
+}
+
+/** עוטף את הטקסט ב-HTML עם כיווניות RTL ויישור לימין */
+function rtlHtml_(text) {
+  var esc = String(text || '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return '<div dir="rtl" style="direction:rtl;text-align:right;unicode-bidi:embed;' +
+         'font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.75;' +
+         'color:#1a1a1a;white-space:pre-wrap;">' + esc + '</div>';
 }
 
 /** מאתר בתיקייה את הקבצים לפי שמם */

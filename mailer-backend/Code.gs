@@ -214,6 +214,97 @@ function historyFor_(email) {
   return out.reverse();   // החדש ביותר ראשון
 }
 
+// ===================== יומן PRIME =====================
+const CALENDAR_NAME = 'PRIME';
+
+function primeCalendar_() {
+  const byName = CalendarApp.getCalendarsByName(CALENDAR_NAME);
+  if (byName.length) return byName[0];
+  // גיבוי: יומן שהשם שלו מכיל PRIME
+  const all = CalendarApp.getAllCalendars();
+  for (var i = 0; i < all.length; i++) {
+    if (all[i].getName().toUpperCase().indexOf('PRIME') >= 0) return all[i];
+  }
+  return null;
+}
+
+/** מזהה שלב מתוך טקסט האירוע: T0 / T3 / T6 */
+function phaseFromText_(t) {
+  const s = String(t || '').toUpperCase();
+  if (/\bT0\b/.test(s)) return 'start';
+  if (/\bT3\b/.test(s)) return 'middle';
+  if (/\bT6\b/.test(s)) return 'end';
+  return '';
+}
+
+/** מזהה מוקד מתוך טקסט: אסותא / איכילוב */
+function siteFromText_(t) {
+  const s = String(t || '');
+  if (s.indexOf('איכילוב') >= 0 || /ichilov|sourasky|tasmc/i.test(s)) return 'ichilov';
+  if (s.indexOf('אסותא') >= 0 || /assuta/i.test(s)) return 'assuta';
+  return '';
+}
+
+/** מחפש ביומן PRIME את האירוע הקרוב שמתאים לשם */
+function lookupCalendar_(name) {
+  const cal = primeCalendar_();
+  if (!cal) return { ok: false, error: 'לא נמצא יומן בשם ' + CALENDAR_NAME };
+  const now = new Date();
+  const end = new Date(now.getTime() + 400 * 24 * 3600 * 1000);
+  const q = String(name || '').trim();
+  const evs = cal.getEvents(now, end);
+  const out = [];
+  for (var i = 0; i < evs.length && out.length < 10; i++) {
+    const ev = evs[i];
+    const title = ev.getTitle() || '';
+    const desc = ev.getDescription() || '';
+    const loc = ev.getLocation() || '';
+    if (q && title.indexOf(q) < 0 && desc.indexOf(q) < 0) continue;
+    var guests = [];
+    try { guests = ev.getGuestList().map(function (g) { return g.getEmail(); }); } catch (e) {}
+    // מייל: מהאורחים, ואם אין — מתוך הכותרת/התיאור
+    var email = guests.filter(function (g) { return ALLOWED_EMAILS.indexOf(String(g).toLowerCase()) < 0; })[0] || '';
+    if (!email) {
+      const m = (title + ' ' + desc).match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/);
+      if (m) email = m[0];
+    }
+    out.push({
+      title: title,
+      start: Utilities.formatDate(ev.getStartTime(), Session.getScriptTimeZone(), "yyyy-MM-dd'T'HH:mm"),
+      location: loc,
+      email: email,
+      phase: phaseFromText_(title + ' ' + desc),
+      site: siteFromText_(title + ' ' + loc + ' ' + desc)
+    });
+  }
+  return { ok: true, items: out };
+}
+
+/** הרץ ידנית — מציג את מבנה 10 האירועים הקרובים ביומן PRIME */
+function scanCalendar() {
+  const cal = primeCalendar_();
+  if (!cal) {
+    Logger.log('❌ לא נמצא יומן בשם PRIME. היומנים הזמינים:');
+    CalendarApp.getAllCalendars().forEach(function (c) { Logger.log('   • ' + c.getName()); });
+    return;
+  }
+  Logger.log('📅 יומן: ' + cal.getName());
+  const now = new Date();
+  const evs = cal.getEvents(now, new Date(now.getTime() + 400 * 24 * 3600 * 1000));
+  Logger.log('נמצאו ' + evs.length + ' אירועים עתידיים. 10 הראשונים:');
+  for (var i = 0; i < Math.min(10, evs.length); i++) {
+    const ev = evs[i];
+    var guests = [];
+    try { guests = ev.getGuestList().map(function (g) { return g.getEmail(); }); } catch (e) {}
+    Logger.log('──────────────');
+    Logger.log('כותרת : ' + ev.getTitle());
+    Logger.log('מתי   : ' + Utilities.formatDate(ev.getStartTime(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm'));
+    Logger.log('מיקום : ' + (ev.getLocation() || '(ריק)'));
+    Logger.log('אורחים: ' + (guests.join(', ') || '(אין)'));
+    Logger.log('תיאור : ' + (ev.getDescription() || '(ריק)').slice(0, 120));
+  }
+}
+
 // ===================== תזמון =====================
 function queueScheduled_(data) {
   queueSheet_().appendRow([new Date(), data.sendAt, 'pending', JSON.stringify(data)]);

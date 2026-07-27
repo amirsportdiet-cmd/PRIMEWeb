@@ -102,7 +102,9 @@
 <!-- ===== AUTH ===== -->
 <div id="auth-screen">
   <div id="auth-box" class="auth-box">
-    <div style="font-size:42px; margin-bottom:12px;">✉️</div>
+    <img src="images/prime/prime_logo.jpeg" alt="PRIME"
+         style="height:70px; width:70px; object-fit:contain; margin-bottom:14px; border-radius:14px;"
+         onerror="this.style.display='none'">
     <h2>מערכת מיילים PRIME</h2>
     <p>כלי פנימי למחקר. יש להתחבר עם חשבון Google מורשה.</p>
     <button class="btn-google" id="btn-signin" onclick="signInWithGoogle()">
@@ -122,9 +124,14 @@
 <!-- ===== APP ===== -->
 <div id="app-screen">
   <div class="app-header">
-    <div>
-      <h1>✉️ מערכת מיילים PRIME</h1>
-      <div class="sub">גזירה אוטומטית של כל התאריכים מיום המחקר · שליחה מיידית או מתוזמנת</div>
+    <div style="display:flex; align-items:center; gap:14px;">
+      <img src="images/prime/prime_logo.jpeg" alt="PRIME"
+           style="height:52px; width:52px; object-fit:contain; background:#fff; border-radius:12px; padding:5px; flex-shrink:0;"
+           onerror="this.style.display='none'">
+      <div>
+        <h1>מערכת מיילים PRIME</h1>
+        <div class="sub">גזירה אוטומטית של כל התאריכים מיום המחקר · שליחה מיידית או מתוזמנת</div>
+      </div>
     </div>
     <div class="user"><span id="user-email-display"></span><button onclick="signOut()">התנתק</button></div>
   </div>
@@ -186,7 +193,7 @@
 
     <!-- Preview -->
     <div class="card" style="grid-column:1/-1;">
-      <h2>👁 תצוגה מקדימה (עם התאריכים שחושבו)</h2>
+      <h2>👁 תצוגה מקדימה למייל (עם התאריכים שחושבו)</h2>
       <div class="preview">
         <div class="pv-to" id="pv-to">אל: —</div>
         <div class="pv-subject" id="pv-subject">—</div>
@@ -250,11 +257,7 @@
       </details>
     </div>
 
-    <div class="lockbar" id="lockbar">🔒 בודק תבניות…</div>
-
-    <div class="notice">
-      ✅ המערכת פעילה — מיילים נשלחים מ-<b>primerct2026@gmail.com</b> עם הקבצים המצורפים. תופיע בקשת אישור לפני כל שליחה.
-    </div>
+    <div class="lockbar" id="lockbar" style="display:none;"></div>
     <div id="send-status"></div>
   </div>
 </div>
@@ -582,9 +585,9 @@ window.renderLock = function renderLock(){
   const el = document.getElementById('lockbar');
   const h = templatesHash();
   if(h === TEMPLATES_APPROVED){
-    el.className = 'lockbar';
-    el.innerHTML = `🔒 התבניות נעולות ומאושרות (${TEMPLATES_APPROVED_ON}) · לא ניתן לערוך אותן מהמסך`;
+    el.style.display = 'none';        // הכל תקין — אין צורך להציג
   } else {
+    el.style.display = 'flex';
     el.className = 'lockbar changed';
     el.innerHTML = `⚠️ <b>התבניות שונו מאז האישור</b> — חתימה נוכחית <code>${h}</code> במקום <code>${TEMPLATES_APPROVED}</code>. יש לאשר מחדש לפני שליחה לנחקרים.`;
   }

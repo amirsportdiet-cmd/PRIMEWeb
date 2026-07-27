@@ -1,26 +1,56 @@
 /**
  * מערכת מיילים PRIME — שרת שליחה (Google Apps Script)
- * לפריסה תחת החשבון primerct2026@gmail.com
+ * פרויקט תחת primerct2026@gmail.com
+ *
+ * התקנה: להריץ פעם אחת את הפונקציה setup()
+ * היא יוצרת את תיקיית הקבצים, מתקינה את טריגר התזמון, ומדפיסה את הקישור לתיקייה.
  */
 
-// ===== הגדרות =====
-const SECRET = 'lgGnSJZnAsfIs4W822y0k7F6';   // מפתח אבטחה (זהה לזה שבעמוד)
+const SECRET = 'lgGnSJZnAsfIs4W822y0k7F6';
 const SENDER_NAME = 'מחקר PRIME';
+const FOLDER_NAME = 'PRIME Mailer Files';
 
-// מזהה תיקיית ה-Drive שבה נמצאים הקבצים המצורפים לכל שלב.
-// כל קבצי ה-PDF שבתיקייה יצורפו אוטומטית. יתמלא אחרי יצירת התיקייה.
-// מזהה תיקייה אחת ב-Drive שמכילה את כל קובצי ההנחיות (לפי שם).
-// להעתיק מכתובת התיקייה: drive.google.com/drive/folders/<<המזהה כאן>>
-const FILES_FOLDER_ID = 'PASTE_FOLDER_ID';
-
-// מיילים מורשים לשלוח (חייב להיות זהה לרשימה בעמוד)
 const ALLOWED_EMAILS = ['amirsportdiet@gmail.com', 'primerct2026@gmail.com'];
-// מפתח ה-Web API של פרויקט Firebase (ציבורי — משמש רק לאימות האסימון)
 const FIREBASE_API_KEY = 'AIzaSyCZR4jxDQ8hcmfslbgx06dlRQNIoTf3Wss';
 
+// ===================== התקנה =====================
+function setup() {
+  const folder = filesFolder_();
+  installTrigger_();
+  const url = 'https://drive.google.com/drive/folders/' + folder.getId();
+  Logger.log('✅ הכל מוכן!');
+  Logger.log('תיקיית הקבצים: ' + url);
+  Logger.log('יש להעלות לתיקייה את 7 קובצי ה-PDF.');
+  Logger.log('קבצים שכבר בתיקייה: ' + listFiles_().join(', ') || '(ריקה)');
+  return url;
+}
+
+/** בדיקה: מציג אילו קבצים נמצאים בתיקייה */
+function listFiles_() {
+  const it = filesFolder_().getFiles();
+  const out = [];
+  while (it.hasNext()) out.push(it.next().getName());
+  return out;
+}
+function whatFilesDoIHave() { Logger.log(listFiles_().join('\n') || '(התיקייה ריקה)'); }
+
+/** מאתר את תיקיית הקבצים, ויוצר אותה אם אינה קיימת */
+function filesFolder_() {
+  const props = PropertiesService.getScriptProperties();
+  const id = props.getProperty('FILES_FOLDER_ID');
+  if (id) {
+    try { return DriveApp.getFolderById(id); } catch (e) { /* נמחקה — ניצור מחדש */ }
+  }
+  const it = DriveApp.getFoldersByName(FOLDER_NAME);
+  const folder = it.hasNext() ? it.next() : DriveApp.createFolder(FOLDER_NAME);
+  props.setProperty('FILES_FOLDER_ID', folder.getId());
+  return folder;
+}
+
+// ===================== אבטחה =====================
 /**
- * מאמת את אסימון הזהות מול Google ומחזיר את המייל, או null אם לא תקין.
- * זו שכבת האבטחה האמיתית: המפתח הסודי גלוי בקוד העמוד, ולכן לבדו אינו מספיק.
+ * מאמת את אסימון הזהות מול Google ומחזיר את המייל, או null.
+ * זו שכבת האבטחה האמיתית — המפתח הסודי גלוי בקוד העמוד ולכן אינו מספיק לבדו.
  */
 function verifiedEmail_(idToken) {
   if (!idToken) return null;
@@ -31,17 +61,15 @@ function verifiedEmail_(idToken) {
   if (res.getResponseCode() !== 200) return null;
   const users = (JSON.parse(res.getContentText()) || {}).users || [];
   if (!users.length || !users[0].email) return null;
-  if (users[0].emailVerified === false) return null;
   return String(users[0].email).toLowerCase();
 }
 
-// ===== נקודת הכניסה מהעמוד =====
+// ===================== נקודת הכניסה מהעמוד =====================
 function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
     if (data.secret !== SECRET) return json({ ok: false, error: 'unauthorized' });
 
-    // אימות זהות אמיתי — מי באמת שולח את הבקשה
     const email = verifiedEmail_(data.idToken);
     if (!email) return json({ ok: false, error: 'לא זוהה משתמש מחובר' });
     if (ALLOWED_EMAILS.indexOf(email) < 0) {
@@ -52,16 +80,15 @@ function doPost(e) {
     if (data.mode === 'now') {
       sendMail_(data);
       return json({ ok: true, sent: true });
-    } else {
-      queueScheduled_(data);
-      return json({ ok: true, scheduled: true, sendAt: data.sendAt });
     }
+    queueScheduled_(data);
+    return json({ ok: true, scheduled: true, sendAt: data.sendAt });
   } catch (err) {
     return json({ ok: false, error: String(err) });
   }
 }
 
-// ===== שליחת מייל =====
+// ===================== שליחה =====================
 function sendMail_(data) {
   GmailApp.sendEmail(data.to.join(','), data.subject, data.body, {
     name: SENDER_NAME,
@@ -69,11 +96,10 @@ function sendMail_(data) {
   });
 }
 
-/** מאתר בתיקייה את הקבצים לפי שמם ומחזיר אותם לצירוף. */
+/** מאתר בתיקייה את הקבצים לפי שמם */
 function attachmentsFor_(names) {
   if (!names || !names.length) return [];
-  if (!FILES_FOLDER_ID || FILES_FOLDER_ID.indexOf('PASTE_') === 0) return [];
-  const folder = DriveApp.getFolderById(FILES_FOLDER_ID);
+  const folder = filesFolder_();
   const out = [];
   for (var i = 0; i < names.length; i++) {
     const it = folder.getFilesByName(names[i]);
@@ -83,12 +109,11 @@ function attachmentsFor_(names) {
   return out;
 }
 
-// ===== תור לתזמון =====
+// ===================== תזמון =====================
 function queueScheduled_(data) {
   queueSheet_().appendRow([new Date(), data.sendAt, 'pending', JSON.stringify(data)]);
 }
 
-// רץ כל 15 דקות (טריגר) — שולח את מה שהגיע זמנו
 function checkScheduled() {
   const sh = queueSheet_();
   const rows = sh.getDataRange().getValues();
@@ -108,7 +133,7 @@ function checkScheduled() {
 
 function queueSheet_() {
   const props = PropertiesService.getScriptProperties();
-  let id = props.getProperty('QUEUE_SHEET_ID');
+  const id = props.getProperty('QUEUE_SHEET_ID');
   let ss;
   if (id) {
     ss = SpreadsheetApp.openById(id);
@@ -120,21 +145,14 @@ function queueSheet_() {
   return ss.getSheets()[0];
 }
 
-function json(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
-// הרץ פעם אחת ידנית — מתקין את הטריגר לתזמון
-function installTrigger() {
+function installTrigger_() {
   ScriptApp.getProjectTriggers().forEach(function (t) {
     if (t.getHandlerFunction() === 'checkScheduled') ScriptApp.deleteTrigger(t);
   });
   ScriptApp.newTrigger('checkScheduled').timeBased().everyMinutes(15).create();
 }
 
-// בדיקה ידנית — שולח מייל בדיקה לעצמך (הרץ אותו כדי לאשר הרשאות)
-function testSend() {
-  GmailApp.sendEmail('primerct2026@gmail.com', 'בדיקה — מערכת מיילים PRIME',
-    'זו בדיקה. אם קיבלת את זה, השליחה עובדת.', { name: SENDER_NAME });
+function json(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
 }

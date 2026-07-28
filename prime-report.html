@@ -1663,6 +1663,13 @@ window.generateReport = () => {
   const walkRef  = walkPred !== null ? walkPred : walkExp.mean;   // צפי אישי אם יש BMI, אחרת ממוצע הקבוצה
   const tWalk = tagGte(D.walkE, walkRef * 0.85);
 
+  // הערה 41 — בעמוד ההשוואה: האם השינוי עבר את סף השינוי המשמעותי של אותו מבחן
+  const mSig = (s, e, mdc) => {
+    const a = +s, b = +e;
+    if (!isFinite(a) || !isFinite(b) || (!a && !b)) return '';
+    return sigTag(b - a, mdc, Math.abs(b - a) < 1e-9);
+  };
+
   // הערה 36 — "להמשך הדרך": עד 3 נקודות, נבחרות לפי החולשות בפועל, לפי סדר חשיבות קלינית
   const nextSteps = (() => {
     const c = [];
@@ -1913,7 +1920,8 @@ ${dateBarEnd}
         <div class="bar bar-hi-good"><div class="mark" style="right:${markPos(hgMaxE, 0, 70)}%;"></div></div>
         <div class="scale"><span>חולשה</span><span>טווח תקין</span><span>כוח גבוה</span></div>
       </div>
-      <div class="note">${hgNote} ${tHg}</div>
+      <div class="note">${hgNote} ${tHg}
+        <div class="ref">ספי חולשה: Cruz-Jentoft AJ et al., EWGSOP2, Age Ageing 2019;48:16-31 · סף שינוי משמעותי: Bohannon RW, J Phys Ther Sci 2019;31:75-78</div></div>
     </div>
     <div class="card">
       <div class="label">סוללת מבחנים קצרה להערכת התפקוד הגופני&nbsp;<span class="nb">(SPPB)</span></div>
@@ -1925,7 +1933,8 @@ ${dateBarEnd}
         <div class="bar bar-hi-good"><div class="mark" style="right:${markPos(D.sppbE, 0, 12)}%;"></div></div>
         <div class="scale"><span>0 · מוגבל</span><span>סיכון</span><span>12 · מצוין</span></div>
       </div>
-      <div class="note">ציון ≥10 = תפקוד טוב; ≤8 = סיכון לירידה תפקודית · ממוצע לגיל ${sppbNorm.age} (${sex==='m'?'גברים':'נשים'}): ${n(sppbNorm.mean,1)} מתוך 12 ${tSppb}</div>
+      <div class="note">ציון ≥10 = תפקוד טוב; ≤8 = סיכון לירידה תפקודית · ממוצע לגיל ${sppbNorm.age} (${sex==='m'?'גברים':'נשים'}): ${n(sppbNorm.mean,1)} מתוך 12 ${tSppb}
+        <div class="ref">ספי פרשנות: Guralnik JM et al., J Gerontol 1994;49:M85-94 · ערכי ייחוס לפי גיל: Bergland A &amp; Strand BH, BMC Geriatr 2019;19:216 (Tromsø) · סף שינוי משמעותי: Perera S et al., J Am Geriatr Soc 2006;54:743-9</div></div>
     </div>
     <div class="card">
       <div class="label">קימה מכיסא ב-30 שניות&nbsp;<span class="nb">(30s STS)</span></div>
@@ -1937,7 +1946,8 @@ ${dateBarEnd}
         <div class="bar bar-hi-good"><div class="mark" style="right:${markPos(D.stsE, 0, 25)}%;"></div></div>
         <div class="scale"><span>נמוך</span><span>טווח תקין</span><span>גבוה</span></div>
       </div>
-      <div class="note">${stsNote} ${tSts}</div>
+      <div class="note">${stsNote} ${tSts}
+        <div class="ref">Rikli RE &amp; Jones CJ, Senior Fitness Test, J Aging Phys Act 1999;7:129-161</div></div>
     </div>
     <div class="card">
       <div class="label">מבחן הליכה 2 דקות&nbsp;<span class="nb" dir="ltr">(2-min walk)</span></div>
@@ -1949,7 +1959,8 @@ ${dateBarEnd}
         <div class="bar bar-hi-good"><div class="mark" style="right:${markPos(D.walkE, 0, 250)}%;"></div></div>
         <div class="scale"><span>נמוך</span><span>טווח תקין</span><span>גבוה</span></div>
       </div>
-      <div class="note">תקין (גיל ${walkExp.band}): ${sex==='m'?'גברים':'נשים'} ${n(walkExp.lo,0)}–${n(walkExp.hi,0)} מ׳${walkPred !== null ? ` · צפי אישי לפי גיל ו-BMI: ~${n(walkPred,0)} מ׳` : ''} ${tWalk}</div>
+      <div class="note">תקין (גיל ${walkExp.band}): ${sex==='m'?'גברים':'נשים'} ${n(walkExp.lo,0)}–${n(walkExp.hi,0)} מ׳${walkPred !== null ? ` · צפי אישי לפי גיל ו-BMI: ~${n(walkPred,0)} מ׳` : ''} ${tWalk}
+        <div class="ref">Bohannon RW, Wang YC &amp; Gershon RC, Arch Phys Med Rehabil 2015;96:472-7 (NIH Toolbox)</div></div>
     </div>
   </div>
   <div class="summary">המטרה אינה רק לרדת במשקל, אלא גם לשמור על ה<b>כוח, העצמאות והניידות</b>. שמירה או שיפור של הערכים האלה לאורך המחקר הם סימן מצוין לכך שירידת המשקל מגיעה מהמקום הנכון.</div>
@@ -2171,7 +2182,7 @@ ${dateBarCmp}
           ${cHgR}
           <div class="cside"><div class="ct">סוף</div><div class="cv e">${n(D.hgrE,1)}<span class="ex">ק״ג</span></div></div>
         </div>
-        <div class="cinterp">${iHgR}</div>
+        <div class="cinterp">${iHgR}${mSig(D.hgrS, D.hgrE, NORMS.mdc.hg)}</div>
       </div>
       <div class="ccard">
         <div class="cl">כוח לפיתה, יד שמאל</div>
@@ -2180,7 +2191,7 @@ ${dateBarCmp}
           ${cHgL}
           <div class="cside"><div class="ct">סוף</div><div class="cv e">${n(D.hglE,1)}<span class="ex">ק״ג</span></div></div>
         </div>
-        <div class="cinterp">${iHgL}</div>
+        <div class="cinterp">${iHgL}${mSig(D.hglS, D.hglE, NORMS.mdc.hg)}</div>
       </div>
       <div class="ccard">
         <div class="cl">סוללת מבחנים קצרה <span dir="ltr">(SPPB)</span></div>
@@ -2189,7 +2200,7 @@ ${dateBarCmp}
           ${cSppb}
           <div class="cside"><div class="ct">סוף</div><div class="cv e">${D.sppbE}<span class="ex">/12</span></div></div>
         </div>
-        <div class="cinterp">${iSppb}</div>
+        <div class="cinterp">${iSppb}${mSig(D.sppbS, D.sppbE, NORMS.mdc.sppb)}</div>
       </div>
       <div class="ccard">
         <div class="cl">קימה מכיסא <span dir="ltr">(30s STS)</span></div>
@@ -2198,7 +2209,7 @@ ${dateBarCmp}
           ${cSts}
           <div class="cside"><div class="ct">סוף</div><div class="cv e">${D.stsE}<span class="ex">חזרות</span></div></div>
         </div>
-        <div class="cinterp">${iSts}</div>
+        <div class="cinterp">${iSts}${mSig(D.stsS, D.stsE, NORMS.mdc.sts)}</div>
       </div>
       <div class="ccard">
         <div class="cl">הליכה 2 דקות <span dir="ltr">(2-min walk)</span></div>
@@ -2207,7 +2218,7 @@ ${dateBarCmp}
           ${cWalk}
           <div class="cside"><div class="ct">סוף</div><div class="cv e">${D.walkE}<span class="ex">מטר</span></div></div>
         </div>
-        <div class="cinterp">${iWalk}</div>
+        <div class="cinterp">${iWalk}${mSig(D.walkS, D.walkE, NORMS.mdc.walk)}</div>
       </div>
     </div>
   </div>

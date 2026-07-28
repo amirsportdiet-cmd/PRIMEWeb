@@ -213,7 +213,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
 .sheet2 .grid2{ flex:1; grid-auto-rows:1fr; }
 .sheet2 .card{ display:flex; flex-direction:column; }
 .sheet2 .card .bar-wrap{ margin-top:auto; }
-.ill{ display:flex; justify-content:center; align-items:center; margin:12px 0 6px; }
+.ill{ display:flex; justify-content:center; align-items:center; margin:8px auto 2px; width:100%; }
 .ill svg{ height:60px; width:auto; }
 .ill .photo{ height:120px; width:auto; max-width:100%; object-fit:contain; border-radius:8px; }
 .card{ border:1px solid var(--line); border-radius:12px; padding:7px 14px 6px; background:#fff; }
@@ -376,6 +376,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
   .agenote { font-size:8.5px; margin-top:2px; }
   .foot { margin-top:4px; padding-top:6px; font-size:10px; }
   /* Page 2 */
+  .ill { margin:5px auto 1px; }
   .ill .photo { height:90px; }
   .summary { padding:10px 16px; font-size:11.5px; margin-top:12px; }
 }
@@ -1623,7 +1624,7 @@ window.generateReport = () => {
   <p>בדוח זה מרוכזות תוצאות הבדיקות שביצעת: <b>חילוף חומרים במנוחה</b> (QNRG), <b>הרכב גוף</b> (InBody),
      <b>מדידות גוף והיקפים</b> ו<b>בדיקות תפקודיות</b>.</p>
   <p>הערכים המוצגים בעמודים 1–2 הם מהבדיקה <b>האחרונה</b> שביצעת${D.dateE ? ` (${D.dateE})` : ''},
-     ובעמוד האחרון מוצגת <b>השוואה מלאה בין הבדיקה בכניסה למחקר${D.dateS ? ` (${D.dateS})` : ''} לבין הבדיקה האחרונה</b> —
+     ובעמוד האחרון מוצגת <b>השוואה מלאה בין הבדיקה בכניסה למחקר${D.dateS ? ` (${D.dateS})` : ''} לבין הבדיקה האחרונה</b>,
      כדי לראות את המגמה והשינוי לאורך המחקר.</p>
 </div>
 
@@ -1638,14 +1639,14 @@ window.generateReport = () => {
 <div class="qbanner">
   <div class="qb-icon">⚠️</div>
   <div>
-    <div class="qb-t">חוק הרבע — למה זה הלב של המחקר</div>
-    <div class="qb-b">בירידה במשקל <b>ללא אימוני כוח</b>, בממוצע כ-<b>25% מהמשקל היורד מגיע מהמסה נטולת השומן</b> — כלומר משריר ולא משומן.
+    <div class="qb-t">חוק הרבע, למה זה הלב של המחקר</div>
+    <div class="qb-b">בירידה במשקל <b>ללא אימוני כוח</b>, בממוצע כ-<b>25% מהמשקל היורד מגיע מהמסה נטולת השומן</b>, כלומר משריר ולא משומן.
       לכן השילוב של <b>חלבון ואימוני כוח</b> במחקר נועד לשמר את השריר ולוודא שהירידה מגיעה מהמקום הנכון.</div>
   </div>
 </div>
 
 <div class="section">
-  <div class="sec-head"><div class="sec-num">1</div><h2>בדיקת חילוף חומרים במנוחה במכשיר ה-QNRG — או במילים אחרות: כמה אנרגיה הגוף שלך שורף/מוציא במנוחה ביממה?</h2></div>
+  <div class="sec-head"><div class="sec-num">1</div><h2>בדיקת חילוף חומרים במנוחה במכשיר ה-QNRG, או במילים אחרות: כמה אנרגיה הגוף שלך שורף/מוציא במנוחה ביממה?</h2></div>
   <div class="lead">הבדיקה מודדת, באמצעות מסכה ובמנוחה, כמה <b>חמצן</b> הגוף צורך וכמה <b>פחמן דו-חמצני</b> הוא פולט, ומתוך זה מחושב במדויק כמה קלוריות הגוף שלך שורף, ואיזה "דלק" הוא מעדיף.</div>
   <div class="grid">
     <div class="card">
@@ -1677,7 +1678,7 @@ window.generateReport = () => {
         <div class="a" style="width:${fatBurnWidth}%;">שומן ${fatBurnWidth}%</div>
         <div class="b" style="width:${chBurnWidth}%;">פחמימה ${chBurnWidth}%</div>
       </div>
-      <div class="desc">תמהיל מטבולי הנגזר מ-RER. ${fatBurnWidth >= 60 ? 'שריפת שומן כמקור עיקרי — תמהיל בריא.' : 'תמהיל מטבולי בהתאם לערכי RER.'}</div>
+      <div class="desc">תמהיל מטבולי הנגזר מ-RER. ${fatBurnWidth >= 60 ? 'שריפת שומן כמקור עיקרי, תמהיל בריא.' : 'תמהיל מטבולי בהתאם לערכי RER.'}</div>
     </div>
   </div>
 </div>
@@ -1761,12 +1762,12 @@ window.generateReport = () => {
         <span class="tag ${wtLossPct >= 5 ? 'ok' : 'warn'}">${wtLossPct >= 5 ? 'ירידה משמעותית' : 'פחות מ-5%'}</span></div>
     </div>
     <div class="lb-item">
-      <div class="lb-l">מתוך הירידה — מהמסה נטולת השומן</div>
+      <div class="lb-l">מתוך הירידה, מהמסה נטולת השומן</div>
       <div class="lb-v">${ffmShare === null ? '—' : n(Math.max(0,ffmShare),0) + '%'}</div>
       <div class="lb-s">${ffmShare === null ? '' :
           (ffmShare <= 25
             ? '<span class="tag ok">שמירה טובה על המסה נטולת השומן</span>'
-            : '<span class="tag warn">מעל 25% — כדאי לחזק אימוני כוח וחלבון</span>')}</div>
+            : '<span class="tag warn">מעל 25%, כדאי לחזק אימוני כוח וחלבון</span>')}</div>
     </div>
   </div>` : ''}
   <div class="ref" style="margin-top:4px;">* החישוב מבוסס על FFM (מסה נטולת שומן) ממכשיר ה-InBody.</div>
@@ -1801,7 +1802,7 @@ window.generateReport = () => {
       <div class="desc">הבדיקה מתבצעת באמצעות מכשיר <b>דינמומטר JAMAR</b>. נמדד כוח הלפיתה של כף היד, ומוצג <b>הערך הגבוה ביותר</b> שנמדד בכל יד. זהו מדד אמין לכוח השרירים בכל הגוף, וירידה בו עשויה להעיד על מצב של אובדן כוח, תפקוד ומסת שריר (מצב הקרוי <b>סרקופניה</b>).</div>
       <div class="ill"><img class="photo" src="images/prime/hg.png" alt="כוח לפיתה" onerror="this.style.display='none'"></div>
       <div class="bar-wrap">
-        <div class="bar simple"><div class="zone" style="right:25%;left:0;"></div><div class="mark" style="right:${markPos(hgMaxE, 0, 70)}%;"></div></div>
+        <div class="bar bar-hi-good"><div class="mark" style="right:${markPos(hgMaxE, 0, 70)}%;"></div></div>
         <div class="scale"><span>חולשה</span><span>טווח תקין</span><span>כוח גבוה</span></div>
       </div>
       <div class="note">${hgNote} ${tHg}</div>
@@ -1810,7 +1811,7 @@ window.generateReport = () => {
       <div class="label">סוללת מבחנים קצרה להערכת התפקוד הגופני&nbsp;<span class="nb">(SPPB)</span></div>
       <div class="val"><span dir="ltr">${D.sppbE} <small>/ 12</small></span></div>
       ${since(D.sppbS, D.sppbE, "", 0)}
-      <div class="desc">מבחן משולב משלושה חלקים: שיווי משקל, מהירות הליכה, ויכולת לקום מכיסא. 0–12, ככל שגבוה יותר — תפקוד טוב יותר.</div>
+      <div class="desc">מבחן משולב משלושה חלקים: שיווי משקל, מהירות הליכה, ויכולת לקום מכיסא. <b>טווח הציונים במבחן זה: 0–12</b>, ככל שגבוה יותר, כך התפקוד טוב יותר.</div>
       <div class="ill"><img class="photo" src="images/prime/sppb.png" alt="SPPB" onerror="this.style.display='none'"></div>
       <div class="bar-wrap">
         <div class="bar simple"><div class="zone" style="right:20%;left:0;"></div><div class="mark" style="right:${markPos(D.sppbE, 0, 12)}%;"></div></div>
@@ -2055,7 +2056,7 @@ window.generateReport = () => {
     <div class="csub">בדיקות תפקודיות</div>
     <div class="cgrid g4">
       <div class="ccard">
-        <div class="cl">כוח לפיתה — יד ימין</div>
+        <div class="cl">כוח לפיתה, יד ימין</div>
         <div class="crow">
           <div class="cside"><div class="ct">התחלה</div><div class="cv s">${n(D.hgrS,1)}<span class="ex">ק״ג</span></div></div>
           ${cHgR}
@@ -2064,7 +2065,7 @@ window.generateReport = () => {
         <div class="cinterp">${iHgR}</div>
       </div>
       <div class="ccard">
-        <div class="cl">כוח לפיתה — יד שמאל</div>
+        <div class="cl">כוח לפיתה, יד שמאל</div>
         <div class="crow">
           <div class="cside"><div class="ct">התחלה</div><div class="cv s">${n(D.hglS,1)}<span class="ex">ק״ג</span></div></div>
           ${cHgL}

@@ -240,6 +240,9 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
 .refbox .items{ display:grid; grid-template-columns:1fr 1fr; gap:1px 18px; line-height:1.38; }
 .refbox .items b{ color:var(--navy); }
 .agenote{ font-size:9.5px; color:#94a3b8; margin-top:4px; line-height:1.4; }
+/* עמוד הרכב הגוף — תוכן בגודלו הטבעי, אך הכותרת התחתונה נדחפת לתחתית הדף */
+.sheet1b{ min-height:1010px; display:flex; flex-direction:column; }
+.sheet1b .foot{ margin-top:auto; }
 .sheet2{ min-height:1010px; display:flex; flex-direction:column; }
 .sheet2 .section{ flex:1; display:flex; flex-direction:column; }
 .sheet2 .grid2{ flex:1; grid-auto-rows:1fr; }
@@ -421,6 +424,53 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
   .next-i { font-size:11px; line-height:1.5; margin-bottom:4px; }
   .next-n { width:15px; height:15px; font-size:9px; }
   .next-f { font-size:8.5px; padding-top:4px; }
+  /* ---- מעבר דחיסה ----
+     הערה 44 הגדילה את כל הטקסט שהנחקר קורא, ולכן צומצם המרווח סביבו:
+     כותרות, לוגו, ריווחי רשת ותמונות ההמחשה. אף גודל גופן של תוכן לא הוקטן. */
+  .head { padding-bottom:5px; margin-bottom:3px; }
+  .logo { height:46px; }
+  .head-txt h1 { font-size:20px; }
+  .head-txt .sub { font-size:11px; margin-top:2px; }
+  .head-badge { font-size:10px; padding:5px 12px; }
+  .sec-num { width:26px; height:26px; font-size:14px; border-radius:7px; }
+  .sec-head { margin-bottom:2px; gap:8px; }
+  .sec-head h2 { font-size:14.5px; }
+  .intro { padding:6px 11px; margin-bottom:4px; line-height:1.42; }
+  .intro p { margin-bottom:2px; }
+  .ptbar { margin-bottom:4px; }
+  .qbanner { padding:5px 10px; margin-bottom:4px; }
+  .card { padding:3px 10px; }
+  .card .val { font-size:17px; margin:0; }
+  .grid, .grid2 { gap:8px; }
+  .ill { margin:3px auto 0; }
+  .ill .photo { height:66px; }
+  .refbox { columns:2; column-gap:14px; padding:4px 9px; }
+  .lossbox { margin:4px 0 3px; }
+  .lossbox .lb-v { font-size:16px; }
+  .statrow5 .stat { padding:4px 7px; }
+  .statrow5 .stat .v { font-size:15px; }
+  .dual .dv { font-size:16px; }
+  .since { margin:2px 0 1px; padding:2px 7px; }
+  .summary { padding:6px 12px; font-size:10.5px; margin-top:6px; }
+  /* עמוד ההשוואה */
+  .csub { margin:4px 0 2px; font-size:11.5px; }
+  .cgrid { gap:5px; }
+  .ccard { padding:3px 7px; }
+  .ccard .cl { margin-bottom:3px; min-height:17px; font-size:10px; }
+  .cv.s { font-size:12px; }
+  .cv.e { font-size:15px; }
+  .cv .ex { font-size:8px; margin-top:1px; }
+  .cinterp { margin-top:2px; padding-top:2px; }
+  .clegend { font-size:9.5px; margin-bottom:2px; }
+  .compare .cbody { gap:5px; }
+  .compare .lead { font-size:10.5px; padding:4px 11px; margin-bottom:1px; }
+  .chip { font-size:8.5px; padding:1px 5px; }
+  .next { padding:6px 12px 5px; margin-top:4px; }
+  .next-i { margin-bottom:3px; }
+  .contact { padding:5px 12px 4px; margin-top:3px; }
+  .ct-p { padding:3px 8px; }
+  .ct-r { margin:0 0 1px; }
+
   /* הערה 44 — הפונטים גדלו, ולכן העמוד עלול לגלוש. שובר את העמודים בגבולות נקיים */
   .card, .ccard, .phen, .next, .contact, .refbox, .lossbox, .qbanner,
   .ptbar, .summary, .statrow5 { break-inside:avoid; }
@@ -1882,6 +1932,15 @@ ${dateBarEnd}
   </div>
   <div class="agenote">* ערכי הסף התלויים בגיל ובמין (אחוז שומן, קימה מכיסא) מותאמים לגיל ולמין של הנחקר/ת.</div>
 </div>
+<div class="foot"><span>קוד: ${D.code} · גיל ${age} · ${sex==='m'?'זכר':'נקבה'}</span><span>מחקר PRIME</span></div>
+
+<div class="sheet1b pagebreak">
+<div class="head">
+  <div class="logo"><img src="images/prime/prime_logo.jpeg" alt="PRIME"></div>
+  <div class="head-txt"><h1>הסבר על תוצאות הבדיקות שלך</h1><div class="sub">הרכב גוף</div></div>
+  <div class="head-badge">מחקר PRIME</div>
+</div>
+${dateBarEnd}
 <div class="section">
   <div class="sec-head"><div class="sec-num">3</div><h2>בדיקת הרכב גוף באמצעות מכשיר ה-InBody, או במילים אחרות: ממה המשקל שלך מורכב?</h2></div>
   <div class="lead">זרם חשמלי חלש עובר בגוף ומעריך את הרכבו: <b>מים</b>, <b>שומן</b>, <b>רקמה נטולת שומן</b> (שמתוכה מסה רזה ומסת שריר), <b>מינרלים</b> ו<b>עצם</b>. חשוב לדעת: המכשיר מודד מסה נטולת שומן, ומסת השריר היא אומדן הנגזר ממנה, ולא מדידה ישירה.</div>
@@ -1950,8 +2009,8 @@ ${dateBarEnd}
   </div>` : ''}
   <div class="ref" style="margin-top:4px;">* החישוב מבוסס על FFM (מסה נטולת שומן) ממכשיר ה-InBody.</div>
 </div>
-
-<div class="foot"><span>קוד: ${D.code} · גיל ${age} · ${sex==='m'?'זכר':'נקבה'}</span><span>מחקר PRIME</span></div>`;
+<div class="foot"><span>קוד: ${D.code} · גיל ${age} · ${sex==='m'?'זכר':'נקבה'}</span><span>מחקר PRIME</span></div>
+</div>`;
 
   // ================================================================
   // PAGE 2

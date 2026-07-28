@@ -1265,9 +1265,12 @@ function obesitySOFor(age, sex) {
 }
 // ערך הסף לקימה מכיסא ב-30 שניות (שקופית 46): מתחת לערך זה, כוח הרגליים ירוד
 function stsCriterion(age, sex) {
+  // הטבלה של אסף מתחילה בגיל 60. למי שצעיר יותר מוצג ערך הסף של הקבוצה הצעירה ביותר,
+  // ומצוין במפורש שזהו הסף לגיל 60–64 כדי שלא ייווצר רושם שקיימת נורמה לגילו.
   const bands = [[64, 15, 17], [69, 15, 16], [74, 14, 15], [79, 13, 14],
                  [84, 12, 13], [89, 11, 11], [999, 9, 9]];   // [עד גיל, נשים, גברים]
   const labels = ['60–64', '65–69', '70–74', '75–79', '80–84', '85–89', '90+'];
+  if (age < 60) return { band: '60–64', min: sex === 'm' ? 17 : 15, below60: true };
   for (let i = 0; i < bands.length; i++) {
     if (age <= bands[i][0]) return { band: labels[i], min: sex === 'm' ? bands[i][2] : bands[i][1] };
   }
@@ -1894,7 +1897,11 @@ window.generateReport = () => {
     const threshold = decimals === 0 ? 0.5 : 0.005;
     if (abs < threshold) return `<div class="chip flat">נשמר</div>`;
     const up = diff > 0;
-    const improved = (goodDir === 'up' && up) || (goodDir === 'down' && !up) || goodDir === 'preserve';
+    /* 'preserve' = מדד שרוצים לשמר (מסה רזה, REE, היקף שוק). עלייה או יציבות הן שיפור,
+       אבל ירידה של יותר מ-3% אינה "שימור" ואסור לצבוע אותה בירוק עם ✓. */
+    const dropPct = (goodDir === 'preserve' && !up && s > 0) ? (abs / s) * 100 : 0;
+    const improved = (goodDir === 'up' && up) || (goodDir === 'down' && !up)
+                  || (goodDir === 'preserve' && (up || dropPct <= 3));
     const cls = improved ? 'up' : 'down';
     const arrow = up ? '&#9650;' : '&#9660;';
     const sizeStr = decimals != null ? abs.toFixed(decimals) : abs.toFixed(1);
@@ -1906,6 +1913,10 @@ window.generateReport = () => {
     const diff = e - s;
     const abs = Math.abs(diff);
     if (abs < 0.005) return texts.flat || 'נשמר';
+    // הנוסח של texts.down מתאר ירידה קלה. בירידה של יותר מ-3% במדד שרוצים לשמר, זה לא מדויק
+    if (goodDir === 'preserve' && diff < 0 && s > 0 && (abs / s) * 100 > 3) {
+      return texts.bigDown || texts.down || '';
+    }
     return diff > 0 ? (texts.up || '') : (texts.down || '');
   }
 
@@ -1932,7 +1943,7 @@ ${dateBarEnd}
   <p>תודה רבה על השתתפותך במחקר <b>PRIME</b> ועל שיתוף הפעולה לאורך הדרך.</p>
   <p>בדוח זה מרוכזות תוצאות הבדיקות שביצעת: <b>חילוף חומרים במנוחה</b> (QNRG), <b>הרכב גוף</b> (InBody),
      <b>מדידות גוף והיקפים</b> ו<b>בדיקות תפקודיות</b>.</p>
-  <p>הערכים המוצגים בעמודים 1–2 הם מהבדיקה <b>האחרונה</b> שביצעת${D.dateE ? ` (${D.dateE})` : ''},
+  <p>הערכים המוצגים בעמודים <span dir="ltr">1–2</span> הם מהבדיקה <b>האחרונה</b> שביצעת${D.dateE ? ` (${D.dateE})` : ''},
      ובעמוד האחרון מוצגת <b>השוואה מלאה בין הבדיקה בכניסה למחקר${D.dateS ? ` (${D.dateS})` : ''} לבין הבדיקה האחרונה</b>,
      כדי לראות את המגמה והשינוי לאורך המחקר.</p>
 </div>
@@ -1967,7 +1978,7 @@ ${dateBarEnd}
         <div class="bar bar-hi-good"><div class="mark" style="right:${reePctPos}%;"></div></div>
         <div class="scale"><span>נמוך מהצפוי</span><span>צפוי</span><span>גבוה מהצפוי</span></div>
       </div>
-      <div class="note"><b>${n(reePctE,0)}% מהצפוי</b> (Harris-Benedict). תקין: 90–110% ${tRee}</div>
+      <div class="note"><b>${n(reePctE,0)}% מהצפוי</b> (Harris-Benedict). תקין: <span dir="ltr">90–110%</span> ${tRee}</div>
     </div>
     <div class="card">
       <div class="label">מנת הנשימה&nbsp;<span class="nb">(RER)</span></div>
@@ -2005,7 +2016,7 @@ ${dateBarEnd}
   <div class="refbox">
     <div class="rt">טווחי ייחוס תקינים</div>
     <div class="items">
-      <div><b>BMI (ק״ג/מ²):</b> 18.5–24.9 (עודף משקל 25–29.9; השמנה ≥30)</div>
+      <div><b>BMI (ק״ג/מ²):</b> <span dir="ltr">18.5–24.9</span> (עודף משקל <span dir="ltr">25–29.9</span>; השמנה <span dir="ltr">&#8805;30</span>)</div>
       <div><b>ערך רצוי ליחס מותן-גובה (WHtR):</b> מתחת ל-0.5. מדד זה בודק <b>איפה</b> יושב השומן ולא רק כמה יש ממנו, ולכן הוא מנבא סיכון מטבולי טוב יותר מ-BMI: שומן בטני קשור לסיכון גבוה יותר, ואילו ה-BMI אינו מבחין בין שריר לשומן ולא בין שומן בבטן לשומן בירכיים.</div>
       <div><b>ערכים רצויים להיקף מותניים:</b> גברים מתחת ל-102, נשים מתחת ל-88 ס״מ</div>
       <div><b>ערכים תקינים להיקף שוק:</b> גברים מעל 34, נשים מעל 33 ס״מ</div>
@@ -2071,14 +2082,14 @@ ${dateBarEnd}
         ${(armGap !== null || legGap !== null) ? `<div style="margin-top:2px;">איזון בין ימין לשמאל: ידיים ${armGap === null ? '—' : n(armGap,1) + '%'} · רגליים ${legGap === null ? '—' : n(legGap,1) + '%'} ${(Math.max(armGap || 0, legGap || 0) > NORMS.limbGapPct) ? '<span class="tag warn">פער מעל 5%</span>' : '<span class="tag ok">מאוזן</span>'}</div>` : ''}
         <div class="ref">ASMM/משקל: Obes Facts 2022;15:321-335 · במקור J Am Geriatr Soc 2013;61:974-80 · פער בין הצדדים: דף פענוח InBody 770, ד"ר אסף בוך</div></div>
     </div>` : ''}
-    ${D.tbwE > 0 ? `<div class="card">
+    ${(D.tbwE > 0 && D.icwE > 0 && D.ecwE > 0) ? `<div class="card">
       <div class="label">נוזלים · Total Body Water&nbsp;<span class="nb">(TBW)</span></div>
       <div class="val">${n(D.tbwE,1)} <small>ליטר</small></div>
       <div class="split" style="height:26px; font-size:11.5px;">
         <div class="a" style="width:${Math.round(D.icwE/D.tbwE*100)}%; background:#0ea5e9;">ICW · ${n(D.icwE,1)}</div>
         <div class="b" style="width:${Math.round(D.ecwE/D.tbwE*100)}%; background:#7dd3fc; color:#0c4a6e;">ECW · ${n(D.ecwE,1)}</div>
       </div>
-      <div class="desc"><b>סך</b> המים בגוף. יחס ECW/TBW: <b>${n(ecwTbwE,3)}</b>, תקין 0.360–0.390. ${tagOk(ecwTbwE, 0.360, 0.390)}</div>
+      <div class="desc"><b>סך</b> המים בגוף. יחס ECW/TBW: <b>${n(ecwTbwE,3)}</b>, תקין <span dir="ltr">0.360–0.390</span>. ${tagOk(ecwTbwE, 0.360, 0.390)}</div>
     </div>` : `<div class="card" style="opacity:.55;">
       <div class="label">נוזלים · Total Body Water&nbsp;<span class="nb">(TBW)</span></div>
       <div class="desc" style="margin-top:16px;">לא נמדד בבדיקה זו.</div>
@@ -2109,8 +2120,8 @@ ${dateBarEnd}
   // ================================================================
   // PAGE 2
   // ================================================================
-  const hgNote = sex === 'm' ? 'תקין: גברים ≥27, נשים ≥16 ק״ג' : 'תקין: נשים ≥16, גברים ≥27 ק״ג';
-  const stsNote = `ערך הסף לגיל ${stsCrit.band} (${sex==='m'?'גברים':'נשים'}): <b>${stsCrit.min} חזרות</b> ומעלה`;
+  const hgNote = sex === 'm' ? 'תקין: גברים <span dir="ltr">&#8805;27</span>, נשים <span dir="ltr">&#8805;16</span> ק״ג' : 'תקין: נשים <span dir="ltr">&#8805;16</span>, גברים <span dir="ltr">&#8805;27</span> ק״ג';
+  const stsNote = `ערך הסף לגיל <span dir="ltr">${stsCrit.band}</span> (${sex==='m'?'גברים':'נשים'}): <b>${stsCrit.min} חזרות</b> ומעלה${stsCrit.below60 ? ' · הנורמות המפורסמות מתחילות בגיל 60, ולכן מוצג כאן הסף של הקבוצה הצעירה ביותר' : ''}`;
 
   const page2 = `
 <div class="sheet2 pagebreak">
@@ -2144,17 +2155,17 @@ ${dateBarEnd}
       <div class="label">סוללת מבחנים קצרה להערכת התפקוד הגופני&nbsp;<span class="nb">(SPPB)</span></div>
       <div class="val"><span dir="ltr">${D.sppbE} <small>/ 12</small></span></div>
       ${since(D.sppbS, D.sppbE, "", 0, NORMS.mdc.sppb)}
-      <div class="desc">מבחן משולב משלושה חלקים, כל אחד מנוקד מ-0 עד 4 נקודות: <b>שיווי משקל</b> בעמידה בשלוש תנוחות (0–4), <b>מהירות הליכה</b> למרחק 4 מטר (0–4), ו<b>קימה מכיסא</b> 5 פעמים ללא עזרת הידיים (0–4). סכום שלושתם הוא <b>הציון הכולל: 0–12</b>, וככל שהוא גבוה יותר, כך התפקוד טוב יותר.</div>
+      <div class="desc">מבחן משולב משלושה חלקים, כל אחד מנוקד מ-0 עד 4 נקודות: <b>שיווי משקל</b> בעמידה בשלוש תנוחות (<span dir="ltr">0–4</span>), <b>מהירות הליכה</b> למרחק 4 מטר (<span dir="ltr">0–4</span>), ו<b>קימה מכיסא</b> 5 פעמים ללא עזרת הידיים (<span dir="ltr">0–4</span>). סכום שלושתם הוא <b>הציון הכולל: <span dir="ltr">0–12</span></b>, וככל שהוא גבוה יותר, כך התפקוד טוב יותר.</div>
       <div class="ill"><img class="photo" src="images/prime/sppb.png" alt="SPPB" onerror="this.style.display='none'"></div>
       <div class="bar-wrap">
         <div class="bar bar-hi-good"><div class="mark" style="right:${markPos(D.sppbE, 0, 12)}%;"></div></div>
         <div class="scale"><span>0 · מוגבל</span><span>סיכון</span><span>12 · מצוין</span></div>
       </div>
-      <div class="note">ציון ≥10 = תפקוד טוב; ≤8 = סיכון לירידה תפקודית · ממוצע לגיל ${sppbNorm.age} (${sex==='m'?'גברים':'נשים'}): ${n(sppbNorm.mean,1)} מתוך 12 ${tSppb}
+      <div class="note">ציון <span dir="ltr">&#8805;10</span> = תפקוד טוב; <span dir="ltr">&#8804;8</span> = סיכון לירידה תפקודית · ממוצע לגיל ${sppbNorm.age} (${sex==='m'?'גברים':'נשים'}): ${n(sppbNorm.mean,1)} מתוך 12 ${tSppb}
         <div class="ref">ספי פרשנות: Guralnik JM et al., J Gerontol 1994;49:M85-94 · ערכי ייחוס לפי גיל: Bergland A &amp; Strand BH, BMC Geriatr 2019;19:216 (Tromsø) · סף שינוי משמעותי: Perera S et al., J Am Geriatr Soc 2006;54:743-9</div></div>
     </div>
     <div class="card">
-      <div class="label">קימה מכיסא ב-30 שניות&nbsp;<span class="nb">(30s STS)</span></div>
+      <div class="label">קימה מכיסא ב-30 שניות&nbsp;<span class="nb" dir="ltr">(30s STS)</span></div>
       <div class="val">${D.stsE} <small>חזרות</small></div>
       ${since(D.stsS, D.stsE, " חז׳", 0, NORMS.mdc.sts)}
       <div class="desc">כמה פעמים מצליחים לקום מכיסא ולשבת חזרה, בלי עזרת הידיים, ב-30 שניות. מודד כוח וסיבולת שרירי הרגליים.</div>
@@ -2176,7 +2187,7 @@ ${dateBarEnd}
         <div class="bar bar-hi-good"><div class="mark" style="right:${markPos(D.walkE, 0, 250)}%;"></div></div>
         <div class="scale"><span>נמוך</span><span>טווח תקין</span><span>גבוה</span></div>
       </div>
-      <div class="note">תקין (גיל ${walkExp.band}): ${sex==='m'?'גברים':'נשים'} ${n(walkExp.lo,0)}–${n(walkExp.hi,0)} מ׳${walkPred !== null ? ` · צפי אישי לפי גיל ו-BMI: ~${n(walkPred,0)} מ׳` : ''} ${tWalk}
+      <div class="note">תקין (גיל <span dir="ltr">${walkExp.band}</span>): ${sex==='m'?'גברים':'נשים'} <span dir="ltr">${n(walkExp.lo,0)}–${n(walkExp.hi,0)}</span> מ׳${walkPred !== null ? ` · צפי אישי לפי גיל ו-BMI: ~${n(walkPred,0)} מ׳` : ''} ${tWalk}
         <div class="ref">Bohannon RW, Wang YC &amp; Gershon RC, Arch Phys Med Rehabil 2015;96:472-7 (NIH Toolbox)</div></div>
     </div>
   </div>
@@ -2214,16 +2225,16 @@ ${dateBarEnd}
 
   // Interps
   const T = {
-    ree:   { down:'ירידה קלה בהוצאה האנרגטית במנוחה, המטבוליזם כמעט נשמר', up:'עלייה בהוצאה האנרגטית במנוחה', flat:'המטבוליזם נשמר' },
+    ree:   { down:'ירידה קלה בהוצאה האנרגטית במנוחה, המטבוליזם כמעט נשמר', bigDown:'ירידה ניכרת בהוצאה האנרגטית במנוחה', up:'עלייה בהוצאה האנרגטית במנוחה', flat:'המטבוליזם נשמר' },
     rer:   { down:'ירידה במנת הנשימה, עלייה בשריפת השומן במנוחה', up:'עלייה במנת הנשימה, פחות שריפת שומן במנוחה', flat:'מנת הנשימה נשמרה' },
     wt:    { down:'ירידה במשקל הכולל', up:'עלייה במשקל הכולל', flat:'המשקל נשמר' },
     fm:    { down:'ירידה במסת השומן ובאחוז השומן, פחות שומן בגוף', up:'עלייה במסת השומן ובאחוז השומן', flat:'מסת השומן נשמרה' },
-    ffm:   { down:'ירידה קלה במסה הרזה, כמעט נשמרה במלואה', up:'עלייה במסה הרזה', flat:'המסה הרזה נשמרה' },
+    ffm:   { down:'ירידה קלה במסה הרזה, כמעט נשמרה במלואה', bigDown:'ירידה ניכרת במסה הרזה, כדאי לחזק אימוני כוח וצריכת חלבון', up:'עלייה במסה הרזה', flat:'המסה הרזה נשמרה' },
     smm:   { down:'ירידה במסת השריר', up:'עלייה במסת השריר, רקמה פעילה יותר', flat:'מסת השריר נשמרה' },
     bmi:   { down:'ירידה ב-BMI, התקרבות לטווח הבריא', up:'עלייה ב-BMI', flat:'ה-BMI נשמר' },
     waist: { down:'ירידה בהיקף המותניים ובשומן הבטני', up:'עלייה בהיקף המותניים', flat:'היקף המותניים נשמר' },
     whtr:  { down:'ירידה ביחס מותן-גובה ובסיכון המטבולי', up:'עלייה ביחס מותן-גובה', flat:'היחס נשמר' },
-    calf:  { down:'ירידה בהיקף השוק', up:'עלייה בהיקף השוק', flat:'היקף השוק נשמר, מסת השריר ברגל נשמרה' },
+    calf:  { down:'ירידה קלה בהיקף השוק', bigDown:'ירידה ניכרת בהיקף השוק, ייתכן אובדן מסת שריר ברגל', up:'עלייה בהיקף השוק', flat:'היקף השוק נשמר, מסת השריר ברגל נשמרה' },
     hg:    { down:'ירידה בכוח האחיזה', up:'עלייה בכוח האחיזה, כוח כללי טוב יותר', flat:'כוח האחיזה נשמר' },
     sppb:  { down:'ירידה בציון התפקוד', up:'עלייה בציון התפקוד, ניידות טובה יותר', flat:'ציון התפקוד נשמר' },
     sts:   { down:'ירידה במספר הקימות', up:'עלייה במספר הקימות, רגליים חזקות יותר', flat:'מספר הקימות נשמר' },
@@ -2419,14 +2430,14 @@ ${dateBarCmp}
       <div class="ccard">
         <div class="cl">סוללת מבחנים קצרה <span dir="ltr">(SPPB)</span></div>
         <div class="crow">
-          <div class="cside"><div class="ct">התחלה</div><div class="cv s">${D.sppbS}<span class="ex">/12</span></div></div>
+          <div class="cside"><div class="ct">התחלה</div><div class="cv s">${D.sppbS}<span class="ex" dir="ltr">/12</span></div></div>
           ${cSppb}
-          <div class="cside"><div class="ct">סוף</div><div class="cv e">${D.sppbE}<span class="ex">/12</span></div></div>
+          <div class="cside"><div class="ct">סוף</div><div class="cv e">${D.sppbE}<span class="ex" dir="ltr">/12</span></div></div>
         </div>
         <div class="cinterp">${iSppb}${mSig(D.sppbS, D.sppbE, NORMS.mdc.sppb)}</div>
       </div>
       <div class="ccard">
-        <div class="cl">קימה מכיסא <span dir="ltr">(30s STS)</span></div>
+        <div class="cl">קימה מכיסא <span class="nb" dir="ltr">(30s STS)</span></div>
         <div class="crow">
           <div class="cside"><div class="ct">התחלה</div><div class="cv s">${D.stsS}<span class="ex">חזרות</span></div></div>
           ${cSts}

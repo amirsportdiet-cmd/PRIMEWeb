@@ -226,8 +226,6 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
 .summary{ background:var(--teal-l); border-radius:12px; padding:15px 22px; font-size:14px; color:#0f5e57; line-height:1.6; margin-top:18px; }
 .summary b{ color:var(--teal); }
 .nb{ white-space:nowrap; }
-.qrule{ background:#fff7ed; border:1px solid #fed7aa; border-radius:10px; padding:7px 13px; font-size:11px; color:#9a3412; line-height:1.38; margin-top:4px; }
-.qrule b{ color:#c2410c; }
 .statrow5{ display:grid; grid-template-columns:repeat(6,1fr); gap:8px; }
 .statrow5 .stat{ flex-direction:column; align-items:center; justify-content:flex-start; gap:1px; padding:8px 11px; text-align:center; }
 .statrow5 .stat .l{ font-size:10.5px; min-height:27px; }
@@ -249,7 +247,6 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
 .sheet2 .card{ display:flex; flex-direction:column; }
 .sheet2 .card .bar-wrap{ margin-top:auto; }
 .ill{ display:flex; justify-content:center; align-items:center; margin:8px auto 2px; width:100%; }
-.ill svg{ height:60px; width:auto; }
 .ill .photo{ height:120px; width:auto; max-width:100%; object-fit:contain; border-radius:8px; }
 .card{ border:1px solid var(--line); border-radius:12px; padding:7px 14px 6px; background:#fff; }
 .card .label{ font-size:13.5px; color:var(--muted); font-weight:500; text-align:center; }
@@ -287,16 +284,11 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
 /* יישור הסרגלים לתחתית הכרטיס, כך שיהיו בקו אחד (הערה 21) */
 .grid > .card, .grid2 > .card{ display:flex; flex-direction:column; }
 .card > .bar-wrap{ margin-top:auto; }
-.bar.simple{ background:#eef2f7; }
-.zone{ position:absolute; top:0; bottom:0; background:var(--green); opacity:.32; border-radius:8px; }
 .mark{ position:absolute; top:-5px; width:0; height:0; border-left:7px solid transparent; border-right:7px solid transparent; border-top:11px solid var(--navy); transform:translateX(50%); }
 .scale{ display:flex; justify-content:space-between; font-size:10.5px; color:#94a3b8; margin-top:3px; }
 .split{ display:flex; height:30px; border-radius:8px; overflow:hidden; margin-top:8px; font-size:11px; font-weight:700; color:#fff; }
 .split .a{ background:var(--teal); display:flex; align-items:center; justify-content:center; text-align:center; line-height:1.1; padding:0 2px; }
 .split .b{ background:var(--navy2); display:flex; align-items:center; justify-content:center; text-align:center; line-height:1.1; padding:0 2px; }
-.splitleg{ display:flex; gap:18px; font-size:11px; color:#475569; margin-top:7px; }
-.splitleg span{ display:flex; align-items:center; gap:5px; }
-.dot{ width:11px; height:11px; border-radius:3px; display:inline-block; }
 .dual{ display:flex; gap:18px; margin:5px 0 2px; }
 .dual .dv{ font-size:22px; font-weight:700; color:var(--navy); line-height:1.05; }
 .dual .dv small{ font-size:11px; font-weight:500; color:var(--muted); }
@@ -394,9 +386,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
   .tag { font-size:9px; padding:2px 8px; }
   .dual { margin:3px 0 1px; }
   .dual .dv { font-size:18px; }
-  .split { height:22px; font-size:9.5px; margin-top:5px; }
-  .qrule { padding:5px 10px; font-size:10.5px; margin-top:3px; }
-  .statrow5 { gap:5px; }
+  .split { height:22px; font-size:9.5px; margin-top:5px; }  .statrow5 { gap:5px; }
   .statrow5 .stat { padding:5px 8px; }
   .statrow5 .stat .l { font-size:10px; min-height:24px; }
   .statrow5 .stat .v { font-size:17px; }
@@ -1229,7 +1219,7 @@ const NORMS = {
   asmmPct: { okM: 25.7, okF: 19.4 },
   limbGapPct: 5,                    // פער מעל 5% בין ימין לשמאל, לפי דף הפענוח של אסף
   ree_pct: { ok: [90, 110] },
-  rer: { ok: [0.70, 1.00] },
+  rer: { fastingMax: 0.85, scale: [0.70, 1.00] },   // בצום: רצוי מתחת ל-0.85
   hg: { okM: 27, okF: 16 },        // greater or equal
   sppb: { ok: 10 },               // ספי Guralnik: ≥10 תפקוד טוב, ≤8 סיכון
   // הערה 34 — סף לשינוי אמיתי (מעבר לשונות המדידה). כל ערך ממקור שפורסם:
@@ -1357,25 +1347,6 @@ function sigTag(diff, mdc, flat) {
     : ' <span class="nsig">בתחום שונות המדידה</span>';
 }
 
-// Chip logic
-function chip(startVal, endVal, goodDir) {
-  const diff = endVal - startVal;
-  const absDiff = Math.abs(diff);
-  const threshold = 0.01;
-  if (absDiff < threshold) return { cls:'flat', arrow:'נשמר', size:'' };
-  const up = diff > 0;
-  const improved = (goodDir === 'up' && up) || (goodDir === 'down' && !up);
-  const cls = absDiff < threshold ? 'flat' : (improved ? 'up' : 'down');
-  const arrow = up ? '&#9650;' : '&#9660;';
-  return { cls, arrow, size: absDiff };
-}
-
-function interp(goodDir, diff, texts) {
-  const threshold = 0.01;
-  if (Math.abs(diff) < threshold) return texts.flat;
-  return diff > 0 ? texts.up : texts.down;
-}
-
 // =====================================================================
 // GENERATE REPORT
 // =====================================================================
@@ -1391,7 +1362,9 @@ const RC_MAP = {
   waist:'bc_avg_waistc_anthro', calf:'bc_avg_rcalf_anthro',
   hgr:'hgrip_top_right', hgl:'hgrip_top_left',
   sppb:'sppb_total_score', sts:'chair_stand_total', walk:'walk_total_distance',
-  tbw:'bia_tbw', icw:'bia_icw', ecw:'bia_ecw'
+  tbw:'bia_tbw', icw:'bia_icw', ecw:'bia_ecw',
+  // מסה רזה בגפיים מה-InBody. שים לב: עמודת רגל ימין נקראת bia_lrleg ב-REDCap
+  lmra:'bia_rarm', lmla:'bia_larm', lmrl:'bia_lrleg', lmll:'bia_lleg'
 };
 let RC_HEADER = null, RC_BY_ID = null;
 
@@ -1623,8 +1596,6 @@ window.generateReport = () => {
     { id:'f-rer-e',    label:'RER — סוף' },
     { id:'f-fatburn-s',label:'% שריפת שומן — התחלה' },
     { id:'f-fatburn-e',label:'% שריפת שומן — סוף' },
-    { id:'f-chburn-s', label:'% שריפת פחמימה — התחלה' },
-    { id:'f-chburn-e', label:'% שריפת פחמימה — סוף' },
     { id:'f-wt-s',     label:'משקל — התחלה' },
     { id:'f-wt-e',     label:'משקל — סוף' },
     { id:'f-fm-s',     label:'מסת שומן FM — התחלה' },
@@ -1785,9 +1756,9 @@ window.generateReport = () => {
     ? `<div class="datebar">כניסה למחקר: <b>${D.dateS || '—'}</b> ← סוף המחקר: <b>${D.dateE || '—'}</b></div>` : '';
   const walkExp = walkExpected(age, sex);
 
-  const tBmi = tagOk(bmiE, 18.5, 24.9);
+  const tBmi = tagOk(bmiE, NORMS.bmi.ok[0], NORMS.bmi.ok[1]);
   const tWaist = sex === 'm' ? tagLt(D.waistE, 102) : tagLt(D.waistE, 88);
-  const tWhtr = tagLt(whtrE, 0.5);
+  const tWhtr = tagLt(whtrE, NORMS.whtr.ok);
   const tCalf = sex === 'm' ? tagGte(D.calfE, 34) : tagGte(D.calfE, 33);
   const tFatPct = tagLt(fatPctE, fatPctMax);
   const tSmi = tagGte(D.smiE, smiMin);
@@ -1809,20 +1780,19 @@ window.generateReport = () => {
     if (Math.abs(d) < Math.pow(10, -dec) / 2) return '<div class="dlt">ללא שינוי</div>';
     return `<div class="dlt">${d > 0 ? '▲' : '▼'} ${n(Math.abs(d),dec)}${unit||''} <span dir="ltr">(${d > 0 ? '+' : '−'}${n(Math.abs(pct),1)}%)</span></div>`;
   };
-  const tRee = tagOk(reePctE, 90, 110);
-  const tRer = tagLt(D.rerE, 0.85);   // בצום: כל ערך מתחת ל-0.85 נחשב תקין
-  const hgMaxS = Math.max(D.hgrS, D.hglS);
+  const tRee = tagOk(reePctE, NORMS.ree_pct.ok[0], NORMS.ree_pct.ok[1]);
+  const tRer = tagLt(D.rerE, NORMS.rer.fastingMax);   // בצום: כל ערך מתחת ל-0.85 נחשב תקין
   const hgMaxE = Math.max(D.hgrE, D.hglE);
   const tHg = sex === 'm' ? tagGte(hgMaxE, 27) : tagGte(hgMaxE, 16);
-  const tSppb = tagGte(D.sppbE, 10);
+  const tSppb = tagGte(D.sppbE, NORMS.sppb.ok);
   const tSts = tagGte(D.stsE, stsCrit.min);
   const walkPred = walkPredicted(age, bmiE, sex);
   const walkRef  = walkPred !== null ? walkPred : walkExp.mean;   // צפי אישי אם יש BMI, אחרת ממוצע הקבוצה
   const tWalk = tagGte(D.walkE, walkRef * 0.85);
 
   /* הערה 45 — סיווג פנוטיפ הרכב גוף, לפי ההגדרה שאסף מלמד:
-     השמנה   = אחוז שומן מעל סף ההשמנה לגיל ולמין
-     סרקופניה = כוח ירוד (לפיתה או קימה מכיסא) וגם מסת שריר נמוכה (SMI)
+     השמנה   = אחוז שומן מעל הסף (ראו שני הספים בהמשך)
+     סרקופניה = כוח ירוד (לפיתה או קימה מכיסא) וגם מסת שריר נמוכה (ASMM/משקל, או SMI אם אין)
      הצגה בניסוח זהיר, "הממצאים מתאימים ל...", ולא כאבחנה. */
   const phen = (() => {
     const hasFat = isFinite(fatPctE) && fatPctE > 0;
@@ -1830,7 +1800,12 @@ window.generateReport = () => {
     const hasStr = hgMaxE > 0 || D.stsE > 0;
     if (!hasFat || !hasMass || !hasStr) return null;   // אין מספיק נתונים, לא מסווגים
 
-    const obese    = fatPctE >= obesityCutSO;
+    /* שני ספי שומן, כל אחד למטרה שלו, כדי שלא תיווצר סתירה בין העמודים:
+       obeseCard = הסף הקליני שמוצג בכרטיס אחוז השומן (דף ה-InBody), ובו משתמשים
+                   בכל פעם שנאמרת המילה "השמנה" סתם.
+       obeseSO   = הסף המחמיר של ESPEN/EASO, ובו משתמשים אך ורק לאבחנת "השמנה סרקופנית". */
+    const obeseCard = fatPctE >= obesityCut;
+    const obeseSO   = fatPctE >= obesityCutSO;
     // מסת שריר נמוכה — ASMM/משקל אם הוזן (הקריטריון שאסף מלמד), אחרת SMI
     const lowMass  = asmmPctE !== null ? asmmPctE < asmmMin : D.smiE < smiMin;
     const lowStrHg = hgMaxE > 0 && ((sex === 'm' && hgMaxE < 27) || (sex === 'f' && hgMaxE < 16));
@@ -1839,13 +1814,16 @@ window.generateReport = () => {
     const sarco    = lowStr && lowMass;
 
     let title, body, cls;
-    if (obese && sarco) {
+    if (obeseSO && sarco) {
       cls = 'warn'; title = 'הממצאים מתאימים להשמנה סרקופנית';
       body = 'אחוז השומן גבוה, ובמקביל גם מסת השריר וגם הכוח נמוכים מהערכים המומלצים. זהו השילוב שהמחקר מבקש לזהות ולטפל בו, משום ששתי התופעות יחד משפיעות על התפקוד יותר מכל אחת מהן בנפרד.';
+    } else if (sarco && obeseCard) {
+      cls = 'warn'; title = 'הממצאים מתאימים לסרקופניה יחד עם השמנה';
+      body = `מסת השריר והכוח נמוכים מהערכים המומלצים, ואחוז השומן מעל הסף להשמנה. אחוז השומן נמצא מעט מתחת לסף המחמיר יותר (${obesityCutSO}%) שנדרש להגדרה הפורמלית של השמנה סרקופנית, ולכן הממצאים מוצגים כאן בנפרד.`;
     } else if (sarco) {
       cls = 'warn'; title = 'הממצאים מתאימים לסרקופניה';
       body = 'מסת השריר והכוח נמוכים מהערכים המומלצים, בעוד אחוז השומן אינו בטווח ההשמנה. אימוני התנגדות וצריכת חלבון מספקת הם הכלים המרכזיים לשיפור.';
-    } else if (obese) {
+    } else if (obeseCard) {
       cls = 'warn'; title = 'הממצאים מתאימים להשמנה, ללא סרקופניה';
       body = 'אחוז השומן מעל הסף המוגדר להשמנה, אך מסת השריר והכוח נשמרו בטווחים התקינים, וזו נקודת פתיחה טובה.';
     } else if (lowStr || lowMass) {
@@ -1888,7 +1866,6 @@ window.generateReport = () => {
   // REE bar marker position
   const reePctPos = markPos(reePctE, 70, 130);
   const rerPos = markPos(D.rerE, 0.70, 1.00);
-  const fatPctPos = markPos(fatPctE, 0, 50);
 
   // CHIP helper
   function mkChip(s, e, goodDir, unit, decimals) {
@@ -2266,13 +2243,6 @@ ${dateBarEnd}
         <div style="width:${ch}%;background:var(--navy2);display:flex;align-items:center;justify-content:center;">${ch}%</div>
       </div>
     </div>`;
-
-  function cRow(startVal, endVal, unit) {
-    return `
-      <div class="cside"><div class="ct">התחלה</div><div class="cv s">${startVal}<span class="ex">${unit}</span></div></div>
-      %%CHIP%%
-      <div class="cside"><div class="ct">סוף</div><div class="cv e">${endVal}<span class="ex">${unit}</span></div></div>`;
-  }
 
   const page3 = `
 <div class="pagebreak compare">

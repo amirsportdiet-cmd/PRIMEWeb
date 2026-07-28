@@ -233,6 +233,12 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
 .bar.bar-hi-bad{  background:linear-gradient(90deg,#fca5a5 0%,#a7f3d0 40%,#a7f3d0 65%,#fde68a 100%); }
 .bar.bar-hi-good{ background:linear-gradient(90deg,#34d399 0%,#a7f3d0 35%,#fde68a 65%,#fca5a5 100%); }
 .ref{ font-size:8.5px; color:#94a3b8; margin-top:2px; line-height:1.3; }
+.lossbox{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:8px 0 6px; }
+.lossbox .lb-item{ background:#fff; border:1px solid var(--line); border-right:4px solid var(--teal); border-radius:11px; padding:8px 13px; }
+.lossbox .lb-l{ font-size:10.5px; color:#64748b; font-weight:700; }
+.lossbox .lb-v{ font-size:23px; font-weight:800; color:var(--navy); line-height:1.15; margin:1px 0 2px; }
+.lossbox .lb-v small{ font-size:11px; font-weight:600; color:#64748b; }
+.lossbox .lb-s{ font-size:9.8px; color:#64748b; line-height:1.5; }
 .bar.simple{ background:#eef2f7; }
 .zone{ position:absolute; top:0; bottom:0; background:var(--green); opacity:.32; border-radius:8px; }
 .mark{ position:absolute; top:-5px; width:0; height:0; border-left:7px solid transparent; border-right:7px solid transparent; border-top:11px solid var(--navy); transform:translateX(50%); }
@@ -1521,6 +1527,16 @@ window.generateReport = () => {
   const tCalf = sex === 'm' ? tagGte(D.calfE, 34) : tagGte(D.calfE, 33);
   const tFatPct = tagLt(fatPctE, fatPctMax);
   const tSmi = tagGte(D.smiE, smiMin);
+
+  // --- שינוי במשקל והרכבו (הערה 13) ---
+  const wtLoss    = D.wtS - D.wtE;                                  // ק״ג שירדו (חיובי = ירידה)
+  const wtLossPct = D.wtS > 0 ? (wtLoss / D.wtS) * 100 : 0;          // % ירידה במשקל
+  const ffmLoss   = ffmS - ffmE;                                     // ק״ג מסה נטולת שומן שירדו
+  // איזה חלק מהירידה במשקל הגיע ממסה נטולת שומן (רלוונטי רק כשיש ירידה)
+  const ffmShare  = wtLoss > 0 ? (ffmLoss / wtLoss) * 100 : null;
+  const wtChangeMeta = D.wtS > 0
+    ? `<span class="tag ${wtLossPct >= 5 ? 'ok' : 'warn'}">${wtLoss >= 0 ? '▼' : '▲'} ${n(Math.abs(wtLossPct),1)}%</span>`
+    : '';
   const tRee = tagOk(reePctE, 90, 110);
   const tRer = tagLt(D.rerE, 0.85);   // בצום: כל ערך מתחת ל-0.85 נחשב תקין
   const hgMaxS = Math.max(D.hgrS, D.hglS);
@@ -1630,7 +1646,28 @@ window.generateReport = () => {
 </div>
 
 <div class="section">
-  <div class="sec-head"><div class="sec-num">2</div><h2>בדיקת הרכב גוף באמצעות מכשיר ה-InBody, או במילים אחרות: ממה המשקל שלך מורכב?</h2></div>
+  <div class="sec-head"><div class="sec-num">2</div><h2>מדידות גוף והיקפים · Anthropometrics</h2></div>
+  <div class="statrow5">
+    <div class="stat"><div class="l">גובה · Height</div><div class="v">${height} <small>ס״מ</small></div></div>
+    <div class="stat"><div class="l">משקל · Weight</div><div class="v">${n(D.wtE,1)} <small>ק״ג</small></div><div class="meta">${wtChangeMeta}</div></div>
+    <div class="stat"><div class="l">BMI · מדד מסת גוף</div><div class="v">${n(bmiE,1)} <small>ק״ג/מ²</small></div><div class="meta">${tBmi}</div></div>
+    <div class="stat"><div class="l">היקף מותניים · Waist</div><div class="v">${n(D.waistE,0)} <small>ס״מ</small></div><div class="meta">${tWaist}</div></div>
+    <div class="stat"><div class="l">יחס מותן-גובה · WHtR</div><div class="v">${n(whtrE,2)}</div><div class="meta">${tWhtr}</div></div>
+    <div class="stat"><div class="l">היקף שוק · Calf</div><div class="v">${n(D.calfE,0)} <small>ס״מ</small></div><div class="meta">${tCalf}</div></div>
+  </div>
+  <div class="refbox">
+    <div class="rt">טווחי ייחוס תקינים</div>
+    <div class="items">
+      <div><b>BMI (ק״ג/מ²):</b> 18.5–24.9 (עודף משקל 25–29.9; השמנה ≥30)</div>
+      <div><b>ערך רצוי ליחס מותן-גובה (WHtR):</b> מתחת ל-0.5</div>
+      <div><b>ערכים רצויים להיקף מותניים:</b> גברים מתחת ל-102, נשים מתחת ל-88 ס״מ</div>
+      <div><b>ערכים תקינים להיקף שוק:</b> גברים מעל 34, נשים מעל 33 ס״מ</div>
+    </div>
+  </div>
+  <div class="agenote">* ערכי הסף התלויים בגיל ובמין (אחוז שומן, קימה מכיסא) מותאמים לגיל ולמין של הנחקר/ת.</div>
+</div>
+<div class="section">
+  <div class="sec-head"><div class="sec-num">3</div><h2>בדיקת הרכב גוף באמצעות מכשיר ה-InBody, או במילים אחרות: ממה המשקל שלך מורכב?</h2></div>
   <div class="lead">זרם חשמלי חלש עובר בגוף ומעריך את הרכבו: <b>מים</b>, <b>שומן</b>, <b>רקמה נטולת שומן</b> (שמתוכה מסה רזה ומסת שריר), <b>מינרלים</b> ו<b>עצם</b>. חשוב לדעת: המכשיר מודד מסה נטולת שומן, ומסת השריר היא אומדן הנגזר ממנה, ולא מדידה ישירה.</div>
   <div class="grid">
     <div class="card">
@@ -1678,30 +1715,27 @@ window.generateReport = () => {
       <div class="desc" style="margin-top:16px;">לא נמדד בבדיקה זו.</div>
     </div>`}
   </div>
-  <div class="qrule"><b>חוק הרבע:</b> בירידה במשקל ללא אימוני כוח, בממוצע כ-25% מהמשקל היורד מגיע ממסה רזה. לכן השילוב של חלבון ואימוני כוח במחקר נועד לשמר את השריר.</div>
+  ${wtLoss > 0 ? `
+  <div class="lossbox">
+    <div class="lb-item">
+      <div class="lb-l">ירידה במשקל</div>
+      <div class="lb-v">${n(wtLoss,1)} <small>ק״ג</small></div>
+      <div class="lb-s">${n(wtLossPct,1)}% ממשקל הגוף ההתחלתי
+        <span class="tag ${wtLossPct >= 5 ? 'ok' : 'warn'}">${wtLossPct >= 5 ? 'ירידה משמעותית' : 'פחות מ-5%'}</span></div>
+    </div>
+    <div class="lb-item">
+      <div class="lb-l">מתוך הירידה — מהמסה נטולת השומן</div>
+      <div class="lb-v">${ffmShare === null ? '—' : n(Math.max(0,ffmShare),0) + '%'}</div>
+      <div class="lb-s">${ffmShare === null ? '' :
+          (ffmShare <= 25
+            ? '<span class="tag ok">שמירה טובה על המסה נטולת השומן</span>'
+            : '<span class="tag warn">מעל 25% — כדאי לחזק אימוני כוח וחלבון</span>')}</div>
+    </div>
+  </div>` : ''}
+  <div class="qrule"><b>חוק הרבע:</b> בירידה במשקל ללא אימוני כוח, בממוצע כ-25% מהמשקל היורד מגיע מהמסה נטולת השומן. לכן השילוב של חלבון ואימוני כוח במחקר נועד לשמר את השריר.
+    <div class="ref" style="margin-top:3px;">החישוב מבוסס על FFM (מסה נטולת שומן) ממכשיר ה-InBody.</div></div>
 </div>
 
-<div class="section">
-  <div class="sec-head"><div class="sec-num">3</div><h2>מדידות גוף והיקפים · Anthropometrics</h2></div>
-  <div class="statrow5">
-    <div class="stat"><div class="l">גובה · Height</div><div class="v">${height} <small>ס״מ</small></div></div>
-    <div class="stat"><div class="l">משקל · Weight</div><div class="v">${n(D.wtE,1)} <small>ק״ג</small></div></div>
-    <div class="stat"><div class="l">BMI · מדד מסת גוף</div><div class="v">${n(bmiE,1)}</div><div class="meta">${tBmi}</div></div>
-    <div class="stat"><div class="l">היקף מותניים · Waist</div><div class="v">${n(D.waistE,0)} <small>ס״מ</small></div><div class="meta">${tWaist}</div></div>
-    <div class="stat"><div class="l">יחס מותן-גובה · WHtR</div><div class="v">${n(whtrE,2)}</div><div class="meta">${tWhtr}</div></div>
-    <div class="stat"><div class="l">היקף שוק · Calf</div><div class="v">${n(D.calfE,0)} <small>ס״מ</small></div><div class="meta">${tCalf}</div></div>
-  </div>
-  <div class="refbox">
-    <div class="rt">טווחי ייחוס תקינים</div>
-    <div class="items">
-      <div><b>BMI:</b> 18.5–24.9 (עודף משקל 25–29.9; השמנה ≥30)</div>
-      <div><b>יחס מותן-גובה (WHtR):</b> מתחת ל-0.5</div>
-      <div><b>היקף מותניים:</b> גברים מתחת ל-102, נשים מתחת ל-88 ס״מ</div>
-      <div><b>היקף שוק:</b> גברים מעל 34, נשים מעל 33 ס״מ</div>
-    </div>
-  </div>
-  <div class="agenote">* ערכי הסף התלויים בגיל ובמין (אחוז שומן, קימה מכיסא) מותאמים לגיל ולמין של הנחקר/ת.</div>
-</div>
 <div class="foot"><span>קוד: ${D.code} · גיל ${age} · ${sex==='m'?'זכר':'נקבה'}</span><span>מחקר PRIME</span></div>`;
 
   // ================================================================

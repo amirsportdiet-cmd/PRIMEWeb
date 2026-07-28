@@ -1081,7 +1081,13 @@ const NORMS = {
   ree_pct: { ok: [90, 110] },
   rer: { ok: [0.70, 1.00] },
   hg: { okM: 27, okF: 16 },        // greater or equal
-  sppb: { ok: 10 },               // greater or equal
+  sppb: { ok: 10 },               // ספי Guralnik: ≥10 תפקוד טוב, ≤8 סיכון
+  // ציון SPPB כולל לפי גיל ומין — ערכי ייחוס Tromsø Study (BMC Geriatrics 2019, n=7,474)
+  // מפתח = גיל בקפיצות של 5; ערך = [ממוצע, אחוזון 25]
+  sppbAge: {
+    m: { 55:[11.78,12], 60:[11.74,12], 65:[11.70,12], 70:[11.49,11.5], 75:[11.01,10.5], 80:[10.41,9.3], 85:[9.80,8.0] },
+    f: { 55:[11.78,11.9], 60:[11.65,11.6], 65:[11.43,11.1], 70:[11.02,10.4], 75:[10.43,9.6], 80:[9.75,8.7], 85:[9.06,7.8] }
+  },
   // 30s STS Rikli & Jones (25th–75th percentile)
   sts: {
     m: [[14,19],[12,18],[12,17],[11,17],[10,15],[8,14],[7,12]],  // 60-64,65-69,...,90+
@@ -1114,6 +1120,13 @@ function walkExpected(age, sex) {
   for (let k = 0; k < cuts.length; k++) { if (age >= cuts[k]) i = k + 1; }
   const r = tbl[i];
   return { band: r[0], mean: r[1], lo: r[2], hi: r[3] };
+}
+// ציון SPPB ממוצע לגיל ולמין — נקודת הייחוס הקרובה ביותר (קפיצות של 5 שנים, 55–85)
+function sppbForAge(age, sex) {
+  const tbl = sex === 'm' ? NORMS.sppbAge.m : NORMS.sppbAge.f;
+  const a = Math.max(55, Math.min(85, Math.round(age / 5) * 5));
+  const r = tbl[a];
+  return { age: a, mean: r[0], p25: r[1] };
 }
 // משוואת הרגרסיה של Bohannon — צפי אישי לפי גיל ו-BMI (מדויק יותר מממוצע הקבוצה)
 function walkPredicted(age, bmi, sex) {
@@ -1556,6 +1569,7 @@ window.generateReport = () => {
   const fatPctMax = sex === 'm' ? NORMS.fatPct.m[ageGroup] : NORMS.fatPct.f[ageGroup];
   const obesityCut = sex === 'm' ? NORMS.obesity.m : NORMS.obesity.f;
   const smiMin = sex === 'm' ? NORMS.smi.okM : NORMS.smi.okF;
+  const sppbNorm = sppbForAge(age, sex);
   const stsRng = stsRange(age, sex);
   const walkExp = walkExpected(age, sex);
 
@@ -1683,7 +1697,7 @@ window.generateReport = () => {
       <div class="label">מנת הנשימה&nbsp;<span class="nb">(RER)</span></div>
       <div class="val">${n(D.rerE,2)}</div>
       ${since(D.rerS, D.rerE, "", 2)}
-      <div class="desc">יחס בין פחמן דו-חמצני נפלט לחמצן נצרך, מדד הקרוי "מנת הנשימה". הוא מלמד איזה דלק הגוף שורף (שומן או פחמימה), וכאשר הבדיקה בצום רצוי לשרוף כמה שיותר שומן. מספר נמוך = שריפת שומן, גבוה = שריפת פחמימה.</div>
+      <div class="desc">מדד שמראה איזה "דלק" הגוף שורף כרגע: שומן או פחמימה. הוא מחושב מהיחס בין הפחמן הדו-חמצני שנפלט לחמצן שנצרך, ולכן הוא נקרא "מנת הנשימה". בבדיקה בצום, ככל שהערך נמוך יותר, כך שריפת השומן גבוהה יותר.</div>
       <div class="bar-wrap">
         <div class="bar bar-lo-good"><div class="mark" style="right:${rerPos}%;"></div></div>
         <div class="scale"><span>0.70 · שומן</span><span>תמהיל</span><span>1.00 · פחמימה</span></div>
@@ -1830,13 +1844,13 @@ window.generateReport = () => {
       <div class="label">סוללת מבחנים קצרה להערכת התפקוד הגופני&nbsp;<span class="nb">(SPPB)</span></div>
       <div class="val"><span dir="ltr">${D.sppbE} <small>/ 12</small></span></div>
       ${since(D.sppbS, D.sppbE, "", 0)}
-      <div class="desc">מבחן משולב משלושה חלקים: שיווי משקל, מהירות הליכה, ויכולת לקום מכיסא. <b>טווח הציונים במבחן זה: 0–12</b>, ככל שגבוה יותר, כך התפקוד טוב יותר.</div>
+      <div class="desc">מבחן משולב משלושה חלקים, כל אחד מנוקד מ-0 עד 4 נקודות: <b>שיווי משקל</b> בעמידה בשלוש תנוחות (0–4), <b>מהירות הליכה</b> למרחק 4 מטר (0–4), ו<b>קימה מכיסא</b> 5 פעמים ללא עזרת הידיים (0–4). סכום שלושתם הוא <b>הציון הכולל: 0–12</b>, וככל שהוא גבוה יותר, כך התפקוד טוב יותר.</div>
       <div class="ill"><img class="photo" src="images/prime/sppb.png" alt="SPPB" onerror="this.style.display='none'"></div>
       <div class="bar-wrap">
         <div class="bar bar-hi-good"><div class="mark" style="right:${markPos(D.sppbE, 0, 12)}%;"></div></div>
         <div class="scale"><span>0 · מוגבל</span><span>סיכון</span><span>12 · מצוין</span></div>
       </div>
-      <div class="note">ציון ≥10 = תפקוד טוב; ≤8 = סיכון לירידה תפקודית ${tSppb}</div>
+      <div class="note">ציון ≥10 = תפקוד טוב; ≤8 = סיכון לירידה תפקודית · ממוצע לגיל ${sppbNorm.age} (${sex==='m'?'גברים':'נשים'}): ${n(sppbNorm.mean,1)} מתוך 12 ${tSppb}</div>
     </div>
     <div class="card">
       <div class="label">קימה מכיסא ב-30 שניות&nbsp;<span class="nb">(30s STS)</span></div>

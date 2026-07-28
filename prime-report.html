@@ -188,6 +188,21 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
 .since{ font-size:10.5px; color:#475569; background:#f8fafc; border:1px dashed #cbd5e1;
         border-radius:7px; padding:3px 8px; margin:4px 0 2px; }
 .since b{ color:var(--navy); }
+.next{ background:#fff; border:1px solid var(--teal); border-radius:12px;
+       padding:11px 16px 9px; margin-top:10px; }
+.next-h{ font-size:13.5px; font-weight:700; color:var(--teal); margin-bottom:6px; }
+.next-i{ display:flex; gap:8px; align-items:flex-start; font-size:11.5px;
+         color:#334155; line-height:1.55; margin-bottom:5px; }
+.next-i b{ color:var(--navy); }
+.next-n{ flex:0 0 auto; width:17px; height:17px; border-radius:50%; background:var(--teal);
+         color:#fff; font-size:10px; font-weight:700; display:flex; align-items:center;
+         justify-content:center; margin-top:1px; }
+.next-f{ font-size:9.5px; color:#94a3b8; border-top:1px dashed #e2e8f0;
+         padding-top:5px; margin-top:3px; }
+.sig{ display:inline-block; background:#dcfce7; color:#15803d; border-radius:5px;
+      padding:0 5px; font-size:9.5px; font-weight:700; }
+.nsig{ display:inline-block; background:#f1f5f9; color:#64748b; border-radius:5px;
+       padding:0 5px; font-size:9.5px; font-weight:600; }
 .grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
 .grid2{ display:grid; grid-template-columns:repeat(2,1fr); gap:18px; }
 .pagebreak{ break-before:page; }
@@ -1082,6 +1097,13 @@ const NORMS = {
   rer: { ok: [0.70, 1.00] },
   hg: { okM: 27, okF: 16 },        // greater or equal
   sppb: { ok: 10 },               // ספי Guralnik: ≥10 תפקוד טוב, ≤8 סיכון
+  // הערה 34 — סף לשינוי אמיתי (מעבר לשונות המדידה). כל ערך ממקור שפורסם:
+  mdc: {
+    hg:   5.0,    // ק״ג   — Bohannon 2019, סקירה שיטתית: 5.0–6.5 ק״ג שינוי משמעותי
+    sppb: 1.0,    // נק׳   — Perera 2006: שינוי מהותי ≈1.0 נקודה
+    sts:  2.0,    // חזרות — MDC95 של מבחן 30 שניות התקני
+    walk: 42.5    // מטר   — Bohannon 2015 (NIH Toolbox), MDC95
+  },
   // ציון SPPB כולל לפי גיל ומין — ערכי ייחוס Tromsø Study (BMC Geriatrics 2019, n=7,474)
   // מפתח = גיל בקפיצות של 5; ערך = [ממוצע, אחוזון 25]
   sppbAge: {
@@ -1169,16 +1191,28 @@ function markPos(val, lo, hi) {
  * שורת "מאז הכניסה למחקר": ערך התחלתי, ההפרש (חיסור) והשינוי באחוזים (חילוק).
  * מוצגת בעמודים 1-2 מתחת לערך הנוכחי.
  */
-function since(startVal, endVal, unit, dec) {
+function since(startVal, endVal, unit, dec, mdc) {
   const s = +startVal, e = +endVal;
   if (!isFinite(s) || !isFinite(e) || s === 0) return '';
   const diff = e - s;
   const pct = (diff / s) * 100;
-  const arrow = Math.abs(diff) < Math.pow(10, -dec) / 2 ? 'ללא שינוי'
-              : (diff > 0 ? '▲' : '▼');
-  const amount = Math.abs(diff) < Math.pow(10, -dec) / 2 ? ''
-              : ` ${n(Math.abs(diff), dec)}${unit} (${pct > 0 ? '+' : '−'}${n(Math.abs(pct), 1)}%)`;
-  return `<div class="since">בכניסה למחקר: <b>${n(s, dec)}${unit}</b> · שינוי: ${arrow}${amount}</div>`;
+  const flat = Math.abs(diff) < Math.pow(10, -dec) / 2;
+  const arrow = flat ? 'ללא שינוי' : (diff > 0 ? '▲' : '▼');
+  // הסוגריים עם הסימן מבודדים ל-LTR, אחרת דו-כיווניות ה-RTL מעיפה את ה-+/− לצד השני
+  const amount = flat ? ''
+              : ` ${n(Math.abs(diff), dec)}${unit} <span dir="ltr">(${pct > 0 ? '+' : '−'}${n(Math.abs(pct), 1)}%)</span>`;
+  return `<div class="since">בכניסה למחקר: <b>${n(s, dec)}${unit}</b> · שינוי: ${arrow}${amount}${sigTag(diff, mdc, flat)}</div>`;
+}
+
+/**
+ * הערה 34 — האם השינוי משמעותי קלינית, או בתחום שונות המדידה?
+ * mdc = הסף המזערי לשינוי אמיתי שפורסם עבור אותו מבחן (ראו NORMS.mdc).
+ */
+function sigTag(diff, mdc, flat) {
+  if (!mdc || flat) return '';
+  return Math.abs(diff) >= mdc
+    ? ' <span class="sig">שינוי משמעותי</span>'
+    : ' <span class="nsig">בתחום שונות המדידה</span>';
 }
 
 // Chip logic
@@ -1595,7 +1629,7 @@ window.generateReport = () => {
     if (!isFinite(s) || !isFinite(e) || !s) return '';
     const d = e - s, pct = (d / s) * 100;
     if (Math.abs(d) < Math.pow(10, -dec) / 2) return '<div class="dlt">ללא שינוי</div>';
-    return `<div class="dlt">${d > 0 ? '▲' : '▼'} ${n(Math.abs(d),dec)}${unit||''} (${d > 0 ? '+' : '−'}${n(Math.abs(pct),1)}%)</div>`;
+    return `<div class="dlt">${d > 0 ? '▲' : '▼'} ${n(Math.abs(d),dec)}${unit||''} <span dir="ltr">(${d > 0 ? '+' : '−'}${n(Math.abs(pct),1)}%)</span></div>`;
   };
   const tRee = tagOk(reePctE, 90, 110);
   const tRer = tagLt(D.rerE, 0.85);   // בצום: כל ערך מתחת ל-0.85 נחשב תקין
@@ -1607,6 +1641,24 @@ window.generateReport = () => {
   const walkPred = walkPredicted(age, bmiE, sex);
   const walkRef  = walkPred !== null ? walkPred : walkExp.mean;   // צפי אישי אם יש BMI, אחרת ממוצע הקבוצה
   const tWalk = tagGte(D.walkE, walkRef * 0.85);
+
+  // הערה 36 — "להמשך הדרך": עד 3 נקודות, נבחרות לפי החולשות בפועל, לפי סדר חשיבות קלינית
+  const nextSteps = (() => {
+    const c = [];
+    if (D.smiE > 0 && D.smiE < smiMin)
+      c.push(['שימור מסת השריר', 'מדד מסת השריר נמוך מהטווח המומלץ. אימוני התנגדות סדירים, יחד עם צריכת חלבון מספקת ומפוזרת על פני היום, הם הדרך המרכזית לשמר ולבנות מסת שריר.']);
+    if (D.sppbE > 0 && D.sppbE <= 9)
+      c.push(['חיזוק היציבות והניידות', 'ציון התפקוד הגופני מצביע על מקום לשיפור. תרגילי שיווי משקל וחיזוק שרירי הרגליים, גם בבית ולכמה דקות ביום, משפרים יציבות ומפחיתים סיכון לנפילות.']);
+    if (isFinite(fatPctE) && fatPctE > fatPctMax)
+      c.push(['הרכב הגוף', 'אחוז השומן גבוה מהטווח המומלץ לגיל ולמין. שילוב של פעילות גופנית ותזונה מותאמת מסייע להמשיך ולשפר את הרכב הגוף, גם ללא שינוי גדול במשקל.']);
+    if (hgMaxE > 0 && ((sex === 'm' && hgMaxE < 27) || (sex === 'f' && hgMaxE < 16)))
+      c.push(['כוח האחיזה', 'כוח הלפיתה נמוך מערך הסף. כוח האחיזה משקף כוח כללי בגוף, ואימוני התנגדות לפלג הגוף העליון יכולים לשפר אותו.']);
+    if (isFinite(D.walkE) && D.walkE > 0 && D.walkE < walkRef * 0.85)
+      c.push(['סיבולת והליכה', 'מרחק ההליכה נמוך מהצפוי לגיל. הוספה הדרגתית של הליכה יומית, גם בקטעים קצרים, משפרת סיבולת לב-ריאה ותפקוד יומיומי.']);
+    if (!c.length)
+      c.push(['שמירה על ההישגים', 'הערכים נמצאים בטווחים התקינים. ההמלצה המרכזית היא להמשיך בשגרה שנבנתה: פעילות גופנית סדירה, חלבון מספק לאורך היום, ושינה טובה.']);
+    return c.slice(0, 3);
+  })();
 
   // REE bar marker position
   const reePctPos = markPos(reePctE, 70, 130);
@@ -1831,7 +1883,7 @@ window.generateReport = () => {
         <div><div class="dv">${n(D.hgrE,1)}<small> ק״ג</small></div><div class="dl">יד ימין</div></div>
         <div><div class="dv">${n(D.hglE,1)}<small> ק״ג</small></div><div class="dl">יד שמאל</div></div>
       </div>
-      ${since(Math.max(D.hgrS,D.hglS), Math.max(D.hgrE,D.hglE), " ק״ג", 1)}
+      ${since(Math.max(D.hgrS,D.hglS), Math.max(D.hgrE,D.hglE), " ק״ג", 1, NORMS.mdc.hg)}
       <div class="desc">הבדיקה מתבצעת באמצעות מכשיר <b>דינמומטר JAMAR</b>. נמדד כוח הלפיתה של כף היד, ומוצג <b>הערך הגבוה ביותר</b> שנמדד בכל יד. זהו מדד אמין לכוח השרירים בכל הגוף, וירידה בו עשויה להעיד על מצב של אובדן כוח, תפקוד ומסת שריר (מצב הקרוי <b>סרקופניה</b>).</div>
       <div class="ill"><img class="photo" src="images/prime/hg.png" alt="כוח לפיתה" onerror="this.style.display='none'"></div>
       <div class="bar-wrap">
@@ -1843,7 +1895,7 @@ window.generateReport = () => {
     <div class="card">
       <div class="label">סוללת מבחנים קצרה להערכת התפקוד הגופני&nbsp;<span class="nb">(SPPB)</span></div>
       <div class="val"><span dir="ltr">${D.sppbE} <small>/ 12</small></span></div>
-      ${since(D.sppbS, D.sppbE, "", 0)}
+      ${since(D.sppbS, D.sppbE, "", 0, NORMS.mdc.sppb)}
       <div class="desc">מבחן משולב משלושה חלקים, כל אחד מנוקד מ-0 עד 4 נקודות: <b>שיווי משקל</b> בעמידה בשלוש תנוחות (0–4), <b>מהירות הליכה</b> למרחק 4 מטר (0–4), ו<b>קימה מכיסא</b> 5 פעמים ללא עזרת הידיים (0–4). סכום שלושתם הוא <b>הציון הכולל: 0–12</b>, וככל שהוא גבוה יותר, כך התפקוד טוב יותר.</div>
       <div class="ill"><img class="photo" src="images/prime/sppb.png" alt="SPPB" onerror="this.style.display='none'"></div>
       <div class="bar-wrap">
@@ -1855,7 +1907,7 @@ window.generateReport = () => {
     <div class="card">
       <div class="label">קימה מכיסא ב-30 שניות&nbsp;<span class="nb">(30s STS)</span></div>
       <div class="val">${D.stsE} <small>חזרות</small></div>
-      ${since(D.stsS, D.stsE, " חז׳", 0)}
+      ${since(D.stsS, D.stsE, " חז׳", 0, NORMS.mdc.sts)}
       <div class="desc">כמה פעמים מצליחים לקום מכיסא ולשבת חזרה, בלי עזרת הידיים, ב-30 שניות. מודד כוח וסיבולת שרירי הרגליים.</div>
       <div class="ill"><img class="photo" src="images/prime/sts.png" alt="קימה מכיסא" onerror="this.style.display='none'"></div>
       <div class="bar-wrap">
@@ -1867,7 +1919,7 @@ window.generateReport = () => {
     <div class="card">
       <div class="label">מבחן הליכה 2 דקות&nbsp;<span class="nb" dir="ltr">(2-min walk)</span></div>
       <div class="val">${D.walkE} <small>מטר</small></div>
-      ${since(D.walkS, D.walkE, " מ׳", 1)}
+      ${since(D.walkS, D.walkE, " מ׳", 1, NORMS.mdc.walk)}
       <div class="desc">המרחק שעוברים בהליכה רציפה במשך 2 דקות. מודד סיבולת לב-ריאה ויכולת תפקודית.</div>
       <div class="ill"><img class="photo" src="images/prime/walk.png" alt="מבחן הליכה" onerror="this.style.display='none'"></div>
       <div class="bar-wrap">
@@ -2137,6 +2189,11 @@ window.generateReport = () => {
   </div>
   <div class="summary" style="padding:13px 18px; font-size:12.5px;">
     <b>המגמה הכללית:</b> ${D.wtE < D.wtS ? 'ירידה במשקל' : 'שינוי במשקל'}, ${D.fmE < D.fmS ? 'ירידה בשומן' : 'שינוי בשומן'}, ${D.smmE >= D.smmS ? 'תוך שמירה/עלייה במסת השריר' : 'ושינוי במסת השריר'}.
+  </div>
+  <div class="next">
+    <div class="next-h">להמשך הדרך</div>
+    ${nextSteps.map((s, i) => `<div class="next-i"><span class="next-n">${i + 1}</span><div><b>${s[0]}</b> ${s[1]}</div></div>`).join('')}
+    <div class="next-f">ההמלצות כאן כלליות ומבוססות על תוצאות הבדיקות במחקר. הן אינן מחליפות ייעוץ רפואי או תזונתי אישי.</div>
   </div>
 </div>
 <div class="foot"><span>קוד: ${D.code}</span><span>מחקר PRIME</span></div>

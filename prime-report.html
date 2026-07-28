@@ -1178,7 +1178,12 @@ const NORMS = {
     m: { '<65': 25, '65+': 28 },
     f: { '<65': 37, '65+': 40 }
   },
-  obesity: { m: 30, f: 42 },
+  // ספי אחוז שומן להגדרת השמנה, לפי גיל ומין (מצגת אסף בוך, שקופית 47)
+  // ESPEN/EASO consensus, Obes Facts 2022;15:321-335 · במקור: Am J Clin Nutr 2000;72:694-701
+  obesity: {
+    m: [[39, 26], [59, 29], [999, 31]],
+    f: [[39, 39], [59, 41], [999, 43]]
+  },
   // SMI — מדד מסת שריר (Cruz-Jentoft AJ et al., EWGSOP2, Age Ageing 2019;48:16-31)
   smi: { okM: 7.0, okF: 5.5 },
   ree_pct: { ok: [90, 110] },
@@ -1198,11 +1203,6 @@ const NORMS = {
     m: { 55:[11.78,12], 60:[11.74,12], 65:[11.70,12], 70:[11.49,11.5], 75:[11.01,10.5], 80:[10.41,9.3], 85:[9.80,8.0] },
     f: { 55:[11.78,11.9], 60:[11.65,11.6], 65:[11.43,11.1], 70:[11.02,10.4], 75:[10.43,9.6], 80:[9.75,8.7], 85:[9.06,7.8] }
   },
-  // 30s STS Rikli & Jones (25th–75th percentile)
-  sts: {
-    m: [[14,19],[12,18],[12,17],[11,17],[10,15],[8,14],[7,12]],  // 60-64,65-69,...,90+
-    f: [[12,17],[11,16],[10,15],[10,15],[9,14],[8,13],[4,11]]
-  },
   // מבחן הליכה 2 דקות — נורמות NIH Toolbox (Bohannon, Wang & Gershon, Arch Phys Med Rehabil 2015)
   // לכל קבוצת גיל ומין: [ממוצע, גבול תחתון 95%CI, גבול עליון 95%CI] במטרים
   walk2: {
@@ -1215,12 +1215,21 @@ const NORMS = {
   }
 };
 
-function stsRange(age, sex) {
-  const ages = [60,65,70,75,80,85,90];
-  let i = 0;
-  for (let a of ages) { if (age >= a) i = ages.indexOf(a); }
-  if (age < 60) i = 0;
-  return sex === 'm' ? NORMS.sts.m[i] : NORMS.sts.f[i];
+// סף אחוז השומן להגדרת השמנה, לפי גיל ומין (שקופית 47 במצגת של אסף)
+function obesityCutFor(age, sex) {
+  const tbl = sex === 'm' ? NORMS.obesity.m : NORMS.obesity.f;
+  for (const [maxAge, cut] of tbl) if (age <= maxAge) return cut;
+  return tbl[tbl.length - 1][1];
+}
+// ערך הסף לקימה מכיסא ב-30 שניות (שקופית 46): מתחת לערך זה, כוח הרגליים ירוד
+function stsCriterion(age, sex) {
+  const bands = [[64, 15, 17], [69, 15, 16], [74, 14, 15], [79, 13, 14],
+                 [84, 12, 13], [89, 11, 11], [999, 9, 9]];   // [עד גיל, נשים, גברים]
+  const labels = ['60–64', '65–69', '70–74', '75–79', '80–84', '85–89', '90+'];
+  for (let i = 0; i < bands.length; i++) {
+    if (age <= bands[i][0]) return { band: labels[i], min: sex === 'm' ? bands[i][2] : bands[i][1] };
+  }
+  return { band: labels[0], min: sex === 'm' ? 17 : 15 };
 }
 // מחזיר את שורת הנורמה המתאימה לגיל ולמין: {band, mean, lo, hi}
 function walkExpected(age, sex) {
@@ -1689,7 +1698,8 @@ window.generateReport = () => {
   // Tags
   const ageGroup = age < 65 ? '<65' : '65+';
   const fatPctMax = sex === 'm' ? NORMS.fatPct.m[ageGroup] : NORMS.fatPct.f[ageGroup];
-  const obesityCut = sex === 'm' ? NORMS.obesity.m : NORMS.obesity.f;
+  const obesityCut = obesityCutFor(age, sex);
+  const stsCrit    = stsCriterion(age, sex);
   const smiMin = sex === 'm' ? NORMS.smi.okM : NORMS.smi.okF;
   const sppbNorm = sppbForAge(age, sex);
   // הערה 37 — תרגום סף אחוז השומן למסת שומן בק״ג לפי המשקל בפועל
@@ -1701,7 +1711,6 @@ window.generateReport = () => {
     ? `<div class="datebar">התוצאות בעמוד זה הן ממדידת <b>סוף המחקר</b>${D.dateE ? `, ${D.dateE}` : ''}${D.dateS ? ` · מדידת הכניסה למחקר: ${D.dateS}` : ''}</div>` : '';
   const dateBarCmp = (D.dateE || D.dateS)
     ? `<div class="datebar">כניסה למחקר: <b>${D.dateS || '—'}</b> ← סוף המחקר: <b>${D.dateE || '—'}</b></div>` : '';
-  const stsRng = stsRange(age, sex);
   const walkExp = walkExpected(age, sex);
 
   const tBmi = tagOk(bmiE, 18.5, 24.9);
@@ -1734,7 +1743,7 @@ window.generateReport = () => {
   const hgMaxE = Math.max(D.hgrE, D.hglE);
   const tHg = sex === 'm' ? tagGte(hgMaxE, 27) : tagGte(hgMaxE, 16);
   const tSppb = tagGte(D.sppbE, 10);
-  const tSts = tagOk(D.stsE, stsRng[0], stsRng[1]);
+  const tSts = tagGte(D.stsE, stsCrit.min);
   const walkPred = walkPredicted(age, bmiE, sex);
   const walkRef  = walkPred !== null ? walkPred : walkExp.mean;   // צפי אישי אם יש BMI, אחרת ממוצע הקבוצה
   const tWalk = tagGte(D.walkE, walkRef * 0.85);
@@ -1752,7 +1761,7 @@ window.generateReport = () => {
     const obese    = fatPctE >= obesityCut;
     const lowMass  = D.smiE < smiMin;
     const lowStrHg = hgMaxE > 0 && ((sex === 'm' && hgMaxE < 27) || (sex === 'f' && hgMaxE < 16));
-    const lowStrSts= D.stsE > 0 && D.stsE < stsRng[0];
+    const lowStrSts= D.stsE > 0 && D.stsE < stsCrit.min;
     const lowStr   = lowStrHg || lowStrSts;
     const sarco    = lowStr && lowMass;
 
@@ -1792,6 +1801,8 @@ window.generateReport = () => {
       c.push(['חיזוק היציבות והניידות', 'ציון התפקוד הגופני מצביע על מקום לשיפור. תרגילי שיווי משקל וחיזוק שרירי הרגליים, גם בבית ולכמה דקות ביום, משפרים יציבות ומפחיתים סיכון לנפילות.']);
     if (isFinite(fatPctE) && fatPctE > fatPctMax)
       c.push(['הרכב הגוף', 'אחוז השומן גבוה מהטווח המומלץ לגיל ולמין. שילוב של פעילות גופנית ותזונה מותאמת מסייע להמשיך ולשפר את הרכב הגוף, גם ללא שינוי גדול במשקל.']);
+    if (D.stsE > 0 && D.stsE < stsCrit.min && !(D.smiE > 0 && D.smiE < smiMin))
+      c.push(['כוח הרגליים', `במבחן הקימה מכיסא בוצעו ${D.stsE} קימות, מתחת לערך הסף של ${stsCrit.min} לגילך. תרגילי קימה מכיסא וחיזוק שרירי הירך והישבן משפרים זאת במהירות יחסית.`]);
     if (hgMaxE > 0 && ((sex === 'm' && hgMaxE < 27) || (sex === 'f' && hgMaxE < 16)))
       c.push(['כוח האחיזה', 'כוח הלפיתה נמוך מערך הסף. כוח האחיזה משקף כוח כללי בגוף, ואימוני התנגדות לפלג הגוף העליון יכולים לשפר אותו.']);
     if (isFinite(D.walkE) && D.walkE > 0 && D.walkE < walkRef * 0.85)
@@ -2016,7 +2027,7 @@ ${dateBarEnd}
   // PAGE 2
   // ================================================================
   const hgNote = sex === 'm' ? 'תקין: גברים ≥27, נשים ≥16 ק״ג' : 'תקין: נשים ≥16, גברים ≥27 ק״ג';
-  const stsNote = `תקין (גיל ${age < 60 ? '60–64' : age < 65 ? '60–64' : age < 70 ? '65–69' : age < 75 ? '70–74' : age < 80 ? '75–79' : age < 85 ? '80–84' : age < 90 ? '85–89' : '90+'}): ${sex==='m'?'גברים':'נשים'} ${stsRng[0]}–${stsRng[1]} חזרות`;
+  const stsNote = `ערך הסף לגיל ${stsCrit.band} (${sex==='m'?'גברים':'נשים'}): <b>${stsCrit.min} חזרות</b> ומעלה`;
 
   const page2 = `
 <div class="sheet2 pagebreak">
@@ -2070,7 +2081,7 @@ ${dateBarEnd}
         <div class="scale"><span>נמוך</span><span>טווח תקין</span><span>גבוה</span></div>
       </div>
       <div class="note">${stsNote} ${tSts}
-        <div class="ref">Rikli RE &amp; Jones CJ, Senior Fitness Test, J Aging Phys Act 1999;7:129-161</div></div>
+        <div class="ref">Rikli RE &amp; Jones CJ, Gerontologist 2013;53:255-6 (ערכי סף לשמירה על עצמאות תפקודית)</div></div>
     </div>
     <div class="card">
       <div class="label">מבחן הליכה 2 דקות&nbsp;<span class="nb" dir="ltr">(2-min walk)</span></div>
@@ -2090,7 +2101,7 @@ ${dateBarEnd}
     <div class="ph-h">תמונת המצב המשולבת, הרכב גוף וכוח</div>
     <div class="ph-t">${phen.title}</div>
     <div class="ph-b">${phen.body}</div>
-    <div class="ph-f">סיווג זה מבוסס על שילוב אחוז השומן, מדד מסת השריר (SMI) ומבחני הכוח, לפי ההגדרות המקובלות בתחום. הוא אינו מהווה אבחנה רפואית.</div>
+    <div class="ph-f">הסיווג מבוסס על הקונצנזוס להשמנה סרקופנית (ESPEN/EASO, Obes Facts 2022): כוח ירוד נקבע לפי כוח לפיתה מתחת ל-${sex==='m'?'27':'16'} ק״ג או קימה מכיסא מתחת ל-${stsCrit.min} חזרות, ואחוז שומן גבוה נקבע מעל ${obesityCut}% לגיל ולמין. אינו מהווה אבחנה רפואית.</div>
   </div>` : ''}
   <div class="summary">המטרה אינה רק לרדת במשקל, אלא גם לשמור על ה<b>כוח, העצמאות והניידות</b>. שמירה או שיפור של הערכים האלה לאורך המחקר הם סימן מצוין לכך שירידת המשקל מגיעה מהמקום הנכון.</div>
 </div>

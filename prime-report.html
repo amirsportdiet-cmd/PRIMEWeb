@@ -188,6 +188,9 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
 .since{ font-size:10.5px; color:#475569; background:#f8fafc; border:1px dashed #cbd5e1;
         border-radius:7px; padding:3px 8px; margin:4px 0 2px; }
 .since b{ color:var(--navy); }
+.datebar{ background:var(--teal-l); border-radius:8px; padding:4px 12px; margin:0 0 7px;
+          font-size:10.5px; color:#0f5e57; font-weight:600; text-align:center; }
+.datebar b{ color:var(--navy); }
 .next{ background:#fff; border:1px solid var(--teal); border-radius:12px;
        padding:11px 16px 9px; margin-top:10px; }
 .next-h{ font-size:13.5px; font-weight:700; color:var(--teal); margin-bottom:6px; }
@@ -395,6 +398,15 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
   .ill { margin:5px auto 1px; }
   .ill .photo { height:90px; }
   .summary { padding:10px 16px; font-size:11.5px; margin-top:12px; }
+  .datebar { padding:2px 10px; margin-bottom:5px; font-size:9px; }
+  .since { font-size:9px; padding:2px 7px; margin:2px 0 1px; }
+  .sig, .nsig { font-size:8.5px; }
+  /* Page 3 */
+  .next { padding:8px 13px 6px; margin-top:7px; }
+  .next-h { font-size:12px; margin-bottom:4px; }
+  .next-i { font-size:10px; line-height:1.4; margin-bottom:3px; }
+  .next-n { width:15px; height:15px; font-size:9px; }
+  .next-f { font-size:8.5px; padding-top:4px; }
 }
 </style>
 </head>
@@ -1604,6 +1616,15 @@ window.generateReport = () => {
   const obesityCut = sex === 'm' ? NORMS.obesity.m : NORMS.obesity.f;
   const smiMin = sex === 'm' ? NORMS.smi.okM : NORMS.smi.okF;
   const sppbNorm = sppbForAge(age, sex);
+  // הערה 37 — תרגום סף אחוז השומן למסת שומן בק״ג לפי המשקל בפועל
+  const fmMaxKg  = D.wtE > 0 ? D.wtE * fatPctMax  / 100 : null;
+  const fmObesKg = D.wtE > 0 ? D.wtE * obesityCut / 100 : null;
+
+  // הערה 39 — פס תאריכים בראש כל עמוד, כדי שתאריך המדידה תמיד מול העיניים
+  const dateBarEnd = (D.dateE || D.dateS)
+    ? `<div class="datebar">התוצאות בעמוד זה הן ממדידת <b>סוף המחקר</b>${D.dateE ? `, ${D.dateE}` : ''}${D.dateS ? ` · מדידת הכניסה למחקר: ${D.dateS}` : ''}</div>` : '';
+  const dateBarCmp = (D.dateE || D.dateS)
+    ? `<div class="datebar">כניסה למחקר: <b>${D.dateS || '—'}</b> ← סוף המחקר: <b>${D.dateE || '—'}</b></div>` : '';
   const stsRng = stsRange(age, sex);
   const walkExp = walkExpected(age, sex);
 
@@ -1703,6 +1724,7 @@ window.generateReport = () => {
   </div>
   <div class="head-badge">מחקר PRIME</div>
 </div>
+${dateBarEnd}
 
 <div class="intro">
   <p>תודה רבה על השתתפותך במחקר <b>PRIME</b> ועל שיתוף הפעולה לאורך הדרך.</p>
@@ -1782,7 +1804,7 @@ window.generateReport = () => {
     <div class="rt">טווחי ייחוס תקינים</div>
     <div class="items">
       <div><b>BMI (ק״ג/מ²):</b> 18.5–24.9 (עודף משקל 25–29.9; השמנה ≥30)</div>
-      <div><b>ערך רצוי ליחס מותן-גובה (WHtR):</b> מתחת ל-0.5</div>
+      <div><b>ערך רצוי ליחס מותן-גובה (WHtR):</b> מתחת ל-0.5. מדד זה בודק <b>איפה</b> יושב השומן ולא רק כמה יש ממנו, ולכן הוא מנבא סיכון מטבולי טוב יותר מ-BMI: שומן בטני קשור לסיכון גבוה יותר, ואילו ה-BMI אינו מבחין בין שריר לשומן ולא בין שומן בבטן לשומן בירכיים.</div>
       <div><b>ערכים רצויים להיקף מותניים:</b> גברים מתחת ל-102, נשים מתחת ל-88 ס״מ</div>
       <div><b>ערכים תקינים להיקף שוק:</b> גברים מעל 34, נשים מעל 33 ס״מ</div>
     </div>
@@ -1802,7 +1824,7 @@ window.generateReport = () => {
         <div class="bar bar-hi-bad"><div class="mark" style="right:${markPos(fatPctE, 0, 50)}%;"></div></div>
         <div class="scale"><span>נמוך</span><span>תקין</span><span>גבוה</span></div>
       </div>
-      <div class="note">ערך תקין ${sex === 'm' ? 'לגברים' : 'לנשים'} ${age < 65 ? 'עד גיל 65' : 'מגיל 65 ומעלה'}: עד <b>${fatPctMax}%</b> · מעל <b>${obesityCut}%</b> מוגדר השמנה ${tFatPct}
+      <div class="note">ערך תקין ${sex === 'm' ? 'לגברים' : 'לנשים'} ${age < 65 ? 'עד גיל 65' : 'מגיל 65 ומעלה'}: עד <b>${fatPctMax}%</b>${fmMaxKg !== null ? `, שהם <b>${n(fmMaxKg,1)} ק״ג</b> במשקל הנוכחי` : ''} · מעל <b>${obesityCut}%</b>${fmObesKg !== null ? ` (<b>${n(fmObesKg,1)} ק״ג</b>)` : ''} מוגדר השמנה ${tFatPct}
         <div class="ref">Heo M et al., Am J Clin Nutr 2012;95:594-602 (NHANES 1999-2004)</div></div>
     </div>
     <div class="card">
@@ -1873,6 +1895,7 @@ window.generateReport = () => {
   <div class="head-txt"><h1>הסבר על תוצאות הבדיקות שלך</h1><div class="sub">בדיקות תפקודיות</div></div>
   <div class="head-badge">מחקר PRIME</div>
 </div>
+${dateBarEnd}
 <div class="section">
   <div class="sec-head"><div class="sec-num">4</div><h2>בדיקות תפקודיות, או במילים אחרות: איך הגוף שלי מתפקד בפועל?</h2></div>
   <div class="lead">מעבר להרכב הגוף, חשוב לבדוק איך הגוף <b>מתפקד בפועל</b>: כמה כוח יש לך, שיווי המשקל והסיבולת. הבדיקות רגישות מאוד לשינויים בשריר ובכושר לאורך המחקר.</div>
@@ -2010,9 +2033,10 @@ window.generateReport = () => {
 <div class="pagebreak compare">
 <div class="head">
   <div class="logo"><img src="images/prime/prime_logo.jpeg" alt="PRIME"></div>
-  <div class="head-txt"><h1>השוואת תוצאות, התחלה מול סוף</h1><div class="sub">המגמה שלך לאורך המחקר${D.dateS && D.dateE ? ` · ${D.dateS} ← ${D.dateE}` : ''}</div></div>
+  <div class="head-txt"><h1>השוואת תוצאות, התחלה מול סוף</h1><div class="sub">המגמה שלך לאורך המחקר</div></div>
   <div class="head-badge">מחקר PRIME</div>
 </div>
+${dateBarCmp}
 <div class="lead">התוצאות שלך ב<b>תחילת המחקר</b> (מימין) לעומת <b>סופו</b> (משמאל). הסימון באמצע מראה את כיוון השינוי וגודלו, והצבע אם זה שיפור.</div>
 <div class="clegend">
   <span><span class="chip up" style="padding:1px 7px;">&#9650;</span> עלייה</span>

@@ -227,6 +227,12 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
 .note .tag, .desc .tag, .meta .tag{ display:block; width:fit-content; margin:4px auto 0; }
 .bar-wrap{ margin-top:5px; }
 .bar{ position:relative; height:11px; border-radius:8px; background:linear-gradient(90deg,#fde68a 0%,#a7f3d0 35%,#a7f3d0 65%,#fecaca 100%); }
+/* הסקאלה ב-RTL: נמוך מימין, גבוה משמאל.
+   bar-hi-bad  = ערך גבוה לא רצוי (אחוז שומן) -> אדום בשמאל, צהוב בימין
+   bar-hi-good = ערך גבוה רצוי (SMI, כוח)     -> ירוק עז בשמאל, אדום בימין */
+.bar.bar-hi-bad{  background:linear-gradient(90deg,#fca5a5 0%,#a7f3d0 40%,#a7f3d0 65%,#fde68a 100%); }
+.bar.bar-hi-good{ background:linear-gradient(90deg,#34d399 0%,#a7f3d0 35%,#fde68a 65%,#fca5a5 100%); }
+.ref{ font-size:8.5px; color:#94a3b8; margin-top:2px; line-height:1.3; }
 .bar.simple{ background:#eef2f7; }
 .zone{ position:absolute; top:0; bottom:0; background:var(--green); opacity:.32; border-radius:8px; }
 .mark{ position:absolute; top:-5px; width:0; height:0; border-left:7px solid transparent; border-right:7px solid transparent; border-top:11px solid var(--navy); transform:translateX(50%); }
@@ -567,6 +573,15 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
             </div>
             <input type="number" class="field-active-input" data-field="f-smm" data-side="s" data-ph-s="לדוגמה: 35.5" data-ph-e="לדוגמה: 35.8" placeholder="לדוגמה: 35.5" min="0" max="100" step="0.1" inputmode="decimal" oninput="storeVal(this)">
             <input type="hidden" id="f-smm-s"><input type="hidden" id="f-smm-e">
+          </div>
+          <div class="field-card">
+            <div class="field-label">SMI — מדד מסת שריר (ק״ג/מ²)</div>
+            <div class="field-tab-row">
+              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-smi','s')">התחלה</button>
+              <button type="button" class="field-tab end" onclick="switchTab(this,'f-smi','e')">סוף</button>
+            </div>
+            <input type="number" class="field-active-input" data-field="f-smi" data-side="s" data-ph-s="לדוגמה: 7.2" data-ph-e="לדוגמה: 7.4" placeholder="לדוגמה: 7.2" min="0" max="20" step="0.01" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-smi-s"><input type="hidden" id="f-smi-e">
           </div>
           <div class="field-card">
             <div class="field-label">TBW — סך נוזלים (ליטר)</div>
@@ -1026,10 +1041,15 @@ const NORMS = {
   waist: { okM: 102, okF: 88 },   // less than
   whtr: { ok: 0.5 },              // less than
   calf: { okM: 34, okF: 33 },     // greater than
+  // אחוז שומן — לפי ד"ר אסף בוך (Heo M et al., Am J Clin Nutr 2012;95:594-602, NHANES 1999-2004)
+  // ערך תקין = עד הסף; מעל סף ההשמנה = השמנה
   fatPct: {
-    m: { '40-59': [11,21], '60+': [13,24] },
-    f: { '40-59': [23,33], '60+': [24,35] }
+    m: { '<65': 25, '65+': 28 },
+    f: { '<65': 37, '65+': 40 }
   },
+  obesity: { m: 30, f: 42 },
+  // SMI — מדד מסת שריר (Cruz-Jentoft AJ et al., EWGSOP2, Age Ageing 2019;48:16-31)
+  smi: { okM: 7.0, okF: 5.5 },
   ree_pct: { ok: [90, 110] },
   rer: { ok: [0.70, 1.00] },
   hg: { okM: 27, okF: 16 },        // greater or equal
@@ -1134,7 +1154,7 @@ window.backToForm = () => {
 // ===== REDCap CSV import =====
 const RC_MAP = {
   ree:'rmr_measured', rer:'rmr_rq', fatburn:'rmr_fat_use', chburn:'rmr_cho_use',
-  wt:'bia_weight', smm:'bia_smm',
+  wt:'bia_weight', smm:'bia_smm', smi:'rsmi_kg_m2',
   waist:'bc_avg_waistc_anthro', calf:'bc_avg_rcalf_anthro',
   hgr:'hgrip_top_right', hgl:'hgrip_top_left',
   sppb:'sppb_total_score', sts:'chair_stand_total', walk:'walk_total_distance',
@@ -1310,13 +1330,13 @@ window.setDateToday = (btn) => {
 window.loadSample = () => {
   const startMap = {
     'f-ree':'1500','f-rer':'0.82','f-fatburn':'55','f-chburn':'45',
-    'f-wt':'88','f-fm':'28','f-smm':'30','f-tbw':'40','f-icw':'25','f-ecw':'15',
+    'f-wt':'88','f-fm':'28','f-smm':'30','f-smi':'7.1','f-tbw':'40','f-icw':'25','f-ecw':'15',
     'f-waist':'100','f-calf':'36',
     'f-hgr':'38','f-hgl':'36','f-sppb':'11','f-sts':'15','f-walk':'178'
   };
   const endMap = {
     'f-ree':'1550','f-rer':'0.80','f-fatburn':'60','f-chburn':'40',
-    'f-wt':'82','f-fm':'24','f-smm':'31','f-tbw':'41','f-icw':'26','f-ecw':'15',
+    'f-wt':'82','f-fm':'24','f-smm':'31','f-smi':'7.3','f-tbw':'41','f-icw':'26','f-ecw':'15',
     'f-waist':'94','f-calf':'36',
     'f-hgr':'40','f-hgl':'39','f-sppb':'12','f-sts':'17','f-walk':'190'
   };
@@ -1456,6 +1476,7 @@ window.generateReport = () => {
     wtS: g('f-wt-s'), wtE: g('f-wt-e'),
     fmS: g('f-fm-s'), fmE: g('f-fm-e'),
     smmS: g('f-smm-s'), smmE: g('f-smm-e'),
+    smiS: g('f-smi-s'), smiE: g('f-smi-e'),
     tbwS: g('f-tbw-s'), tbwE: g('f-tbw-e'),
     icwS: g('f-icw-s'), icwE: g('f-icw-e'),
     ecwS: g('f-ecw-s'), ecwE: g('f-ecw-e'),
@@ -1487,8 +1508,10 @@ window.generateReport = () => {
   const whtrS = D.waistS / height;
 
   // Tags
-  const ageGroup = age < 60 ? '40-59' : '60+';
-  const fatPctNorm = sex === 'm' ? NORMS.fatPct.m[ageGroup] : NORMS.fatPct.f[ageGroup];
+  const ageGroup = age < 65 ? '<65' : '65+';
+  const fatPctMax = sex === 'm' ? NORMS.fatPct.m[ageGroup] : NORMS.fatPct.f[ageGroup];
+  const obesityCut = sex === 'm' ? NORMS.obesity.m : NORMS.obesity.f;
+  const smiMin = sex === 'm' ? NORMS.smi.okM : NORMS.smi.okF;
   const stsRng = stsRange(age, sex);
   const walkExp = walkExpected(age, sex);
 
@@ -1496,7 +1519,8 @@ window.generateReport = () => {
   const tWaist = sex === 'm' ? tagLt(D.waistE, 102) : tagLt(D.waistE, 88);
   const tWhtr = tagLt(whtrE, 0.5);
   const tCalf = sex === 'm' ? tagGte(D.calfE, 34) : tagGte(D.calfE, 33);
-  const tFatPct = tagOk(fatPctE, fatPctNorm[0], fatPctNorm[1]);
+  const tFatPct = tagLt(fatPctE, fatPctMax);
+  const tSmi = tagGte(D.smiE, smiMin);
   const tRee = tagOk(reePctE, 90, 110);
   const tRer = tagLt(D.rerE, 0.85);   // בצום: כל ערך מתחת ל-0.85 נחשב תקין
   const hgMaxS = Math.max(D.hgrS, D.hglS);
@@ -1615,24 +1639,31 @@ window.generateReport = () => {
       ${since(D.fmS, D.fmE, " ק״ג", 1)}
       <div class="desc">חלק המשקל שמורכב משומן, במשקל ובאחוזים.</div>
       <div class="bar-wrap">
-        <div class="bar"><div class="mark" style="right:${markPos(fatPctE, 0, 50)}%;"></div></div>
+        <div class="bar bar-hi-bad"><div class="mark" style="right:${markPos(fatPctE, 0, 50)}%;"></div></div>
         <div class="scale"><span>נמוך</span><span>תקין</span><span>גבוה</span></div>
       </div>
-      <div class="note"><b>גברים:</b> 11–21% (40–59) · 13–24% (60+)<br><b>נשים:</b> 23–33% (40–59) · 24–35% (60+) ${tFatPct}</div>
+      <div class="note">ערך תקין ${sex === 'm' ? 'לגברים' : 'לנשים'} ${age < 65 ? 'עד גיל 65' : 'מגיל 65 ומעלה'}: עד <b>${fatPctMax}%</b> · מעל <b>${obesityCut}%</b> מוגדר השמנה ${tFatPct}
+        <div class="ref">Heo M et al., Am J Clin Nutr 2012;95:594-602 (NHANES 1999-2004)</div></div>
     </div>
     <div class="card">
-      <div class="label">מסה רזה ומסת שריר</div>
+      <div class="label">מסה נטולת שומן ומסת שריר</div>
       <div class="dual">
-        <div><div class="dv">${n(ffmE,1)}<small> ק״ג</small></div><div class="dl">FFM · מסה רזה</div></div>
+        <div><div class="dv">${n(ffmE,1)}<small> ק״ג</small></div><div class="dl">FFM · מסה נטולת שומן</div></div>
         <div><div class="dv">${n(D.smmE,1)}<small> ק״ג</small></div><div class="dl">SMM · מסת שריר</div></div>
       </div>
       ${since(ffmS, ffmE, " ק״ג", 1)}
-      <div class="desc">מסה רזה (FFM) = המשקל פחות השומן. שמירה עליה בירידה במשקל היא מטרת-העל.</div>
+      <div class="desc">מסה נטולת שומן (FFM) = המשקל פחות השומן. שמירה עליה בירידה במשקל היא מטרת-העל.
+        ${D.smiE > 0 ? `מדד <b>SMI</b> מבטא את מסת השריר ביחס לגובה, ומשמש להערכת סיכון לסרקופניה.` : ''}</div>
+      ${D.smiE > 0 ? `
+      <div class="val" style="font-size:19px; margin-top:4px;">${n(D.smiE,2)} <small>ק״ג/מ² · SMI</small></div>
+      ${since(D.smiS, D.smiE, "", 2)}
       <div class="bar-wrap">
-        <div class="bar simple"><div class="zone" style="right:30%;left:0;"></div><div class="mark" style="right:55%;"></div></div>
-        <div class="scale"><span>נמוך</span><span>טווח תקין</span><span>גבוה</span></div>
+        <div class="bar bar-hi-good"><div class="mark" style="right:${markPos(D.smiE, 4, 11)}%;"></div></div>
+        <div class="scale"><span>נמוך · סיכון</span><span>גבולי</span><span>תקין</span></div>
       </div>
-      <div class="note"><span class="tag ok">בטווח תקין</span></div>
+      <div class="note">SMI תקין: <b>גברים מעל 7.0</b> · <b>נשים מעל 5.5</b> ק״ג/מ² ${tSmi}
+        <div class="ref">Cruz-Jentoft AJ et al., EWGSOP2, Age Ageing 2019;48:16-31</div></div>`
+      : `<div class="note"><span class="tag warn">לא הוזן SMI</span></div>`}
     </div>
     ${D.tbwE > 0 ? `<div class="card">
       <div class="label">נוזלים · Total Body Water&nbsp;<span class="nb">(TBW)</span></div>

@@ -178,6 +178,13 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
 .sec-head h2{ font-size:22px; font-weight:700; color:var(--navy); }
 .lead{ background:var(--teal-l); border-radius:12px; padding:7px 15px; font-size:12px; color:#0f5e57; margin-bottom:2px; line-height:1.38; }
 .lead b{ color:var(--teal); }
+.intro{ background:#fff; border:1px solid var(--line); border-right:4px solid var(--teal); border-radius:12px;
+        padding:11px 16px; margin-bottom:10px; font-size:12.5px; color:#334155; line-height:1.62; }
+.intro p{ margin:0 0 5px; } .intro p:last-child{ margin-bottom:0; } .intro b{ color:var(--navy); }
+.ptbar{ display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-bottom:12px; }
+.ptbar .pt{ background:var(--teal-l); border-radius:10px; padding:7px 10px; text-align:center; }
+.ptbar .ptl{ display:block; font-size:9.5px; color:#0f766e; font-weight:700; letter-spacing:.2px; }
+.ptbar .ptv{ display:block; font-size:13px; color:var(--navy); font-weight:800; margin-top:1px; }
 .grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
 .grid2{ display:grid; grid-template-columns:repeat(2,1fr); gap:18px; }
 .pagebreak{ break-before:page; }
@@ -305,6 +312,11 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
   .sec-head h2 { font-size:17px; }
   .section { margin-bottom:1px; }
   .lead { padding:4px 12px; margin-bottom:1px; font-size:10.5px; }
+  .intro { padding:7px 12px; margin-bottom:6px; font-size:10.5px; line-height:1.5; }
+  .intro p { margin-bottom:3px; }
+  .ptbar { gap:5px; margin-bottom:7px; }
+  .ptbar .pt { padding:4px 6px; }
+  .ptbar .ptl { font-size:8px; } .ptbar .ptv { font-size:11px; }
   .grid { gap:10px; }
   .grid2 { gap:10px; }
   .card { padding:4px 11px 4px; }
@@ -430,6 +442,14 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
               <button type="button" class="sex-btn" id="sex-f" onclick="setSex('f')">נקבה</button>
             </div>
             <input type="hidden" id="f-sex" value="">
+          </div>
+          <div class="simple-field">
+            <label>קבוצת מחקר</label>
+            <div class="sex-toggle">
+              <button type="button" class="sex-btn" id="grp-control" onclick="setGroup('control')">ביקורת</button>
+              <button type="button" class="sex-btn" id="grp-interv" onclick="setGroup('intervention')">התערבות</button>
+            </div>
+            <input type="hidden" id="f-group" value="">
           </div>
         </div>
         <div class="form-row" style="margin-top:14px;">
@@ -905,9 +925,11 @@ window.clearForm = () => {
     inp.closest('.simple-field')?.classList.remove('sf-filled','simple-field--missing');
   });
   document.getElementById('f-sex').value = '';
+  document.getElementById('f-group').value = '';
   document.querySelectorAll('.sex-btn').forEach(b => b.classList.remove('active'));
-  setFieldCheck('sex', '');
+  setFieldCheck('sex', ''); setFieldCheck('group', '');
   document.querySelector('.simple-field:has(#sex-m)')?.classList.remove('sf-filled','simple-field--missing');
+  document.querySelector('.simple-field:has(#grp-control)')?.classList.remove('sf-filled','simple-field--missing');
   const errEl = document.getElementById('form-error');
   errEl.style.display = 'none'; errEl.innerHTML = '';
 };
@@ -928,11 +950,22 @@ window.setFieldCheck = (id, state) => {
 
 window.setSex = (val) => {
   document.getElementById('f-sex').value = val;
-  document.querySelectorAll('.sex-btn').forEach(b => b.classList.remove('active'));
+  const sexSF = document.querySelector('.simple-field:has(#sex-m)');
+  // מנקה רק את כפתורי המין — לא את כפתורי הקבוצה
+  sexSF.querySelectorAll('.sex-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('sex-' + val).classList.add('active');
   setFieldCheck('sex', 'ok');
-  const sexSF = document.querySelector('.simple-field:has(#sex-m)');
   if (sexSF) { sexSF.classList.remove('simple-field--missing'); sexSF.classList.add('sf-filled'); }
+};
+
+window.setGroup = (val) => {
+  document.getElementById('f-group').value = val;
+  const grpSF = document.querySelector('.simple-field:has(#grp-control)');
+  grpSF.querySelectorAll('.sex-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(val === 'control' ? 'grp-control' : 'grp-interv').classList.add('active');
+  setFieldCheck('group', 'ok');
+  grpSF.classList.remove('simple-field--missing');
+  grpSF.classList.add('sf-filled');
 };
 
 window.signInWithGoogle = () => {
@@ -1286,6 +1319,7 @@ window.loadSample = () => {
     el.closest('.simple-field')?.classList.add('sf-filled');
   });
   setSex('m');
+  setGroup('intervention');
   generateReport();
 };
 
@@ -1296,6 +1330,7 @@ window.generateReport = () => {
     { id:'f-code',     label:'קוד נחקר/ת' },
     { id:'f-age',      label:'גיל' },
     { id:'f-sex',      label:'מין' },
+    { id:'f-group',    label:'קבוצת מחקר' },
     { id:'f-height',   label:'גובה' },
     { id:'f-date-s',   label:'תאריך מדידה — התחלה' },
     { id:'f-date-e',   label:'תאריך מדידה — סוף' },
@@ -1367,6 +1402,8 @@ window.generateReport = () => {
 
   const age = +document.getElementById('f-age').value;
   const sex = document.getElementById('f-sex').value;
+  const group = document.getElementById('f-group').value;
+  const groupHe = group === 'intervention' ? 'קבוצת התערבות' : 'קבוצת ביקורת';
   const height = +document.getElementById('f-height').value;
 
   const g = id => +document.getElementById(id).value || 0;
@@ -1480,19 +1517,36 @@ window.generateReport = () => {
   <div class="logo"><img src="images/prime/prime_logo.jpeg" alt="PRIME"></div>
   <div class="head-txt">
     <h1>הסבר על תוצאות הבדיקות שלך</h1>
-    <div class="sub">בדיקות מטבוליזם והרכב גוף · קוד: ${D.code}${D.dateS || D.dateE ? ` · ${D.dateS || '?'} — ${D.dateE || '?'}` : ''}</div>
+    <div class="sub">בדיקות מטבוליזם, הרכב גוף ותפקוד</div>
   </div>
   <div class="head-badge">מחקר PRIME</div>
 </div>
 
+<div class="intro">
+  <p>תודה רבה על השתתפותך במחקר <b>PRIME</b> ועל שיתוף הפעולה לאורך הדרך.</p>
+  <p>בדוח זה מרוכזות תוצאות הבדיקות שביצעת: <b>חילוף חומרים במנוחה</b> (QNRG), <b>הרכב גוף</b> (InBody),
+     <b>מדידות גוף והיקפים</b> ו<b>בדיקות תפקודיות</b>.</p>
+  <p>הערכים המוצגים בעמודים 1–2 הם מהבדיקה <b>האחרונה</b> שביצעת${D.dateE ? ` (${D.dateE})` : ''},
+     ובעמוד האחרון מוצגת <b>השוואה מלאה בין הבדיקה בכניסה למחקר${D.dateS ? ` (${D.dateS})` : ''} לבין הבדיקה האחרונה</b> —
+     כדי לראות את המגמה והשינוי לאורך המחקר.</p>
+</div>
+
+<div class="ptbar">
+  <div class="pt"><span class="ptl">גיל</span><span class="ptv">${age}</span></div>
+  <div class="pt"><span class="ptl">מין</span><span class="ptv">${sex === 'm' ? 'זכר' : 'נקבה'}</span></div>
+  <div class="pt"><span class="ptl">קבוצה במחקר</span><span class="ptv">${groupHe}</span></div>
+  <div class="pt"><span class="ptl">כניסה למחקר</span><span class="ptv">${D.dateS || '—'}</span></div>
+  <div class="pt"><span class="ptl">בדיקה אחרונה</span><span class="ptv">${D.dateE || '—'}</span></div>
+</div>
+
 <div class="section">
-  <div class="sec-head"><div class="sec-num">1</div><h2>בדיקת חילוף חומרים במנוחה (QNRG), כמה אנרגיה הגוף שלך שורף?</h2></div>
+  <div class="sec-head"><div class="sec-num">1</div><h2>בדיקת חילוף חומרים במנוחה במכשיר ה-QNRG — או במילים אחרות: כמה אנרגיה הגוף שלך שורף/מוציא במנוחה ביממה?</h2></div>
   <div class="lead">הבדיקה מודדת, באמצעות מסכה ובמנוחה, כמה <b>חמצן</b> הגוף צורך וכמה <b>פחמן דו-חמצני</b> הוא פולט, ומתוך זה מחושב במדויק כמה קלוריות הגוף שלך שורף, ואיזה "דלק" הוא מעדיף.</div>
   <div class="grid">
     <div class="card">
       <div class="label">הוצאה אנרגטית במנוחה&nbsp;<span class="nb">(REE)</span></div>
       <div class="val">${Math.round(D.reeE).toLocaleString('he')} <small>קק״ל/יום</small></div>
-      <div class="desc">הקלוריות שהגוף שורף במנוחה מלאה. מספר זה מהווה כ-70% מסך שריפת הקלוריות היומית.</div>
+      <div class="desc">הקלוריות שהגוף שורף במנוחה מלאה ביממה. מספר זה מהווה כ-70% מסך שריפת הקלוריות היומית.</div>
       <div class="bar-wrap">
         <div class="bar simple"><div class="zone" style="right:25%;left:0;"></div><div class="mark" style="right:${reePctPos}%;"></div></div>
         <div class="scale"><span>נמוך מהצפוי</span><span>צפוי</span><span>גבוה מהצפוי</span></div>
@@ -1597,7 +1651,7 @@ window.generateReport = () => {
 <div class="sheet2 pagebreak">
 <div class="head">
   <div class="logo"><img src="images/prime/prime_logo.jpeg" alt="PRIME"></div>
-  <div class="head-txt"><h1>הסבר על תוצאות הבדיקות שלך</h1><div class="sub">בדיקות תפקודיות · קוד: ${D.code}</div></div>
+  <div class="head-txt"><h1>הסבר על תוצאות הבדיקות שלך</h1><div class="sub">בדיקות תפקודיות</div></div>
   <div class="head-badge">מחקר PRIME</div>
 </div>
 <div class="section">
@@ -1733,7 +1787,7 @@ window.generateReport = () => {
 <div class="pagebreak compare">
 <div class="head">
   <div class="logo"><img src="images/prime/prime_logo.jpeg" alt="PRIME"></div>
-  <div class="head-txt"><h1>השוואת תוצאות, התחלה מול סוף</h1><div class="sub">המגמה שלך לאורך המחקר · קוד: ${D.code}</div></div>
+  <div class="head-txt"><h1>השוואת תוצאות, התחלה מול סוף</h1><div class="sub">המגמה שלך לאורך המחקר${D.dateS && D.dateE ? ` · ${D.dateS} ← ${D.dateE}` : ''}</div></div>
   <div class="head-badge">מחקר PRIME</div>
 </div>
 <div class="lead">התוצאות שלך ב<b>תחילת המחקר</b> (מימין) לעומת <b>סופו</b> (משמאל). הסימון באמצע מראה את כיוון השינוי וגודלו, והצבע אם זה שיפור.</div>

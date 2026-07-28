@@ -188,6 +188,13 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
 .since{ font-size:10.5px; color:#475569; background:#f8fafc; border:1px dashed #cbd5e1;
         border-radius:7px; padding:3px 8px; margin:4px 0 2px; }
 .since b{ color:var(--navy); }
+.phen{ border-radius:12px; padding:9px 16px 8px; margin-top:9px; border:1px solid; }
+.phen.ok{   background:var(--green-l); border-color:#6ee7b7; }
+.phen.warn{ background:var(--amber-l); border-color:#fcd34d; }
+.ph-h{ font-size:10px; font-weight:700; color:var(--muted); letter-spacing:.2px; }
+.ph-t{ font-size:14px; font-weight:700; color:var(--navy); margin:2px 0 3px; }
+.ph-b{ font-size:11.5px; color:#334155; line-height:1.55; }
+.ph-f{ font-size:9px; color:#94a3b8; margin-top:4px; line-height:1.35; }
 .contact{ background:var(--teal-l); border-radius:12px; padding:9px 16px 8px; margin-top:8px; }
 .ct-h{ font-size:12px; font-weight:700; color:var(--teal); margin-bottom:6px; text-align:center; }
 .ct-row{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
@@ -355,7 +362,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
   .no-print { display:none !important; }
   .print-bar { display:none !important; }
   body { background:#fff; }
-  #report-content { margin:0; padding:0; max-width:none; font-size:11.2px; line-height:1.32; }
+  #report-content { margin:0; padding:0; max-width:none; font-size:11.8px; line-height:1.42; }
   /* Compact page 1 to prevent overflow */
   .head { padding-bottom:7px; margin-bottom:4px; }
   .logo { height:62px; }
@@ -364,8 +371,8 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
   .sec-head { margin-bottom:3px; }
   .sec-head h2 { font-size:17px; }
   .section { margin-bottom:1px; }
-  .lead { padding:4px 12px; margin-bottom:1px; font-size:10.5px; }
-  .intro { padding:7px 12px; margin-bottom:6px; font-size:10.5px; line-height:1.5; }
+  .lead { padding:5px 12px; margin-bottom:2px; font-size:11.5px; }
+  .intro { padding:8px 12px; margin-bottom:6px; font-size:11.5px; line-height:1.55; }
   .intro p { margin-bottom:3px; }
   .ptbar { gap:5px; margin-bottom:7px; }
   .ptbar .pt { padding:4px 6px; }
@@ -376,44 +383,51 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
   .card .label { font-size:11.5px; }
   .card .val { font-size:20px; margin:1px 0; }
   .card .val small { font-size:11px; }
-  .card .desc { font-size:9px; line-height:1.25; margin-top:2px; }
+  .card .desc { font-size:10.5px; line-height:1.4; margin-top:3px; }
   .bar-wrap { margin-top:3px; }
   .bar { height:9px; }
-  .scale { font-size:9px; margin-top:2px; }
-  .note { font-size:9.5px; margin-top:2px; line-height:1.2; }
+  .scale { font-size:10px; margin-top:3px; }
+  .note { font-size:10.5px; margin-top:3px; line-height:1.38; }
   .tag { font-size:9px; padding:2px 8px; }
   .dual { margin:3px 0 1px; }
   .dual .dv { font-size:18px; }
   .split { height:22px; font-size:9.5px; margin-top:5px; }
-  .qrule { padding:4px 10px; font-size:9.5px; margin-top:2px; }
+  .qrule { padding:5px 10px; font-size:10.5px; margin-top:3px; }
   .statrow5 { gap:5px; }
   .statrow5 .stat { padding:5px 8px; }
-  .statrow5 .stat .l { font-size:9px; min-height:22px; }
+  .statrow5 .stat .l { font-size:10px; min-height:24px; }
   .statrow5 .stat .v { font-size:17px; }
-  .dlt { font-size:8.5px; }
+  .dlt { font-size:10px; }
   .qbanner { padding:6px 11px; margin-bottom:6px; gap:8px; }
   .qbanner .qb-icon { font-size:15px; }
   .qbanner .qb-t { font-size:11px; }
-  .qbanner .qb-b { font-size:9.5px; line-height:1.45; }
+  .qbanner .qb-b { font-size:10.5px; line-height:1.5; }
   .lossbox { gap:6px; margin:5px 0 4px; }
   .lossbox .lb-item { padding:5px 10px; }
   .lossbox .lb-v { font-size:18px; }
-  .refbox { padding:4px 10px; margin-top:3px; font-size:8.8px; }
+  .refbox { padding:5px 10px; margin-top:3px; font-size:10px; }
   .agenote { font-size:8.5px; margin-top:2px; }
   .foot { margin-top:4px; padding-top:6px; font-size:10px; }
   /* Page 2 */
   .ill { margin:5px auto 1px; }
   .ill .photo { height:90px; }
   .summary { padding:10px 16px; font-size:11.5px; margin-top:12px; }
-  .datebar { padding:2px 10px; margin-bottom:5px; font-size:9px; }
-  .since { font-size:9px; padding:2px 7px; margin:2px 0 1px; }
-  .sig, .nsig { font-size:8.5px; }
+  .datebar { padding:3px 10px; margin-bottom:6px; font-size:10px; }
+  .since { font-size:10px; padding:3px 8px; margin:3px 0 2px; }
+  .sig, .nsig { font-size:9.5px; }
   /* Page 3 */
   .next { padding:8px 13px 6px; margin-top:7px; }
   .next-h { font-size:12px; margin-bottom:4px; }
-  .next-i { font-size:10px; line-height:1.4; margin-bottom:3px; }
+  .next-i { font-size:11px; line-height:1.5; margin-bottom:4px; }
   .next-n { width:15px; height:15px; font-size:9px; }
   .next-f { font-size:8.5px; padding-top:4px; }
+  /* הערה 44 — הפונטים גדלו, ולכן העמוד עלול לגלוש. שובר את העמודים בגבולות נקיים */
+  .card, .ccard, .phen, .next, .contact, .refbox, .lossbox, .qbanner,
+  .ptbar, .summary, .statrow5 { break-inside:avoid; }
+  .sec-head, .csub, .ph-h, .next-h, .ct-h { break-after:avoid; }
+  .phen { padding:7px 13px 6px; margin-top:6px; }
+  .ph-h { font-size:9px; } .ph-t { font-size:12.5px; }
+  .ph-b { font-size:10.5px; line-height:1.45; } .ph-f { font-size:8.8px; }
   .contact { padding:6px 13px 5px; margin-top:5px; }
   .ct-h { font-size:10.5px; margin-bottom:4px; }
   .ct-row { gap:7px; }
@@ -1675,6 +1689,43 @@ window.generateReport = () => {
   const walkRef  = walkPred !== null ? walkPred : walkExp.mean;   // צפי אישי אם יש BMI, אחרת ממוצע הקבוצה
   const tWalk = tagGte(D.walkE, walkRef * 0.85);
 
+  /* הערה 45 — סיווג פנוטיפ הרכב גוף, לפי ההגדרה שאסף מלמד:
+     השמנה   = אחוז שומן מעל סף ההשמנה לגיל ולמין
+     סרקופניה = כוח ירוד (לפיתה או קימה מכיסא) וגם מסת שריר נמוכה (SMI)
+     הצגה בניסוח זהיר, "הממצאים מתאימים ל...", ולא כאבחנה. */
+  const phen = (() => {
+    const hasFat = isFinite(fatPctE) && fatPctE > 0;
+    const hasSmi = D.smiE > 0;
+    const hasStr = hgMaxE > 0 || D.stsE > 0;
+    if (!hasFat || !hasSmi || !hasStr) return null;   // אין מספיק נתונים, לא מסווגים
+
+    const obese    = fatPctE >= obesityCut;
+    const lowMass  = D.smiE < smiMin;
+    const lowStrHg = hgMaxE > 0 && ((sex === 'm' && hgMaxE < 27) || (sex === 'f' && hgMaxE < 16));
+    const lowStrSts= D.stsE > 0 && D.stsE < stsRng[0];
+    const lowStr   = lowStrHg || lowStrSts;
+    const sarco    = lowStr && lowMass;
+
+    let title, body, cls;
+    if (obese && sarco) {
+      cls = 'warn'; title = 'הממצאים מתאימים להשמנה סרקופנית';
+      body = 'אחוז השומן גבוה, ובמקביל גם מסת השריר וגם הכוח נמוכים מהערכים המומלצים. זהו השילוב שהמחקר מבקש לזהות ולטפל בו, משום ששתי התופעות יחד משפיעות על התפקוד יותר מכל אחת מהן בנפרד.';
+    } else if (sarco) {
+      cls = 'warn'; title = 'הממצאים מתאימים לסרקופניה';
+      body = 'מסת השריר והכוח נמוכים מהערכים המומלצים, בעוד אחוז השומן אינו בטווח ההשמנה. אימוני התנגדות וצריכת חלבון מספקת הם הכלים המרכזיים לשיפור.';
+    } else if (obese) {
+      cls = 'warn'; title = 'הממצאים מתאימים להשמנה, ללא סרקופניה';
+      body = 'אחוז השומן מעל הסף המוגדר להשמנה, אך מסת השריר והכוח נשמרו בטווחים התקינים, וזו נקודת פתיחה טובה.';
+    } else if (lowStr || lowMass) {
+      cls = 'warn'; title = 'ממצא חלקי: אחד ממדדי השריר מתחת לטווח';
+      body = `${lowMass ? 'מסת השריר נמוכה מהמומלץ אך הכוח נשמר' : 'הכוח נמוך מהמומלץ אך מסת השריר נשמרה'}. מצב זה אינו עונה להגדרת סרקופניה, אך כדאי לשים לב אליו.`;
+    } else {
+      cls = 'ok'; title = 'הממצאים אינם מתאימים להשמנה או לסרקופניה';
+      body = 'אחוז השומן, מסת השריר והכוח נמצאים כולם בטווחים המומלצים לגילך ולמינך.';
+    }
+    return { cls, title, body };
+  })();
+
   // הערה 41 — בעמוד ההשוואה: האם השינוי עבר את סף השינוי המשמעותי של אותו מבחן
   const mSig = (s, e, mdc) => {
     const a = +s, b = +e;
@@ -1716,7 +1767,8 @@ window.generateReport = () => {
     const cls = improved ? 'up' : 'down';
     const arrow = up ? '&#9650;' : '&#9660;';
     const sizeStr = decimals != null ? abs.toFixed(decimals) : abs.toFixed(1);
-    return `<div class="chip ${cls}">${arrow} ${sizeStr}${unit ? ' ' + unit : ''}</div>`;
+    // הערה 43 — סימן ✓ על שינוי בכיוון הרצוי, כדי שהמשמעות לא תישען על הצבע בלבד
+    return `<div class="chip ${cls}">${arrow} ${sizeStr}${unit ? ' ' + unit : ''}${improved ? ' ✓' : ''}</div>`;
   }
 
   function mkInterp(s, e, goodDir, texts) {
@@ -1975,6 +2027,12 @@ ${dateBarEnd}
         <div class="ref">Bohannon RW, Wang YC &amp; Gershon RC, Arch Phys Med Rehabil 2015;96:472-7 (NIH Toolbox)</div></div>
     </div>
   </div>
+  ${phen ? `<div class="phen ${phen.cls}">
+    <div class="ph-h">תמונת המצב המשולבת, הרכב גוף וכוח</div>
+    <div class="ph-t">${phen.title}</div>
+    <div class="ph-b">${phen.body}</div>
+    <div class="ph-f">סיווג זה מבוסס על שילוב אחוז השומן, מדד מסת השריר (SMI) ומבחני הכוח, לפי ההגדרות המקובלות בתחום. הוא אינו מהווה אבחנה רפואית.</div>
+  </div>` : ''}
   <div class="summary">המטרה אינה רק לרדת במשקל, אלא גם לשמור על ה<b>כוח, העצמאות והניידות</b>. שמירה או שיפור של הערכים האלה לאורך המחקר הם סימן מצוין לכך שירידת המשקל מגיעה מהמקום הנכון.</div>
 </div>
 <div class="foot"><span>קוד: ${D.code}</span><span>מחקר PRIME</span></div>
@@ -2060,10 +2118,10 @@ ${dateBarEnd}
   <div class="head-badge">מחקר PRIME</div>
 </div>
 ${dateBarCmp}
-<div class="lead">התוצאות שלך ב<b>תחילת המחקר</b> (מימין) לעומת <b>סופו</b> (משמאל). הסימון באמצע מראה את כיוון השינוי וגודלו, והצבע אם זה שיפור.</div>
+<div class="lead">התוצאות שלך ב<b>תחילת המחקר</b> (מימין) לעומת <b>סופו</b> (משמאל). <b>החץ</b> מראה את כיוון השינוי, עלייה או ירידה, ו<b>הצבע</b> מראה אם השינוי הוא לטובה. שים לב שלא בכל מדד עלייה היא דבר טוב: למשל ירידה באחוז השומן היא שיפור, ולכן היא מסומנת בירוק.</div>
 <div class="clegend">
-  <span><span class="chip up" style="padding:1px 7px;">&#9650;</span> עלייה</span>
-  <span><span class="chip down" style="padding:1px 7px;">&#9660;</span> ירידה</span>
+  <span><span class="chip up" style="padding:1px 7px;">&#9650; ✓</span> שינוי בכיוון הרצוי</span>
+  <span><span class="chip down" style="padding:1px 7px;">&#9660;</span> שינוי בכיוון ההפוך</span>
   <span><span class="chip flat" style="padding:1px 7px;">נשמר</span> ללא שינוי</span>
 </div>
 <div class="cbody">

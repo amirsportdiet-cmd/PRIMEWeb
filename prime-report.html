@@ -239,6 +239,18 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
 .lossbox .lb-v{ font-size:23px; font-weight:800; color:var(--navy); line-height:1.15; margin:1px 0 2px; }
 .lossbox .lb-v small{ font-size:11px; font-weight:600; color:#64748b; }
 .lossbox .lb-s{ font-size:9.8px; color:#64748b; line-height:1.5; }
+/* שינוי מהבדיקה הקודמת בכרטיסי המדידות (הערה 19) */
+.dlt{ font-size:9.5px; font-weight:700; color:#0f766e; margin-top:1px; }
+/* חוק הרבע — בראש הדוח ובולט (הערה 20) */
+.qbanner{ display:flex; gap:11px; align-items:flex-start; background:#fffbeb; border:1px solid #fcd34d;
+          border-right:5px solid #f59e0b; border-radius:12px; padding:10px 15px; margin-bottom:11px; }
+.qbanner .qb-icon{ font-size:19px; line-height:1.1; }
+.qbanner .qb-t{ font-size:13px; font-weight:800; color:#92400e; margin-bottom:2px; }
+.qbanner .qb-b{ font-size:11.5px; color:#78350f; line-height:1.6; }
+.qbanner b{ color:#7c2d12; }
+/* יישור הסרגלים לתחתית הכרטיס, כך שיהיו בקו אחד (הערה 21) */
+.grid > .card, .grid2 > .card{ display:flex; flex-direction:column; }
+.card > .bar-wrap{ margin-top:auto; }
 .bar.simple{ background:#eef2f7; }
 .zone{ position:absolute; top:0; bottom:0; background:var(--green); opacity:.32; border-radius:8px; }
 .mark{ position:absolute; top:-5px; width:0; height:0; border-left:7px solid transparent; border-right:7px solid transparent; border-top:11px solid var(--navy); transform:translateX(50%); }
@@ -352,6 +364,14 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
   .statrow5 .stat { padding:5px 8px; }
   .statrow5 .stat .l { font-size:9px; min-height:22px; }
   .statrow5 .stat .v { font-size:17px; }
+  .dlt { font-size:8.5px; }
+  .qbanner { padding:6px 11px; margin-bottom:6px; gap:8px; }
+  .qbanner .qb-icon { font-size:15px; }
+  .qbanner .qb-t { font-size:11px; }
+  .qbanner .qb-b { font-size:9.5px; line-height:1.45; }
+  .lossbox { gap:6px; margin:5px 0 4px; }
+  .lossbox .lb-item { padding:5px 10px; }
+  .lossbox .lb-v { font-size:18px; }
   .refbox { padding:4px 10px; margin-top:3px; font-size:8.8px; }
   .agenote { font-size:8.5px; margin-top:2px; }
   .foot { margin-top:4px; padding-top:6px; font-size:10px; }
@@ -1537,6 +1557,14 @@ window.generateReport = () => {
   const wtChangeMeta = D.wtS > 0
     ? `<span class="tag ${wtLossPct >= 5 ? 'ok' : 'warn'}">${wtLoss >= 0 ? '▼' : '▲'} ${n(Math.abs(wtLossPct),1)}%</span>`
     : '';
+
+  /** שינוי קומפקטי למדדי המדידות (הערה 19): הפרש + אחוזים */
+  const delta = (s, e, dec, unit) => {
+    if (!isFinite(s) || !isFinite(e) || !s) return '';
+    const d = e - s, pct = (d / s) * 100;
+    if (Math.abs(d) < Math.pow(10, -dec) / 2) return '<div class="dlt">ללא שינוי</div>';
+    return `<div class="dlt">${d > 0 ? '▲' : '▼'} ${n(Math.abs(d),dec)}${unit||''} (${d > 0 ? '+' : '−'}${n(Math.abs(pct),1)}%)</div>`;
+  };
   const tRee = tagOk(reePctE, 90, 110);
   const tRer = tagLt(D.rerE, 0.85);   // בצום: כל ערך מתחת ל-0.85 נחשב תקין
   const hgMaxS = Math.max(D.hgrS, D.hglS);
@@ -1607,6 +1635,15 @@ window.generateReport = () => {
   <div class="pt"><span class="ptl">בדיקה אחרונה</span><span class="ptv">${D.dateE || '—'}</span></div>
 </div>
 
+<div class="qbanner">
+  <div class="qb-icon">⚠️</div>
+  <div>
+    <div class="qb-t">חוק הרבע — למה זה הלב של המחקר</div>
+    <div class="qb-b">בירידה במשקל <b>ללא אימוני כוח</b>, בממוצע כ-<b>25% מהמשקל היורד מגיע מהמסה נטולת השומן</b> — כלומר משריר ולא משומן.
+      לכן השילוב של <b>חלבון ואימוני כוח</b> במחקר נועד לשמר את השריר ולוודא שהירידה מגיעה מהמקום הנכון.</div>
+  </div>
+</div>
+
 <div class="section">
   <div class="sec-head"><div class="sec-num">1</div><h2>בדיקת חילוף חומרים במנוחה במכשיר ה-QNRG — או במילים אחרות: כמה אנרגיה הגוף שלך שורף/מוציא במנוחה ביממה?</h2></div>
   <div class="lead">הבדיקה מודדת, באמצעות מסכה ובמנוחה, כמה <b>חמצן</b> הגוף צורך וכמה <b>פחמן דו-חמצני</b> הוא פולט, ומתוך זה מחושב במדויק כמה קלוריות הגוף שלך שורף, ואיזה "דלק" הוא מעדיף.</div>
@@ -1649,11 +1686,11 @@ window.generateReport = () => {
   <div class="sec-head"><div class="sec-num">2</div><h2>מדידות גוף והיקפים · Anthropometrics</h2></div>
   <div class="statrow5">
     <div class="stat"><div class="l">גובה · Height</div><div class="v">${height} <small>ס״מ</small></div></div>
-    <div class="stat"><div class="l">משקל · Weight</div><div class="v">${n(D.wtE,1)} <small>ק״ג</small></div><div class="meta">${wtChangeMeta}</div></div>
-    <div class="stat"><div class="l">BMI · מדד מסת גוף</div><div class="v">${n(bmiE,1)} <small>ק״ג/מ²</small></div><div class="meta">${tBmi}</div></div>
-    <div class="stat"><div class="l">היקף מותניים · Waist</div><div class="v">${n(D.waistE,0)} <small>ס״מ</small></div><div class="meta">${tWaist}</div></div>
-    <div class="stat"><div class="l">יחס מותן-גובה · WHtR</div><div class="v">${n(whtrE,2)}</div><div class="meta">${tWhtr}</div></div>
-    <div class="stat"><div class="l">היקף שוק · Calf</div><div class="v">${n(D.calfE,0)} <small>ס״מ</small></div><div class="meta">${tCalf}</div></div>
+    <div class="stat"><div class="l">משקל · Weight</div><div class="v">${n(D.wtE,1)} <small>ק״ג</small></div>${delta(D.wtS, D.wtE, 1, ' ק״ג')}<div class="meta">${wtChangeMeta}</div></div>
+    <div class="stat"><div class="l">BMI · מדד מסת גוף</div><div class="v">${n(bmiE,1)} <small>ק״ג/מ²</small></div>${delta(bmiS, bmiE, 1, '')}<div class="meta">${tBmi}</div></div>
+    <div class="stat"><div class="l">היקף מותניים · Waist</div><div class="v">${n(D.waistE,0)} <small>ס״מ</small></div>${delta(D.waistS, D.waistE, 1, ' ס״מ')}<div class="meta">${tWaist}</div></div>
+    <div class="stat"><div class="l">יחס מותן-גובה · WHtR</div><div class="v">${n(whtrE,2)}</div>${delta(whtrS, whtrE, 2, '')}<div class="meta">${tWhtr}</div></div>
+    <div class="stat"><div class="l">היקף שוק · Calf</div><div class="v">${n(D.calfE,0)} <small>ס״מ</small></div>${delta(D.calfS, D.calfE, 1, ' ס״מ')}<div class="meta">${tCalf}</div></div>
   </div>
   <div class="refbox">
     <div class="rt">טווחי ייחוס תקינים</div>
@@ -1732,8 +1769,7 @@ window.generateReport = () => {
             : '<span class="tag warn">מעל 25% — כדאי לחזק אימוני כוח וחלבון</span>')}</div>
     </div>
   </div>` : ''}
-  <div class="qrule"><b>חוק הרבע:</b> בירידה במשקל ללא אימוני כוח, בממוצע כ-25% מהמשקל היורד מגיע מהמסה נטולת השומן. לכן השילוב של חלבון ואימוני כוח במחקר נועד לשמר את השריר.
-    <div class="ref" style="margin-top:3px;">החישוב מבוסס על FFM (מסה נטולת שומן) ממכשיר ה-InBody.</div></div>
+  <div class="ref" style="margin-top:4px;">* החישוב מבוסס על FFM (מסה נטולת שומן) ממכשיר ה-InBody.</div>
 </div>
 
 <div class="foot"><span>קוד: ${D.code} · גיל ${age} · ${sex==='m'?'זכר':'נקבה'}</span><span>מחקר PRIME</span></div>`;

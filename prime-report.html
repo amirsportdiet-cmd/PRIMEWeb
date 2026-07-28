@@ -232,6 +232,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
    bar-hi-good = ערך גבוה רצוי (SMI, כוח)     -> ירוק עז בשמאל, אדום בימין */
 .bar.bar-hi-bad{  background:linear-gradient(90deg,#fca5a5 0%,#a7f3d0 40%,#a7f3d0 65%,#fde68a 100%); }
 .bar.bar-hi-good{ background:linear-gradient(90deg,#34d399 0%,#a7f3d0 35%,#fde68a 65%,#fca5a5 100%); }
+.bar.bar-lo-good{ background:linear-gradient(90deg,#fca5a5 0%,#fde68a 35%,#a7f3d0 65%,#34d399 100%); }
 .ref{ font-size:8.5px; color:#94a3b8; margin-top:2px; line-height:1.3; }
 .lossbox{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:8px 0 6px; }
 .lossbox .lb-item{ background:#fff; border:1px solid var(--line); border-right:4px solid var(--teal); border-radius:11px; padding:8px 13px; }
@@ -1655,7 +1656,7 @@ window.generateReport = () => {
       ${since(D.reeS, D.reeE, " קק״ל", 0)}
       <div class="desc">הקלוריות שהגוף שורף במנוחה מלאה ביממה. מספר זה מהווה כ-70% מסך שריפת הקלוריות היומית.</div>
       <div class="bar-wrap">
-        <div class="bar simple"><div class="zone" style="right:25%;left:0;"></div><div class="mark" style="right:${reePctPos}%;"></div></div>
+        <div class="bar bar-hi-good"><div class="mark" style="right:${reePctPos}%;"></div></div>
         <div class="scale"><span>נמוך מהצפוי</span><span>צפוי</span><span>גבוה מהצפוי</span></div>
       </div>
       <div class="note"><b>${n(reePctE,0)}% מהצפוי</b> (Harris-Benedict). תקין: 90–110% ${tRee}</div>
@@ -1666,7 +1667,7 @@ window.generateReport = () => {
       ${since(D.rerS, D.rerE, "", 2)}
       <div class="desc">יחס בין פחמן דו-חמצני נפלט לחמצן נצרך, מדד הקרוי "מנת הנשימה". הוא מלמד איזה דלק הגוף שורף (שומן או פחמימה), וכאשר הבדיקה בצום רצוי לשרוף כמה שיותר שומן. מספר נמוך = שריפת שומן, גבוה = שריפת פחמימה.</div>
       <div class="bar-wrap">
-        <div class="bar"><div class="mark" style="right:${rerPos}%;"></div></div>
+        <div class="bar bar-lo-good"><div class="mark" style="right:${rerPos}%;"></div></div>
         <div class="scale"><span>0.70 · שומן</span><span>תמהיל</span><span>1.00 · פחמימה</span></div>
       </div>
       <div class="note">ערך רצוי בצום: מתחת ל-0.85. ככל שקרוב יותר ל-0.70, שריפת השומן גבוהה יותר ${tRer}</div>
@@ -1814,7 +1815,7 @@ window.generateReport = () => {
       <div class="desc">מבחן משולב משלושה חלקים: שיווי משקל, מהירות הליכה, ויכולת לקום מכיסא. <b>טווח הציונים במבחן זה: 0–12</b>, ככל שגבוה יותר, כך התפקוד טוב יותר.</div>
       <div class="ill"><img class="photo" src="images/prime/sppb.png" alt="SPPB" onerror="this.style.display='none'"></div>
       <div class="bar-wrap">
-        <div class="bar simple"><div class="zone" style="right:20%;left:0;"></div><div class="mark" style="right:${markPos(D.sppbE, 0, 12)}%;"></div></div>
+        <div class="bar bar-hi-good"><div class="mark" style="right:${markPos(D.sppbE, 0, 12)}%;"></div></div>
         <div class="scale"><span>0 · מוגבל</span><span>סיכון</span><span>12 · מצוין</span></div>
       </div>
       <div class="note">ציון ≥10 = תפקוד טוב; ≤8 = סיכון לירידה תפקודית ${tSppb}</div>
@@ -1826,7 +1827,7 @@ window.generateReport = () => {
       <div class="desc">כמה פעמים מצליחים לקום מכיסא ולשבת חזרה, בלי עזרת הידיים, ב-30 שניות. מודד כוח וסיבולת שרירי הרגליים.</div>
       <div class="ill"><img class="photo" src="images/prime/sts.png" alt="קימה מכיסא" onerror="this.style.display='none'"></div>
       <div class="bar-wrap">
-        <div class="bar simple"><div class="zone" style="right:25%;left:0;"></div><div class="mark" style="right:${markPos(D.stsE, 0, 25)}%;"></div></div>
+        <div class="bar bar-hi-good"><div class="mark" style="right:${markPos(D.stsE, 0, 25)}%;"></div></div>
         <div class="scale"><span>נמוך</span><span>טווח תקין</span><span>גבוה</span></div>
       </div>
       <div class="note">${stsNote} ${tSts}</div>
@@ -1838,7 +1839,7 @@ window.generateReport = () => {
       <div class="desc">המרחק שעוברים בהליכה רציפה במשך 2 דקות. מודד סיבולת לב-ריאה ויכולת תפקודית.</div>
       <div class="ill"><img class="photo" src="images/prime/walk.png" alt="מבחן הליכה" onerror="this.style.display='none'"></div>
       <div class="bar-wrap">
-        <div class="bar simple"><div class="zone" style="right:25%;left:0;"></div><div class="mark" style="right:${markPos(D.walkE, 0, 250)}%;"></div></div>
+        <div class="bar bar-hi-good"><div class="mark" style="right:${markPos(D.walkE, 0, 250)}%;"></div></div>
         <div class="scale"><span>נמוך</span><span>טווח תקין</span><span>גבוה</span></div>
       </div>
       <div class="note">ממוצע צפוי (גיל ${age}): ~${walkExp} מ׳ ${tWalk}</div>

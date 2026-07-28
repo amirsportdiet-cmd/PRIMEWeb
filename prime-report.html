@@ -715,6 +715,42 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
             <input type="hidden" id="f-smi-s"><input type="hidden" id="f-smi-e">
           </div>
           <div class="field-card">
+            <div class="field-label">מסה רזה, יד ימין (ק״ג)</div>
+            <div class="field-tab-row">
+              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-lmra','s')">התחלה</button>
+              <button type="button" class="field-tab end" onclick="switchTab(this,'f-lmra','e')">סוף</button>
+            </div>
+            <input type="number" class="field-active-input" data-field="f-lmra" data-side="s" data-ph-s="לדוגמה: 3.10" data-ph-e="לדוגמה: 3.15" placeholder="לדוגמה: 3.10" min="0" max="20" step="0.01" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-lmra-s"><input type="hidden" id="f-lmra-e">
+          </div>
+          <div class="field-card">
+            <div class="field-label">מסה רזה, יד שמאל (ק״ג)</div>
+            <div class="field-tab-row">
+              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-lmla','s')">התחלה</button>
+              <button type="button" class="field-tab end" onclick="switchTab(this,'f-lmla','e')">סוף</button>
+            </div>
+            <input type="number" class="field-active-input" data-field="f-lmla" data-side="s" data-ph-s="לדוגמה: 3.00" data-ph-e="לדוגמה: 3.08" placeholder="לדוגמה: 3.00" min="0" max="20" step="0.01" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-lmla-s"><input type="hidden" id="f-lmla-e">
+          </div>
+          <div class="field-card">
+            <div class="field-label">מסה רזה, רגל ימין (ק״ג)</div>
+            <div class="field-tab-row">
+              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-lmrl','s')">התחלה</button>
+              <button type="button" class="field-tab end" onclick="switchTab(this,'f-lmrl','e')">סוף</button>
+            </div>
+            <input type="number" class="field-active-input" data-field="f-lmrl" data-side="s" data-ph-s="לדוגמה: 8.40" data-ph-e="לדוגמה: 8.55" placeholder="לדוגמה: 8.40" min="0" max="40" step="0.01" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-lmrl-s"><input type="hidden" id="f-lmrl-e">
+          </div>
+          <div class="field-card">
+            <div class="field-label">מסה רזה, רגל שמאל (ק״ג)</div>
+            <div class="field-tab-row">
+              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-lmll','s')">התחלה</button>
+              <button type="button" class="field-tab end" onclick="switchTab(this,'f-lmll','e')">סוף</button>
+            </div>
+            <input type="number" class="field-active-input" data-field="f-lmll" data-side="s" data-ph-s="לדוגמה: 8.25" data-ph-e="לדוגמה: 8.45" placeholder="לדוגמה: 8.25" min="0" max="40" step="0.01" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-lmll-s"><input type="hidden" id="f-lmll-e">
+          </div>
+          <div class="field-card">
             <div class="field-label">TBW — סך נוזלים (ליטר)</div>
             <div class="field-tab-row">
               <button type="button" class="field-tab start active" onclick="switchTab(this,'f-tbw','s')">התחלה</button>
@@ -1178,14 +1214,20 @@ const NORMS = {
     m: { '<65': 25, '65+': 28 },
     f: { '<65': 37, '65+': 40 }
   },
-  // ספי אחוז שומן להגדרת השמנה, לפי גיל ומין (מצגת אסף בוך, שקופית 47)
-  // ESPEN/EASO consensus, Obes Facts 2022;15:321-335 · במקור: Am J Clin Nutr 2000;72:694-701
-  obesity: {
+  // סף השמנה לכרטיס אחוז השומן — לפי דף פענוח ה-InBody 770 של ד"ר אסף בוך (Heo 2012)
+  obesity: { m: 30, f: 42 },
+  // סף השמנה לצורך סיווג "השמנה סרקופנית" בלבד — קונצנזוס ESPEN/EASO לפי גיל ומין
+  // (מצגת אסף בוך, שקופיות 47 ו-92 · Obes Facts 2022;15:321-335)
+  obesitySO: {
     m: [[39, 26], [59, 29], [999, 31]],
     f: [[39, 39], [59, 41], [999, 43]]
   },
-  // SMI — מדד מסת שריר (Cruz-Jentoft AJ et al., EWGSOP2, Age Ageing 2019;48:16-31)
+  // SMI — מדד מסת שריר ביחס לגובה (Cruz-Jentoft AJ et al., EWGSOP2, Age Ageing 2019;48:16-31)
   smi: { okM: 7.0, okF: 5.5 },
+  // ASMM כאחוז ממשקל הגוף — הקריטריון שאסף מלמד לאבחון סרקופניה (שקופית 92)
+  // Obes Facts 2022;15:321-335 · במקור: J Am Geriatr Soc 2013;61:974-80
+  asmmPct: { okM: 25.7, okF: 19.4 },
+  limbGapPct: 5,                    // פער מעל 5% בין ימין לשמאל, לפי דף הפענוח של אסף
   ree_pct: { ok: [90, 110] },
   rer: { ok: [0.70, 1.00] },
   hg: { okM: 27, okF: 16 },        // greater or equal
@@ -1215,9 +1257,9 @@ const NORMS = {
   }
 };
 
-// סף אחוז השומן להגדרת השמנה, לפי גיל ומין (שקופית 47 במצגת של אסף)
-function obesityCutFor(age, sex) {
-  const tbl = sex === 'm' ? NORMS.obesity.m : NORMS.obesity.f;
+// סף אחוז השומן לאבחון השמנה סרקופנית, לפי גיל ומין (שקופיות 47 ו-92 במצגת של אסף)
+function obesitySOFor(age, sex) {
+  const tbl = sex === 'm' ? NORMS.obesitySO.m : NORMS.obesitySO.f;
   for (const [maxAge, cut] of tbl) if (age <= maxAge) return cut;
   return tbl[tbl.length - 1][1];
 }
@@ -1519,12 +1561,14 @@ window.loadSample = () => {
   const startMap = {
     'f-ree':'1500','f-rer':'0.82','f-fatburn':'55','f-chburn':'45',
     'f-wt':'88','f-fm':'28','f-smm':'30','f-smi':'7.1','f-tbw':'40','f-icw':'25','f-ecw':'15',
+    'f-lmra':'3.05','f-lmla':'2.95','f-lmrl':'8.30','f-lmll':'8.10',
     'f-waist':'100','f-calf':'36',
     'f-hgr':'38','f-hgl':'36','f-sppb':'11','f-sts':'15','f-walk':'178'
   };
   const endMap = {
     'f-ree':'1550','f-rer':'0.80','f-fatburn':'60','f-chburn':'40',
     'f-wt':'82','f-fm':'24','f-smm':'31','f-smi':'7.3','f-tbw':'41','f-icw':'26','f-ecw':'15',
+    'f-lmra':'3.15','f-lmla':'3.05','f-lmrl':'8.55','f-lmll':'8.40',
     'f-waist':'94','f-calf':'36',
     'f-hgr':'40','f-hgl':'39','f-sppb':'12','f-sts':'17','f-walk':'190'
   };
@@ -1665,6 +1709,10 @@ window.generateReport = () => {
     fmS: g('f-fm-s'), fmE: g('f-fm-e'),
     smmS: g('f-smm-s'), smmE: g('f-smm-e'),
     smiS: g('f-smi-s'), smiE: g('f-smi-e'),
+    lmraS: g('f-lmra-s'), lmraE: g('f-lmra-e'),
+    lmlaS: g('f-lmla-s'), lmlaE: g('f-lmla-e'),
+    lmrlS: g('f-lmrl-s'), lmrlE: g('f-lmrl-e'),
+    lmllS: g('f-lmll-s'), lmllE: g('f-lmll-e'),
     tbwS: g('f-tbw-s'), tbwE: g('f-tbw-e'),
     icwS: g('f-icw-s'), icwE: g('f-icw-e'),
     ecwS: g('f-ecw-s'), ecwE: g('f-ecw-e'),
@@ -1698,8 +1746,29 @@ window.generateReport = () => {
   // Tags
   const ageGroup = age < 65 ? '<65' : '65+';
   const fatPctMax = sex === 'm' ? NORMS.fatPct.m[ageGroup] : NORMS.fatPct.f[ageGroup];
-  const obesityCut = obesityCutFor(age, sex);
-  const stsCrit    = stsCriterion(age, sex);
+  const obesityCut   = sex === 'm' ? NORMS.obesity.m : NORMS.obesity.f;  // כרטיס אחוז השומן (דף ה-InBody)
+  const obesityCutSO = obesitySOFor(age, sex);                           // סיווג הפנוטיפ (ESPEN/EASO)
+  const stsCrit      = stsCriterion(age, sex);
+
+  /* מסה רזה אפנדיקולרית (ASMM) — סכום 4 הגפיים מדף ה-InBody.
+     אסף מחשב אותה כאחוז ממשקל הגוף, וזה הקריטריון למסת שריר נמוכה בשקופית 92. */
+  const asmm = (side) => {
+    const v = ['lmra','lmla','lmrl','lmll'].map(k => +D[k + side]);
+    if (v.some(x => !isFinite(x) || x <= 0)) return null;
+    return v.reduce((a, b) => a + b, 0);
+  };
+  const asmmS = asmm('S'), asmmE = asmm('E');
+  const asmmPctE = (asmmE !== null && D.wtE > 0) ? asmmE / D.wtE * 100 : null;
+  const asmmPctS = (asmmS !== null && D.wtS > 0) ? asmmS / D.wtS * 100 : null;
+  const asmmMin  = sex === 'm' ? NORMS.asmmPct.okM : NORMS.asmmPct.okF;
+  // פער בין ימין לשמאל — דף הפענוח של אסף מסמן פער מעל 5% כממצא שדורש התייחסות
+  const gapPct = (r, l) => {
+    const a = +r, b = +l;
+    if (!isFinite(a) || !isFinite(b) || a <= 0 || b <= 0) return null;
+    return Math.abs(a - b) / Math.max(a, b) * 100;
+  };
+  const armGap = gapPct(D.lmraE, D.lmlaE);
+  const legGap = gapPct(D.lmrlE, D.lmllE);
   const smiMin = sex === 'm' ? NORMS.smi.okM : NORMS.smi.okF;
   const sppbNorm = sppbForAge(age, sex);
   // הערה 37 — תרגום סף אחוז השומן למסת שומן בק״ג לפי המשקל בפועל
@@ -1754,12 +1823,13 @@ window.generateReport = () => {
      הצגה בניסוח זהיר, "הממצאים מתאימים ל...", ולא כאבחנה. */
   const phen = (() => {
     const hasFat = isFinite(fatPctE) && fatPctE > 0;
-    const hasSmi = D.smiE > 0;
+    const hasMass = asmmPctE !== null || D.smiE > 0;
     const hasStr = hgMaxE > 0 || D.stsE > 0;
-    if (!hasFat || !hasSmi || !hasStr) return null;   // אין מספיק נתונים, לא מסווגים
+    if (!hasFat || !hasMass || !hasStr) return null;   // אין מספיק נתונים, לא מסווגים
 
-    const obese    = fatPctE >= obesityCut;
-    const lowMass  = D.smiE < smiMin;
+    const obese    = fatPctE >= obesityCutSO;
+    // מסת שריר נמוכה — ASMM/משקל אם הוזן (הקריטריון שאסף מלמד), אחרת SMI
+    const lowMass  = asmmPctE !== null ? asmmPctE < asmmMin : D.smiE < smiMin;
     const lowStrHg = hgMaxE > 0 && ((sex === 'm' && hgMaxE < 27) || (sex === 'f' && hgMaxE < 16));
     const lowStrSts= D.stsE > 0 && D.stsE < stsCrit.min;
     const lowStr   = lowStrHg || lowStrSts;
@@ -1795,7 +1865,7 @@ window.generateReport = () => {
   // הערה 36 — "להמשך הדרך": עד 3 נקודות, נבחרות לפי החולשות בפועל, לפי סדר חשיבות קלינית
   const nextSteps = (() => {
     const c = [];
-    if (D.smiE > 0 && D.smiE < smiMin)
+    if ((asmmPctE !== null && asmmPctE < asmmMin) || (asmmPctE === null && D.smiE > 0 && D.smiE < smiMin))
       c.push(['שימור מסת השריר', 'מדד מסת השריר נמוך מהטווח המומלץ. אימוני התנגדות סדירים, יחד עם צריכת חלבון מספקת ומפוזרת על פני היום, הם הדרך המרכזית לשמר ולבנות מסת שריר.']);
     if (D.sppbE > 0 && D.sppbE <= 9)
       c.push(['חיזוק היציבות והניידות', 'ציון התפקוד הגופני מצביע על מקום לשיפור. תרגילי שיווי משקל וחיזוק שרירי הרגליים, גם בבית ולכמה דקות ביום, משפרים יציבות ומפחיתים סיכון לנפילות.']);
@@ -1988,6 +2058,19 @@ ${dateBarEnd}
         <div class="ref">Cruz-Jentoft AJ et al., EWGSOP2, Age Ageing 2019;48:16-31</div></div>`
       : `<div class="note"><span class="tag warn">לא הוזן SMI</span></div>`}
     </div>
+    ${asmmPctE !== null ? `<div class="card">
+      <div class="label">מסת שריר בגפיים&nbsp;<span class="nb">(ASMM)</span></div>
+      <div class="val">${n(asmmPctE,1)}<small>% ממשקל הגוף</small></div>
+      ${asmmPctS !== null ? since(asmmPctS, asmmPctE, "%", 1) : ''}
+      <div class="desc">סכום המסה הרזה בשתי הידיים ושתי הרגליים, <b>${n(asmmE,2)} ק״ג</b>, כאחוז ממשקל הגוף. אלו השרירים שמזיזים אותך בפועל, ולכן זהו המדד המשמש להערכת סרקופניה.</div>
+      <div class="bar-wrap">
+        <div class="bar bar-hi-good"><div class="mark" style="right:${markPos(asmmPctE, 12, 36)}%;"></div></div>
+        <div class="scale"><span>נמוך · סיכון</span><span>גבולי</span><span>תקין</span></div>
+      </div>
+      <div class="note">תקין: <b>גברים מעל ${n(NORMS.asmmPct.okM,1)}%</b> · <b>נשים מעל ${n(NORMS.asmmPct.okF,1)}%</b> ${tagGte(asmmPctE, asmmMin)}
+        ${(armGap !== null || legGap !== null) ? `<div style="margin-top:2px;">איזון בין ימין לשמאל: ידיים ${armGap === null ? '—' : n(armGap,1) + '%'} · רגליים ${legGap === null ? '—' : n(legGap,1) + '%'} ${(Math.max(armGap || 0, legGap || 0) > NORMS.limbGapPct) ? '<span class="tag warn">פער מעל 5%</span>' : '<span class="tag ok">מאוזן</span>'}</div>` : ''}
+        <div class="ref">ASMM/משקל: Obes Facts 2022;15:321-335 · במקור J Am Geriatr Soc 2013;61:974-80 · פער בין הצדדים: דף פענוח InBody 770, ד"ר אסף בוך</div></div>
+    </div>` : ''}
     ${D.tbwE > 0 ? `<div class="card">
       <div class="label">נוזלים · Total Body Water&nbsp;<span class="nb">(TBW)</span></div>
       <div class="val">${n(D.tbwE,1)} <small>ליטר</small></div>
@@ -2101,7 +2184,7 @@ ${dateBarEnd}
     <div class="ph-h">תמונת המצב המשולבת, הרכב גוף וכוח</div>
     <div class="ph-t">${phen.title}</div>
     <div class="ph-b">${phen.body}</div>
-    <div class="ph-f">הסיווג מבוסס על הקונצנזוס להשמנה סרקופנית (ESPEN/EASO, Obes Facts 2022): כוח ירוד נקבע לפי כוח לפיתה מתחת ל-${sex==='m'?'27':'16'} ק״ג או קימה מכיסא מתחת ל-${stsCrit.min} חזרות, ואחוז שומן גבוה נקבע מעל ${obesityCut}% לגיל ולמין. אינו מהווה אבחנה רפואית.</div>
+    <div class="ph-f">הסיווג מבוסס על הקונצנזוס להשמנה סרקופנית (ESPEN/EASO, Obes Facts 2022): כוח ירוד נקבע לפי כוח לפיתה מתחת ל-${sex==='m'?'27':'16'} ק״ג או קימה מכיסא מתחת ל-${stsCrit.min} חזרות; מסת שריר נמוכה לפי ${asmmPctE !== null ? `מסה רזה בגפיים מתחת ל-${n(asmmMin,1)}% ממשקל הגוף` : `מדד SMI מתחת ל-${n(smiMin,1)} ק״ג/מ²`}; ואחוז שומן גבוה מעל ${obesityCutSO}% לגיל ולמין. אינו מהווה אבחנה רפואית.</div>
   </div>` : ''}
   <div class="summary">המטרה אינה רק לרדת במשקל, אלא גם לשמור על ה<b>כוח, העצמאות והניידות</b>. שמירה או שיפור של הערכים האלה לאורך המחקר הם סימן מצוין לכך שירידת המשקל מגיעה מהמקום הנכון.</div>
 </div>

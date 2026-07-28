@@ -185,6 +185,9 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
 .ptbar .pt{ background:var(--teal-l); border-radius:10px; padding:7px 10px; text-align:center; }
 .ptbar .ptl{ display:block; font-size:9.5px; color:#0f766e; font-weight:700; letter-spacing:.2px; }
 .ptbar .ptv{ display:block; font-size:13px; color:var(--navy); font-weight:800; margin-top:1px; }
+.since{ font-size:10.5px; color:#475569; background:#f8fafc; border:1px dashed #cbd5e1;
+        border-radius:7px; padding:3px 8px; margin:4px 0 2px; }
+.since b{ color:var(--navy); }
 .grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
 .grid2{ display:grid; grid-template-columns:repeat(2,1fr); gap:18px; }
 .pagebreak{ break-before:page; }
@@ -394,6 +397,10 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
 
     <div class="form-researcher-note no-print">
       &#9432; יש להזין את כל השדות, כולל ערכי תחילת המחקר וסוף המחקר
+      <button type="button" onclick="loadSample()"
+        style="margin-right:10px; background:#0d9488; color:#fff; border:none; border-radius:9px; padding:7px 16px; font-size:13px; font-weight:800; cursor:pointer; font-family:inherit;">
+        👁 תצוגה מקדימה — דוח לדוגמה
+      </button>
     </div>
 
     <details class="rc-video no-print">
@@ -1071,9 +1078,30 @@ function harrisB(age, sex, wtKg, htCm) {
 function n(v, d=1) { return typeof v === 'number' ? v.toFixed(d) : v; }
 
 // bar marker position (right %) clamped
+/**
+ * מיקום הסמן על הסרגל.
+ * הסקאלה מוצגת ב-RTL: הערך הנמוך מימין והגבוה משמאל, והסמן ממוקם ב-right.
+ * לכן ערך נמוך => אחוז קטן (קרוב לימין), ערך גבוה => אחוז גדול (קרוב לשמאל).
+ */
 function markPos(val, lo, hi) {
   const pct = (val - lo) / (hi - lo);
-  return Math.max(2, Math.min(96, (1 - pct) * 100));
+  return Math.max(2, Math.min(96, pct * 100));
+}
+
+/**
+ * שורת "מאז הכניסה למחקר": ערך התחלתי, ההפרש (חיסור) והשינוי באחוזים (חילוק).
+ * מוצגת בעמודים 1-2 מתחת לערך הנוכחי.
+ */
+function since(startVal, endVal, unit, dec) {
+  const s = +startVal, e = +endVal;
+  if (!isFinite(s) || !isFinite(e) || s === 0) return '';
+  const diff = e - s;
+  const pct = (diff / s) * 100;
+  const arrow = Math.abs(diff) < Math.pow(10, -dec) / 2 ? 'ללא שינוי'
+              : (diff > 0 ? '▲' : '▼');
+  const amount = Math.abs(diff) < Math.pow(10, -dec) / 2 ? ''
+              : ` ${n(Math.abs(diff), dec)}${unit} (${pct > 0 ? '+' : '−'}${n(Math.abs(pct), 1)}%)`;
+  return `<div class="since">בכניסה למחקר: <b>${n(s, dec)}${unit}</b> · שינוי: ${arrow}${amount}</div>`;
 }
 
 // Chip logic
@@ -1470,7 +1498,7 @@ window.generateReport = () => {
   const tCalf = sex === 'm' ? tagGte(D.calfE, 34) : tagGte(D.calfE, 33);
   const tFatPct = tagOk(fatPctE, fatPctNorm[0], fatPctNorm[1]);
   const tRee = tagOk(reePctE, 90, 110);
-  const tRer = tagOk(D.rerE, 0.70, 1.00);
+  const tRer = tagLt(D.rerE, 0.85);   // בצום: כל ערך מתחת ל-0.85 נחשב תקין
   const hgMaxS = Math.max(D.hgrS, D.hglS);
   const hgMaxE = Math.max(D.hgrE, D.hglE);
   const tHg = sex === 'm' ? tagGte(hgMaxE, 27) : tagGte(hgMaxE, 16);
@@ -1546,6 +1574,7 @@ window.generateReport = () => {
     <div class="card">
       <div class="label">הוצאה אנרגטית במנוחה&nbsp;<span class="nb">(REE)</span></div>
       <div class="val">${Math.round(D.reeE).toLocaleString('he')} <small>קק״ל/יום</small></div>
+      ${since(D.reeS, D.reeE, " קק״ל", 0)}
       <div class="desc">הקלוריות שהגוף שורף במנוחה מלאה ביממה. מספר זה מהווה כ-70% מסך שריפת הקלוריות היומית.</div>
       <div class="bar-wrap">
         <div class="bar simple"><div class="zone" style="right:25%;left:0;"></div><div class="mark" style="right:${reePctPos}%;"></div></div>
@@ -1556,12 +1585,13 @@ window.generateReport = () => {
     <div class="card">
       <div class="label">מנת הנשימה&nbsp;<span class="nb">(RER)</span></div>
       <div class="val">${n(D.rerE,2)}</div>
-      <div class="desc">יחס בין פחמן דו-חמצני נפלט לחמצן נצרך. מספר נמוך = שריפת שומן, גבוה = שריפת פחמימה.</div>
+      ${since(D.rerS, D.rerE, "", 2)}
+      <div class="desc">יחס בין פחמן דו-חמצני נפלט לחמצן נצרך, מדד הקרוי "מנת הנשימה". הוא מלמד איזה דלק הגוף שורף (שומן או פחמימה), וכאשר הבדיקה בצום רצוי לשרוף כמה שיותר שומן. מספר נמוך = שריפת שומן, גבוה = שריפת פחמימה.</div>
       <div class="bar-wrap">
         <div class="bar"><div class="mark" style="right:${rerPos}%;"></div></div>
         <div class="scale"><span>0.70 · שומן</span><span>תמהיל</span><span>1.00 · פחמימה</span></div>
       </div>
-      <div class="note">טווח אופייני במנוחה בצום ~0.80–0.85 ${tRer}</div>
+      <div class="note">ערך רצוי בצום: מתחת ל-0.85. ככל שקרוב יותר ל-0.70, שריפת השומן גבוהה יותר ${tRer}</div>
     </div>
     <div class="card">
       <div class="label">מה שורפים במנוחה</div>
@@ -1582,6 +1612,7 @@ window.generateReport = () => {
     <div class="card">
       <div class="label">מסת שומן · Fat Mass&nbsp;<span class="nb">(FM)</span></div>
       <div class="val">${n(D.fmE,1)} <small>ק״ג · ${n(fatPctE,1)}% אחוז שומן</small></div>
+      ${since(D.fmS, D.fmE, " ק״ג", 1)}
       <div class="desc">חלק המשקל שמורכב משומן, במשקל ובאחוזים.</div>
       <div class="bar-wrap">
         <div class="bar"><div class="mark" style="right:${markPos(fatPctE, 0, 50)}%;"></div></div>
@@ -1595,6 +1626,7 @@ window.generateReport = () => {
         <div><div class="dv">${n(ffmE,1)}<small> ק״ג</small></div><div class="dl">FFM · מסה רזה</div></div>
         <div><div class="dv">${n(D.smmE,1)}<small> ק״ג</small></div><div class="dl">SMM · מסת שריר</div></div>
       </div>
+      ${since(ffmS, ffmE, " ק״ג", 1)}
       <div class="desc">מסה רזה (FFM) = המשקל פחות השומן. שמירה עליה בירידה במשקל היא מטרת-העל.</div>
       <div class="bar-wrap">
         <div class="bar simple"><div class="zone" style="right:30%;left:0;"></div><div class="mark" style="right:55%;"></div></div>
@@ -1664,6 +1696,7 @@ window.generateReport = () => {
         <div><div class="dv">${n(D.hgrE,1)}<small> ק״ג</small></div><div class="dl">יד ימין</div></div>
         <div><div class="dv">${n(D.hglE,1)}<small> ק״ג</small></div><div class="dl">יד שמאל</div></div>
       </div>
+      ${since(Math.max(D.hgrS,D.hglS), Math.max(D.hgrE,D.hglE), " ק״ג", 1)}
       <div class="desc">כוח הלפיתה של כף היד, <b>הערך הגבוה ביותר</b> שנמדד בכל יד. מדד אמין לכוח השרירים בכל הגוף, וירידה בו מעידה על איבוד שריר (סרקופניה).</div>
       <div class="ill"><img class="photo" src="images/prime/hg.png" alt="כוח לפיתה" onerror="this.style.display='none'"></div>
       <div class="bar-wrap">
@@ -1675,6 +1708,7 @@ window.generateReport = () => {
     <div class="card">
       <div class="label">סוללת מבחנים קצרה להערכת התפקוד הגופני&nbsp;<span class="nb">(SPPB)</span></div>
       <div class="val"><span dir="ltr">${D.sppbE} <small>/ 12</small></span></div>
+      ${since(D.sppbS, D.sppbE, "", 0)}
       <div class="desc">מבחן משולב משלושה חלקים: שיווי משקל, מהירות הליכה, ויכולת לקום מכיסא. 0–12, ככל שגבוה יותר — תפקוד טוב יותר.</div>
       <div class="ill"><img class="photo" src="images/prime/sppb.png" alt="SPPB" onerror="this.style.display='none'"></div>
       <div class="bar-wrap">
@@ -1686,6 +1720,7 @@ window.generateReport = () => {
     <div class="card">
       <div class="label">קימה מכיסא ב-30 שניות&nbsp;<span class="nb">(30s STS)</span></div>
       <div class="val">${D.stsE} <small>חזרות</small></div>
+      ${since(D.stsS, D.stsE, " חז׳", 0)}
       <div class="desc">כמה פעמים מצליחים לקום מכיסא ולשבת חזרה, בלי עזרת הידיים, ב-30 שניות. מודד כוח וסיבולת שרירי הרגליים.</div>
       <div class="ill"><img class="photo" src="images/prime/sts.png" alt="קימה מכיסא" onerror="this.style.display='none'"></div>
       <div class="bar-wrap">
@@ -1697,6 +1732,7 @@ window.generateReport = () => {
     <div class="card">
       <div class="label">מבחן הליכה 2 דקות&nbsp;<span class="nb" dir="ltr">(2-min walk)</span></div>
       <div class="val">${D.walkE} <small>מטר</small></div>
+      ${since(D.walkS, D.walkE, " מ׳", 1)}
       <div class="desc">המרחק שעוברים בהליכה רציפה במשך 2 דקות. מודד סיבולת לב-ריאה ויכולת תפקודית.</div>
       <div class="ill"><img class="photo" src="images/prime/walk.png" alt="מבחן הליכה" onerror="this.style.display='none'"></div>
       <div class="bar-wrap">

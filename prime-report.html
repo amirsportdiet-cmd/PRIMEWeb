@@ -1087,9 +1087,15 @@ const NORMS = {
     m: [[14,19],[12,18],[12,17],[11,17],[10,15],[8,14],[7,12]],  // 60-64,65-69,...,90+
     f: [[12,17],[11,16],[10,15],[10,15],[9,14],[8,13],[4,11]]
   },
+  // מבחן הליכה 2 דקות — נורמות NIH Toolbox (Bohannon, Wang & Gershon, Arch Phys Med Rehabil 2015)
+  // לכל קבוצת גיל ומין: [ממוצע, גבול תחתון 95%CI, גבול עליון 95%CI] במטרים
   walk2: {
-    m: { 18:200, 40:196, 50:190, 60:185, 70:170, 80:150 },
-    f: { 18:190, 40:184, 50:178, 60:176, 70:160, 80:140 }
+    m: [['18–54',200.9,197.2,204.6],['55–59',191.0,176.8,205.2],['60–64',179.1,165.4,192.8],
+        ['65–69',184.2,170.7,197.8],['70–74',172.4,163.8,180.9],['75–79',157.6,140.3,174.9],
+        ['80–85',144.1,132.6,155.6]],
+    f: [['18–54',183.0,180.8,185.3],['55–59',176.4,168.1,184.8],['60–64',166.4,158.2,174.5],
+        ['65–69',155.2,140.6,169.8],['70–74',145.9,136.9,154.9],['75–79',140.9,121.8,159.9],
+        ['80–85',134.3,125.7,142.9]]
   }
 };
 
@@ -1100,11 +1106,21 @@ function stsRange(age, sex) {
   if (age < 60) i = 0;
   return sex === 'm' ? NORMS.sts.m[i] : NORMS.sts.f[i];
 }
+// מחזיר את שורת הנורמה המתאימה לגיל ולמין: {band, mean, lo, hi}
 function walkExpected(age, sex) {
   const tbl = sex === 'm' ? NORMS.walk2.m : NORMS.walk2.f;
-  const keys = Object.keys(tbl).map(Number).sort((a,b)=>b-a);
-  for (let k of keys) { if (age >= k) return tbl[k]; }
-  return sex === 'm' ? 200 : 190;
+  const cuts = [55, 60, 65, 70, 75, 80];   // גבול תחתון של כל קבוצה מעל 18–54
+  let i = 0;
+  for (let k = 0; k < cuts.length; k++) { if (age >= cuts[k]) i = k + 1; }
+  const r = tbl[i];
+  return { band: r[0], mean: r[1], lo: r[2], hi: r[3] };
+}
+// משוואת הרגרסיה של Bohannon — צפי אישי לפי גיל ו-BMI (מדויק יותר מממוצע הקבוצה)
+function walkPredicted(age, bmi, sex) {
+  if (!isFinite(bmi) || bmi <= 0) return null;
+  return sex === 'm'
+    ? 279.096 - (0.998 * age) - (1.426 * bmi)
+    : 257.177 - (0.723 * age) - (1.688 * bmi);
 }
 
 function tagOk(v, min, max) {
@@ -1574,7 +1590,9 @@ window.generateReport = () => {
   const tHg = sex === 'm' ? tagGte(hgMaxE, 27) : tagGte(hgMaxE, 16);
   const tSppb = tagGte(D.sppbE, 10);
   const tSts = tagOk(D.stsE, stsRng[0], stsRng[1]);
-  const tWalk = tagGte(D.walkE, walkExp * 0.85);
+  const walkPred = walkPredicted(age, bmiE, sex);
+  const walkRef  = walkPred !== null ? walkPred : walkExp.mean;   // צפי אישי אם יש BMI, אחרת ממוצע הקבוצה
+  const tWalk = tagGte(D.walkE, walkRef * 0.85);
 
   // REE bar marker position
   const reePctPos = markPos(reePctE, 70, 130);
@@ -1842,7 +1860,7 @@ window.generateReport = () => {
         <div class="bar bar-hi-good"><div class="mark" style="right:${markPos(D.walkE, 0, 250)}%;"></div></div>
         <div class="scale"><span>נמוך</span><span>טווח תקין</span><span>גבוה</span></div>
       </div>
-      <div class="note">ממוצע צפוי (גיל ${age}): ~${walkExp} מ׳ ${tWalk}</div>
+      <div class="note">תקין (גיל ${walkExp.band}): ${sex==='m'?'גברים':'נשים'} ${n(walkExp.lo,0)}–${n(walkExp.hi,0)} מ׳${walkPred !== null ? ` · צפי אישי לפי גיל ו-BMI: ~${n(walkPred,0)} מ׳` : ''} ${tWalk}</div>
     </div>
   </div>
   <div class="summary">המטרה אינה רק לרדת במשקל, אלא גם לשמור על ה<b>כוח, העצמאות והניידות</b>. שמירה או שיפור של הערכים האלה לאורך המחקר הם סימן מצוין לכך שירידת המשקל מגיעה מהמקום הנכון.</div>

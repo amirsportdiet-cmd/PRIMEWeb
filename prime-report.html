@@ -154,7 +154,38 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
 .print-bar span { font-size:14px; }
 .btn-print { background:#0d9488; color:#fff; border:none; border-radius:8px; padding:10px 24px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }
 .btn-back { background:transparent; color:#94c7f4; border:1px solid #94c7f4; border-radius:8px; padding:10px 18px; font-size:13px; cursor:pointer; font-family:inherit; }
+.btn-send { background:#fff; color:#16304f; border:none; border-radius:8px; padding:10px 20px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }
+.btn-send:disabled { opacity:.55; cursor:default; }
 #report-content { background:#fff; max-width:794px; margin:24px auto; padding:13mm; }
+
+/* ===== חלון שליחת הדו״ח ===== */
+#send-modal { display:none; position:fixed; inset:0; background:rgba(15,30,50,.55); z-index:60;
+              align-items:center; justify-content:center; padding:20px; }
+#send-modal.on { display:flex; }
+.sm-box { background:#fff; border-radius:16px; width:100%; max-width:520px; padding:22px 26px 20px;
+          box-shadow:0 20px 50px rgba(0,0,0,.3); max-height:92vh; overflow:auto; }
+.sm-h { font-size:19px; font-weight:700; color:#16304f; margin-bottom:14px; }
+.sm-row label { display:block; font-size:13px; font-weight:600; color:#334155; margin-bottom:5px; }
+.sm-row input { width:100%; padding:11px 13px; border:1.5px solid #cbd5e1; border-radius:9px;
+                font-size:15px; font-family:inherit; }
+.sm-row input:focus { outline:none; border-color:#0d9488; }
+.sm-hint { font-size:11.5px; color:#64748b; margin-top:5px; min-height:15px; }
+.sm-prev { margin-top:14px; border:1px solid #e2e8f0; border-radius:10px; overflow:hidden; }
+.sm-prev-h { background:#f8fafc; padding:6px 12px; font-size:11.5px; font-weight:700; color:#64748b;
+             border-bottom:1px solid #e2e8f0; }
+.sm-prev-b { padding:12px 14px; font-size:12.5px; line-height:1.65; color:#334155;
+             max-height:210px; overflow:auto; white-space:pre-line; }
+.sm-warn { margin-top:12px; background:#fff7ed; border:1px solid #fed7aa; border-radius:9px;
+           padding:8px 12px; font-size:12px; color:#9a3412; line-height:1.5; }
+.sm-err { display:none; margin-top:10px; background:#fef2f2; border:1px solid #fca5a5; border-radius:9px;
+          padding:9px 12px; font-size:12.5px; color:#b91c1c; line-height:1.55; }
+.sm-ok  { background:#ecfdf5 !important; border-color:#6ee7b7 !important; color:#047857 !important; }
+.sm-actions { display:flex; gap:10px; justify-content:flex-start; margin-top:16px; }
+.sm-go { background:#0d9488; color:#fff; border:none; border-radius:9px; padding:11px 30px;
+         font-size:14.5px; font-weight:700; cursor:pointer; font-family:inherit; }
+.sm-go:disabled { opacity:.55; cursor:default; }
+.sm-cancel { background:#f1f5f9; color:#475569; border:none; border-radius:9px; padding:11px 22px;
+             font-size:14px; cursor:pointer; font-family:inherit; }
 
 /* ===== Report styles (copied from template exactly) ===== */
 @page { size: A4; margin: 13mm 13mm; }
@@ -887,9 +918,34 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
   <div class="print-bar no-print">
     <button class="btn-back" onclick="backToForm()">← חזרה לטופס</button>
     <span id="report-code-title"></span>
-    <button class="btn-print" onclick="window.print()">הדפס / הורד PDF</button>
+    <span style="display:flex; gap:9px;">
+      <button class="btn-send" onclick="openSend()">✉ שליחה לנחקר/ת</button>
+      <button class="btn-print" onclick="window.print()">הדפס / הורד PDF</button>
+    </span>
   </div>
   <div id="report-content"></div>
+</div>
+
+<!-- ===== חלון שליחת הדו״ח במייל ===== -->
+<div id="send-modal" class="no-print">
+  <div class="sm-box">
+    <div class="sm-h">שליחת הדו״ח לנחקר/ת</div>
+    <div class="sm-row">
+      <label for="sm-email">כתובת המייל</label>
+      <input type="email" id="sm-email" dir="ltr" placeholder="name@example.com" autocomplete="off">
+      <div class="sm-hint" id="sm-src"></div>
+    </div>
+    <div class="sm-prev">
+      <div class="sm-prev-h">תצוגה מקדימה של ההודעה</div>
+      <div class="sm-prev-b" id="sm-preview"></div>
+    </div>
+    <div class="sm-warn">הדו״ח מכיל תוצאות בדיקות אישיות. ודא/י שהכתובת נכונה, השליחה אינה ניתנת לביטול.</div>
+    <div class="sm-err" id="sm-err"></div>
+    <div class="sm-actions">
+      <button class="sm-cancel" onclick="closeSend()">ביטול</button>
+      <button class="sm-go" id="sm-go" onclick="doSend()">שליחה</button>
+    </div>
+  </div>
 </div>
 
 <!-- Firebase SDKs -->
@@ -1171,6 +1227,14 @@ window.signInWithGoogle = () => {
 };
 
 window.signOut = async () => { await fbSignOut(auth); };
+
+// אסימון הזיהוי עבור שליחת הדו״ח במייל. השרת מאמת אותו מול Firebase
+// ומוודא שהחשבון נמצא ברשימת המורשים, בדיוק כמו במערכת המיילים.
+window.__getIdToken = async () => {
+  const u = auth.currentUser;
+  if (!u) throw new Error('אין חיבור פעיל, יש להתחבר מחדש');
+  return u.getIdToken();
+};
 
 // ---- Auth state listener ----
 document.getElementById('auth-loading').style.display = 'block';
@@ -2482,7 +2546,169 @@ ${dateBarCmp}
   document.getElementById('report-code-title').textContent = `קוד נחקר/ת: ${D.code}`;
   document.getElementById('form-screen').style.display = 'none';
   document.getElementById('report-screen').style.display = 'block';
+  // נתונים שחלון השליחה צריך: קוד לשם הקובץ, ומין לניסוח הפנייה
+  window.__report = { code: D.code, sex: sex };
   window.scrollTo(0, 0);
+};
+
+// =====================================================================
+// שליחת הדו״ח במייל לנחקר/ת
+// =====================================================================
+// אותו שרת Apps Script של מערכת המיילים, ואותה שכבת הרשאות
+const BACKEND_URL = "https://script.google.com/macros/s/AKfycbwVd4Np44kwHpgB5m-feXSfrWmKj3kuuk2wz7wOlRNF23eqqUo1BFLmP3YY-jGGYGb1Jg/exec";
+const SEND_SECRET = "lgGnSJZnAsfIs4W822y0k7F6";
+
+const PDF_LIBS = [
+  'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
+];
+let pdfLibsReady = null;
+function loadPdfLibs() {
+  if (pdfLibsReady) return pdfLibsReady;
+  pdfLibsReady = Promise.all(PDF_LIBS.map(src => new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = src; s.onload = res; s.onerror = () => rej(new Error('טעינת ספריית ה-PDF נכשלה'));
+    document.head.appendChild(s);
+  })));
+  return pdfLibsReady;
+}
+
+/** נוסח ההודעה המצורפת לדו״ח. משתנה רק במילה אחת, לפי מין הנחקר/ת. */
+function mailBody(sex) {
+  return `שלום,
+
+תודה רבה על ההשתתפות שלך במחקר PRIME ועל שיתוף הפעולה לאורך הדרך.
+
+מצורף דו״ח אישי המרכז את תוצאות הבדיקות שביצעת: חילוף חומרים במנוחה, הרכב גוף, מדידות היקפים ובדיקות תפקודיות, בהשוואה בין תחילת המחקר לסופו.
+
+הדו״ח נועד לתת לך תמונה ברורה על הגוף שלך ועל השינויים שעברת במהלך המחקר. הוא אינו מהווה אבחנה רפואית ואינו מחליף ייעוץ רפואי או תזונתי אישי.
+
+${sex === 'f' ? 'מוזמנת' : 'מוזמן'} לפנות אלינו בכל שאלה.
+
+בברכה,
+אמיר רובין ושירן בנדלר
+צוות מחקר PRIME
+052-4844497 · 054-6694839`;
+}
+const MAIL_SUBJECT = 'תוצאות הבדיקות שלך במחקר PRIME';
+
+/** שולף את המייל של הנחקר/ת מקובץ ה-REDCap שנטען, אם נטען */
+function participantEmail() {
+  // RC_HEADER הוא מפה של שם עמודה למספר עמודה, והשורות הן מערכים
+  if (!RC_BY_ID || !RC_HEADER || RC_HEADER['cand_email'] == null) return null;
+  const emailCol = RC_HEADER['cand_email'];
+  const codeCol  = RC_HEADER['code_participant'];
+  const code = (document.getElementById('f-code').value || '').trim();
+  if (!code) return null;
+  for (const id in RC_BY_ID) {
+    const evs = RC_BY_ID[id];
+    const isMine = id === code || (codeCol != null &&
+      Object.keys(evs).some(ev => ((evs[ev][codeCol] || '')).trim() === code));
+    if (!isMine) continue;
+    for (const ev in evs) {
+      const v = ((evs[ev][emailCol] || '')).trim();
+      if (v) return v;
+    }
+  }
+  return null;
+}
+
+window.openSend = () => {
+  const sex = (window.__report && window.__report.sex) || 'm';
+  document.getElementById('sm-preview').textContent = mailBody(sex);
+  const found = participantEmail();
+  const inp = document.getElementById('sm-email');
+  inp.value = found || '';
+  document.getElementById('sm-src').textContent = found
+    ? 'הכתובת נטענה מקובץ ה-REDCap. אפשר לערוך.'
+    : 'לא נמצאה כתובת בקובץ, יש להזין ידנית.';
+  const err = document.getElementById('sm-err');
+  err.style.display = 'none'; err.classList.remove('sm-ok');
+  const go = document.getElementById('sm-go');
+  go.disabled = false; go.textContent = 'שליחה';
+  document.getElementById('send-modal').classList.add('on');
+  if (!found) inp.focus();
+};
+window.closeSend = () => document.getElementById('send-modal').classList.remove('on');
+
+/** בונה PDF בן 4 עמודי A4 מתוך הדו״ח שעל המסך */
+async function buildPdf() {
+  await loadPdfLibs();
+  const rc = document.getElementById('report-content');
+  // פיצול לעמודים לפי אותם גבולות שמשמשים בהדפסה
+  const groups = [[]];
+  for (const k of rc.children) {
+    if (k.classList.contains('pagebreak')) groups.push([k]); else groups[groups.length - 1].push(k);
+  }
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+  for (let i = 0; i < groups.length; i++) {
+    /* חשוב: אותו רוחב תוכן בדיוק כמו על המסך (794px נטו, plus אותו ריפוד).
+       box-sizing חייב להישאר content-box, אחרת הריפוד מקטין את התוכן והפריסה נשברת. */
+    const wrap = document.createElement('div');
+    wrap.dir = 'rtl';
+    wrap.style.cssText = 'position:absolute; left:-10000px; top:0; width:794px; background:#fff;' +
+                         'padding:13mm; box-sizing:content-box; font-family:"Rubik","Assistant","Heebo",sans-serif;';
+    groups[i].forEach(el => wrap.appendChild(el.cloneNode(true)));
+    document.body.appendChild(wrap);
+    normalizeSpaces(wrap);          // בלי זה נבלעים רווחים ליד טקסט מודגש
+    const cv = await html2canvas(wrap, { scale: 2, backgroundColor: '#ffffff', logging: false, useCORS: true });
+    wrap.remove();
+    const h = Math.min(cv.height * 210 / cv.width, 297);
+    if (i > 0) pdf.addPage();
+    pdf.addImage(cv.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 210, h);
+  }
+  return pdf.output('datauristring').split(',')[1];   // base64 נקי
+}
+
+/** html2canvas בולע רווחים שגובלים באלמנטים inline. זה מקבע אותם. */
+function normalizeSpaces(root) {
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const nodes = []; let n;
+  while ((n = w.nextNode())) nodes.push(n);
+  nodes.forEach(t => {
+    let v = t.nodeValue; if (!v) return;
+    v = v.replace(/\s+/g, ' ');
+    if (v.startsWith(' ') && t.previousSibling) v = ' ' + v.slice(1);
+    if (v.endsWith(' ')   && t.nextSibling)     v = v.slice(0, -1) + ' ';
+    t.nodeValue = v;
+  });
+}
+
+window.doSend = async () => {
+  const err = document.getElementById('sm-err');
+  const go  = document.getElementById('sm-go');
+  const to  = document.getElementById('sm-email').value.trim();
+  const show = (msg, ok) => {
+    err.textContent = msg; err.style.display = 'block';
+    err.classList.toggle('sm-ok', !!ok);
+  };
+  if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(to)) return show('כתובת המייל אינה תקינה.');
+  const sex  = (window.__report && window.__report.sex) || 'm';
+  const code = (window.__report && window.__report.code) || 'report';
+
+  go.disabled = true; go.textContent = 'מכין את הדו״ח…';
+  err.style.display = 'none'; err.classList.remove('sm-ok');
+  try {
+    const pdf = await buildPdf();
+    go.textContent = 'שולח…';
+    const idToken = await window.__getIdToken();
+    const res = await fetch(BACKEND_URL, {
+      method: 'POST', headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        mode: 'report', secret: SEND_SECRET, idToken,
+        to: [to], subject: MAIL_SUBJECT, body: mailBody(sex),
+        pdfBase64: pdf, pdfName: `PRIME_${code}.pdf`
+      })
+    });
+    const j = await res.json();
+    if (!j.ok) throw new Error(j.error || 'השליחה נכשלה');
+    show('✅ הדו״ח נשלח אל ' + to, true);
+    go.textContent = 'נשלח';
+  } catch (e) {
+    show('❌ ' + (e.message || e));
+    go.disabled = false; go.textContent = 'שליחה';
+  }
 };
 </script>
 </body>

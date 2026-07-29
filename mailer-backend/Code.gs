@@ -6,7 +6,7 @@
  * היא יוצרת את תיקיית הקבצים, מתקינה את טריגר התזמון, ומדפיסה את הקישור לתיקייה.
  */
 
-const CODE_VERSION = 'v12-allevents';
+const CODE_VERSION = 'v13-report';
 const SECRET = 'lgGnSJZnAsfIs4W822y0k7F6';
 const SENDER_NAME = 'מחקר PRIME';
 const FOLDER_NAME = 'PRIME Mailer Files';
@@ -118,6 +118,10 @@ function doPost(e) {
     if (data.mode === 'cancel')     return json(cancelPending_(data.row));
     if (data.mode === 'reschedule') return json(reschedulePending_(data.row, data.sendAt));
 
+    // --- שליחת דו״ח תוצאות אישי, עם PDF שנבנה בדפדפן ---
+    // לפני בדיקת הכפילויות: לדו״ח אין שלב וקבוצה, והוא עשוי להישלח יותר מפעם אחת
+    if (data.mode === 'report')     return json(sendReport_(data));
+
     // --- בדיקת כפילות: אותו נחקר + אותו שלב + אותו סוג שליחה ---
     if (!data.force) {
       const dup = findDuplicate_(data);
@@ -159,6 +163,34 @@ function rtlHtml_(text) {
   return '<div dir="rtl" style="direction:rtl;text-align:right;unicode-bidi:embed;' +
          'font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.75;' +
          'color:#1a1a1a;white-space:pre-wrap;">' + esc + '</div>';
+}
+
+/**
+ * שולח דו״ח תוצאות אישי לנחקר/ת. ה-PDF נבנה בדפדפן ומגיע כאן כ-base64,
+ * כדי שמה שנשלח יהיה בדיוק מה שהחוקר ראה על המסך.
+ */
+function sendReport_(data) {
+  var to = (data.to || []).filter(function (x) { return x; });
+  if (!to.length) return { ok: false, error: 'לא צוינה כתובת מייל' };
+  if (!/^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(to[0])) {
+    return { ok: false, error: 'כתובת המייל אינה תקינה' };
+  }
+  if (!data.pdfBase64) return { ok: false, error: 'לא התקבל קובץ הדו״ח' };
+
+  var bytes = Utilities.base64Decode(data.pdfBase64);
+  var name  = data.pdfName || 'PRIME.pdf';
+  if (bytes.length > 20 * 1024 * 1024) return { ok: false, error: 'קובץ הדו״ח גדול מדי' };
+  var pdf = Utilities.newBlob(bytes, 'application/pdf', name);
+
+  GmailApp.sendEmail(to.join(','), data.subject, data.body, {
+    name: SENDER_NAME,
+    htmlBody: rtlHtml_(data.body),
+    attachments: [pdf]
+  });
+
+  logSend_({ to: to, name: '(דו״ח תוצאות)', phase: 'דו״ח', group: '', site: '',
+             sendAt: '', sentBy: data.sentBy, subject: data.subject }, 'דו״ח נשלח');
+  return { ok: true, sent: true, to: to[0], kb: Math.round(bytes.length / 1024) };
 }
 
 /** מאתר בתיקייה את הקבצים לפי שמם */

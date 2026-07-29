@@ -170,6 +170,15 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
                 font-size:15px; font-family:inherit; }
 .sm-row input:focus { outline:none; border-color:#0d9488; }
 .sm-hint { font-size:11.5px; color:#64748b; margin-top:5px; min-height:15px; }
+.sm-steps { margin-top:14px; display:flex; flex-direction:column; gap:11px; }
+.sm-step { display:flex; gap:10px; align-items:flex-start; background:#f8fafc; border-radius:10px; padding:10px 13px; }
+.sm-step b { font-size:13.5px; color:#16304f; }
+.sm-n { flex:0 0 auto; width:21px; height:21px; border-radius:50%; background:#0d9488; color:#fff;
+        font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; margin-top:1px; }
+.sm-t { font-size:11.5px; color:#64748b; line-height:1.55; margin-top:2px; }
+.sm-alt { margin-top:7px; background:#16304f; color:#fff; border:none; border-radius:8px;
+          padding:8px 16px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; }
+#sm-file { margin-top:7px; font-size:12.5px; font-family:inherit; }
 .sm-prev { margin-top:14px; border:1px solid #e2e8f0; border-radius:10px; overflow:hidden; }
 .sm-prev-h { background:#f8fafc; padding:6px 12px; font-size:11.5px; font-weight:700; color:#64748b;
              border-bottom:1px solid #e2e8f0; }
@@ -934,6 +943,27 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
       <label for="sm-email">כתובת המייל</label>
       <input type="email" id="sm-email" dir="ltr" placeholder="name@example.com" autocomplete="off">
       <div class="sm-hint" id="sm-src"></div>
+    </div>
+    <div class="sm-steps">
+      <div class="sm-step">
+        <span class="sm-n">1</span>
+        <div>
+          <b>הפקת הדו״ח</b>
+          <div class="sm-t">ייפתח חלון ההדפסה. ביעד יש לבחור <b>שמירה כ-PDF</b> ולשמור את הקובץ.</div>
+          <button class="sm-alt" onclick="makePdf()">פתיחת חלון ההדפסה</button>
+          <div class="sm-t" id="sm-step1-hint" style="display:none; color:#0f766e;">
+            אחרי השמירה, בחרו את הקובץ בשלב 2.</div>
+        </div>
+      </div>
+      <div class="sm-step">
+        <span class="sm-n">2</span>
+        <div>
+          <b>בחירת הקובץ שנשמר</b>
+          <div class="sm-t">זה בדיוק הקובץ שיצורף למייל, בלי שינוי.</div>
+          <input type="file" id="sm-file" accept="application/pdf,.pdf" onchange="onPdfPicked(event)">
+          <div class="sm-t" id="sm-file-name">עדיין לא נבחר קובץ</div>
+        </div>
+      </div>
     </div>
     <div class="sm-prev">
       <div class="sm-prev-h">תצוגה מקדימה של ההודעה</div>
@@ -2560,20 +2590,8 @@ ${dateBarCmp}
 const BACKEND_URL = "https://script.google.com/macros/s/AKfycbyt5eaaT6cUSjkgGqiNytQG2tKqOElg7bh6zJxgJDtyK4DhLey3Vf9LU_rq8tC62_CFMw/exec";
 const SEND_SECRET = "lgGnSJZnAsfIs4W822y0k7F6";
 
-const PDF_LIBS = [
-  'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
-];
-let pdfLibsReady = null;
-function loadPdfLibs() {
-  if (pdfLibsReady) return pdfLibsReady;
-  pdfLibsReady = Promise.all(PDF_LIBS.map(src => new Promise((res, rej) => {
-    const s = document.createElement('script');
-    s.src = src; s.onload = res; s.onerror = () => rej(new Error('טעינת ספריית ה-PDF נכשלה'));
-    document.head.appendChild(s);
-  })));
-  return pdfLibsReady;
-}
+/* הקובץ שנשלח הוא בדיוק ה-PDF שמופק ממנוע ההדפסה של הדפדפן, ולא צילום של המסך.
+   ניסיון קודם ליצור PDF מצילום נתן תוצאה מתוחה וחתוכה בקצוות, ולכן ננטש. */
 
 /** נוסח ההודעה המצורפת לדו״ח. משתנה רק במילה אחת, לפי מין הנחקר/ת. */
 function mailBody(sex) {
@@ -2596,7 +2614,6 @@ const MAIL_SUBJECT = 'תוצאות הבדיקות שלך במחקר PRIME';
 
 /** שולף את המייל של הנחקר/ת מקובץ ה-REDCap שנטען, אם נטען */
 function participantEmail() {
-  // RC_HEADER הוא מפה של שם עמודה למספר עמודה, והשורות הן מערכים
   if (!RC_BY_ID || !RC_HEADER || RC_HEADER['cand_email'] == null) return null;
   const emailCol = RC_HEADER['cand_email'];
   const codeCol  = RC_HEADER['code_participant'];
@@ -2615,6 +2632,8 @@ function participantEmail() {
   return null;
 }
 
+let pickedPdf = null;   // הקובץ שהחוקר בחר אחרי ההורדה
+
 window.openSend = () => {
   const sex = (window.__report && window.__report.sex) || 'm';
   document.getElementById('sm-preview').textContent = mailBody(sex);
@@ -2624,96 +2643,52 @@ window.openSend = () => {
   document.getElementById('sm-src').textContent = found
     ? 'הכתובת נטענה מקובץ ה-REDCap. אפשר לערוך.'
     : 'לא נמצאה כתובת בקובץ, יש להזין ידנית.';
+  pickedPdf = null;
+  document.getElementById('sm-file').value = '';
+  document.getElementById('sm-file-name').textContent = 'עדיין לא נבחר קובץ';
   const err = document.getElementById('sm-err');
   err.style.display = 'none'; err.classList.remove('sm-ok');
   const go = document.getElementById('sm-go');
-  go.disabled = false; go.textContent = 'שליחה';
+  go.disabled = true; go.textContent = 'שליחה';
   document.getElementById('send-modal').classList.add('on');
   if (!found) inp.focus();
 };
 window.closeSend = () => document.getElementById('send-modal').classList.remove('on');
 
-/** בונה PDF בן 4 עמודי A4 מתוך הדו״ח שעל המסך */
-async function buildPdf() {
-  await loadPdfLibs();
-  await document.fonts.ready;                 // בלי זה הגופן עלול להיות שונה מהמסך
-  const rc = document.getElementById('report-content');
+/** פותח את חלון ההדפסה של הדפדפן. שם בוחרים "שמירה כ-PDF". */
+window.makePdf = () => {
+  document.getElementById('sm-step1-hint').style.display = 'block';
+  closeSend();
+  setTimeout(() => { window.print(); setTimeout(openSendKeepFile, 400); }, 120);
+};
+function openSendKeepFile() { document.getElementById('send-modal').classList.add('on'); }
 
-  /* מצלמים כל עמוד כאלמנט אמיתי שעל המסך, אחד-אחד.
-     כל ניסיון לשכפל לתוך מיכל אחר, או לצלם הכול ולחתוך לפי קואורדינטות, שינה את
-     הפריסה או את הגובה ולכן העמוד יצא שונה ממה שרואים.
-     התיקונים לספריית הרינדור מוחלים על השכפול הפנימי שלה בלבד, דרך onclone. */
-  const sheets = [...rc.children].filter(k => /sheet1|sheet1b|sheet2|compare/.test(k.className));
-  if (!sheets.length) throw new Error('לא נמצאו עמודים בדו״ח');
-
-  const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-
-  for (let i = 0; i < sheets.length; i++) {
-    const el = sheets[i];
-    el.setAttribute('data-shoot', '1');
-    const cv = await html2canvas(el, {
-      scale: 2, backgroundColor: '#ffffff', logging: false, useCORS: true,
-      onclone: (doc) => {
-        const c = doc.querySelector('[data-shoot="1"]');
-        if (!c) return;
-        normalizeSpaces(c);   // בלי זה נבלעים רווחים ליד טקסט מודגש
-        flattenGrids(c);      // ספריית הרינדור לא מיישמת CSS Grid
-      }
-    });
-    el.removeAttribute('data-shoot');
-    if (i > 0) pdf.addPage();
-    // שוליים של 13mm כמו בהדפסה, והתמונה נכנסת לרוחב שנותר
-    const w = 210 - 26;
-    pdf.addImage(cv.toDataURL('image/jpeg', 0.94), 'JPEG', 13, 13, w,
-                 Math.min(cv.height * w / cv.width, 297 - 26));
+window.onPdfPicked = (ev) => {
+  const err = document.getElementById('sm-err');
+  const go = document.getElementById('sm-go');
+  const f = ev.target.files[0];
+  const nameBox = document.getElementById('sm-file-name');
+  pickedPdf = null; go.disabled = true;
+  if (!f) { nameBox.textContent = 'עדיין לא נבחר קובץ'; return; }
+  if (!/\.pdf$/i.test(f.name) && f.type !== 'application/pdf') {
+    err.textContent = '❌ יש לבחור קובץ PDF.'; err.style.display = 'block';
+    nameBox.textContent = 'עדיין לא נבחר קובץ'; return;
   }
-  return pdf.output('datauristring').split(',')[1];   // base64 נקי
-}
+  if (f.size > 20 * 1024 * 1024) {
+    err.textContent = '❌ הקובץ גדול מ-20MB.'; err.style.display = 'block'; return;
+  }
+  err.style.display = 'none';
+  pickedPdf = f;
+  nameBox.textContent = `${f.name} · ${Math.round(f.size / 1024)}KB`;
+  go.disabled = false;
+};
 
-/**
- * html2canvas אינו מיישם CSS Grid, ולכן כל רשת נשברת בעת ההמרה.
- * ממיר כל רשת ל-flex עם רוחבי עמודות שכבר חושבו על ידי הדפדפן, כך שהתוצאה זהה.
- * חייב לרוץ כשהאלמנט כבר מחובר ל-DOM, אחרת אין ערכים מחושבים.
- */
-function flattenGrids(root) {
-  [root, ...root.querySelectorAll('*')].forEach(el => {
-    const cs = getComputedStyle(el);
-    if (cs.display !== 'grid' && cs.display !== 'inline-grid') return;
-    const cols = cs.gridTemplateColumns.split(/\s+/).filter(Boolean).map(parseFloat);
-    if (!cols.length || cols.some(isNaN)) return;
-    const cGap = parseFloat(cs.columnGap) || 0;
-    const rGap = parseFloat(cs.rowGap) || 0;
-    const kids = [...el.children];
-    el.style.display    = 'flex';
-    // שורה בודדת לא נשברת. רק רשת שגולשת ממילא מקבלת wrap
-    el.style.flexWrap   = kids.length <= cols.length ? 'nowrap' : 'wrap';
-    el.style.alignItems = 'stretch';
-    el.style.gap        = rGap + 'px ' + cGap + 'px';
-    kids.forEach((k, i) => {
-      const w = cols[i % cols.length];
-      if (!isFinite(w)) return;
-      k.style.boxSizing = 'border-box';
-      // עיגול כלפי מטה בפיקסל, אחרת שארית העיגול מפילה את האחרון לשורה הבאה
-      k.style.flex = '0 0 ' + Math.floor(w) + 'px';
-      k.style.maxWidth = Math.floor(w) + 'px';
-    });
-  });
-}
-
-/** html2canvas בולע רווחים שגובלים באלמנטים inline. זה מקבע אותם. */
-function normalizeSpaces(root) {
-  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-  const nodes = []; let n;
-  while ((n = w.nextNode())) nodes.push(n);
-  nodes.forEach(t => {
-    let v = t.nodeValue; if (!v) return;
-    v = v.replace(/\s+/g, ' ');
-    if (v.startsWith(' ') && t.previousSibling) v = ' ' + v.slice(1);
-    if (v.endsWith(' ')   && t.nextSibling)     v = v.slice(0, -1) + ' ';
-    t.nodeValue = v;
-  });
-}
+const fileToBase64 = (file) => new Promise((res, rej) => {
+  const r = new FileReader();
+  r.onload = () => res(String(r.result).split(',')[1]);
+  r.onerror = () => rej(new Error('קריאת הקובץ נכשלה'));
+  r.readAsDataURL(file);
+});
 
 window.doSend = async () => {
   const err = document.getElementById('sm-err');
@@ -2724,14 +2699,14 @@ window.doSend = async () => {
     err.classList.toggle('sm-ok', !!ok);
   };
   if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(to)) return show('כתובת המייל אינה תקינה.');
+  if (!pickedPdf) return show('יש לבחור את קובץ ה-PDF שהורדת.');
   const sex  = (window.__report && window.__report.sex) || 'm';
   const code = (window.__report && window.__report.code) || 'report';
 
-  go.disabled = true; go.textContent = 'מכין את הדו״ח…';
+  go.disabled = true; go.textContent = 'שולח…';
   err.style.display = 'none'; err.classList.remove('sm-ok');
   try {
-    const pdf = await buildPdf();
-    go.textContent = 'שולח…';
+    const pdf = await fileToBase64(pickedPdf);
     const idToken = await window.__getIdToken();
     const res = await fetch(BACKEND_URL, {
       method: 'POST', headers: { 'Content-Type': 'text/plain' },

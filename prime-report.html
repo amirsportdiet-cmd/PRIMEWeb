@@ -2676,16 +2676,18 @@ function flattenGrids(root) {
     const cGap = parseFloat(cs.columnGap) || 0;
     const rGap = parseFloat(cs.rowGap) || 0;
     const kids = [...el.children];
-    el.style.display   = 'flex';
-    el.style.flexWrap  = 'wrap';
+    el.style.display    = 'flex';
+    // שורה בודדת לא נשברת. רק רשת שגולשת ממילא מקבלת wrap
+    el.style.flexWrap   = kids.length <= cols.length ? 'nowrap' : 'wrap';
     el.style.alignItems = 'stretch';
-    el.style.gap       = rGap + 'px ' + cGap + 'px';
+    el.style.gap        = rGap + 'px ' + cGap + 'px';
     kids.forEach((k, i) => {
       const w = cols[i % cols.length];
       if (!isFinite(w)) return;
       k.style.boxSizing = 'border-box';
-      k.style.flex = '0 0 ' + w + 'px';
-      k.style.maxWidth = w + 'px';
+      // עיגול כלפי מטה בפיקסל, אחרת שארית העיגול מפילה את האחרון לשורה הבאה
+      k.style.flex = '0 0 ' + Math.floor(w) + 'px';
+      k.style.maxWidth = Math.floor(w) + 'px';
     });
   });
 }

@@ -2634,31 +2634,48 @@ window.closeSend = () => document.getElementById('send-modal').classList.remove(
 /** בונה PDF בן 4 עמודי A4 מתוך הדו״ח שעל המסך */
 async function buildPdf() {
   await loadPdfLibs();
+  await document.fonts.ready;                 // בלי זה הגופן עלול להיות שונה מהמסך
   const rc = document.getElementById('report-content');
-  // פיצול לעמודים לפי אותם גבולות שמשמשים בהדפסה
-  const groups = [[]];
+
+  /* מצלמים את הדו״ח האמיתי שעל המסך, לא שכפול לתוך מיכל אחר.
+     כל ניסיון לשכפל שינה את הפריסה, ולכן העמוד יצא שונה ממה שרואים.
+     התיקונים לספריית הרינדור מוחלים על השכפול הפנימי שלה דרך onclone. */
+  const sheets = [];
+  let cur = { top: null, bottom: null };
+  const rcTop = rc.getBoundingClientRect().top + window.scrollY;
   for (const k of rc.children) {
-    if (k.classList.contains('pagebreak')) groups.push([k]); else groups[groups.length - 1].push(k);
+    const r = k.getBoundingClientRect();
+    const top = r.top + window.scrollY - rcTop, bottom = top + r.height;
+    if (k.classList.contains('pagebreak')) { if (cur.top !== null) sheets.push(cur); cur = { top, bottom }; }
+    else { if (cur.top === null) cur.top = top; cur.bottom = bottom; }
   }
+  if (cur.top !== null) sheets.push(cur);
+
+  const cv = await html2canvas(rc, {
+    scale: 2, backgroundColor: '#ffffff', logging: false, useCORS: true,
+    windowWidth: document.documentElement.clientWidth,
+    onclone: (doc) => {
+      const el = doc.getElementById('report-content');
+      normalizeSpaces(el);   // בלי זה נבלעים רווחים ליד טקסט מודגש
+      flattenGrids(el);      // ספריית הרינדור לא מיישמת CSS Grid
+    }
+  });
+
+  const s = cv.width / rc.getBoundingClientRect().width;   // פיקסלים בקנבס לכל פיקסל מסך
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-  for (let i = 0; i < groups.length; i++) {
-    /* חשוב: אותו רוחב תוכן בדיוק כמו על המסך (794px נטו, plus אותו ריפוד).
-       box-sizing חייב להישאר content-box, אחרת הריפוד מקטין את התוכן והפריסה נשברת. */
-    const wrap = document.createElement('div');
-    wrap.dir = 'rtl';
-    wrap.style.cssText = 'position:absolute; left:-10000px; top:0; width:794px; background:#fff;' +
-                         'padding:13mm; box-sizing:content-box; font-family:"Rubik","Assistant","Heebo",sans-serif;';
-    groups[i].forEach(el => wrap.appendChild(el.cloneNode(true)));
-    document.body.appendChild(wrap);
-    normalizeSpaces(wrap);          // בלי זה נבלעים רווחים ליד טקסט מודגש
-    flattenGrids(wrap);             // ספריית הרינדור לא מיישמת CSS Grid
-    const cv = await html2canvas(wrap, { scale: 2, backgroundColor: '#ffffff', logging: false, useCORS: true });
-    wrap.remove();
-    const h = Math.min(cv.height * 210 / cv.width, 297);
+  const pad = 13 * 96 / 25.4;                              // ריפוד 13mm שכבר קיים באלמנט
+
+  sheets.forEach((sh, i) => {
+    const y = Math.max(0, Math.round((sh.top - pad) * s));
+    const h = Math.min(Math.round((sh.bottom - sh.top + pad * 2) * s), cv.height - y);
+    const slice = document.createElement('canvas');
+    slice.width = cv.width; slice.height = h;
+    slice.getContext('2d').drawImage(cv, 0, y, cv.width, h, 0, 0, cv.width, h);
     if (i > 0) pdf.addPage();
-    pdf.addImage(cv.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 210, h);
-  }
+    pdf.addImage(slice.toDataURL('image/jpeg', 0.94), 'JPEG', 0, 0, 210,
+                 Math.min(h * 210 / cv.width, 297));
+  });
   return pdf.output('datauristring').split(',')[1];   // base64 נקי
 }
 

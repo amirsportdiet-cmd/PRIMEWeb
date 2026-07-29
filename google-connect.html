@@ -1,0 +1,72 @@
+<!doctype html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>חיבור Google לדשבורד</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #f8fafc; color: #1f2937; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+  .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 32px; max-width: 420px; text-align: center; box-shadow: 0 4px 16px rgba(0,0,0,.06); }
+  h1 { font-size: 20px; margin: 0 0 8px; }
+  p { font-size: 14px; color: #6b7280; line-height: 1.6; }
+  button { background: #4f46e5; color: #fff; border: none; border-radius: 12px; padding: 12px 28px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 12px; }
+  button:disabled { opacity: .5; cursor: default; }
+  .ok { color: #059669; font-weight: bold; font-size: 16px; }
+  .err { color: #dc2626; font-weight: bold; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>🔗 חיבור Google לדשבורד</h1>
+  <p>חיבור חד-פעמי של יומן Google, Gmail ו-Tasks לדשבורד של אמיר.<br>מהרגע הזה החיבור יתחדש אוטומטית — בלי התנתקויות.</p>
+  <button id="btn" disabled>התחבר עם Google</button>
+  <p id="status"></p>
+</div>
+<script src="https://accounts.google.com/gsi/client" async defer onload="gisReady()"></script>
+<script>
+  var CLIENT_ID = '665866758826-tauh8j83lndi57e09begpng7gu2l3lro.apps.googleusercontent.com';
+  var SCOPES = [
+    'https://www.googleapis.com/auth/gmail.readonly',
+    'https://www.googleapis.com/auth/calendar.readonly',
+    'https://www.googleapis.com/auth/calendar.events',
+    'https://www.googleapis.com/auth/tasks'
+  ].join(' ');
+  var STORE_URL = 'https://us-central1-wellnessprojectar.cloudfunctions.net/googleOAuthStore';
+  var codeClient = null;
+  var statusEl = document.getElementById('status');
+  var btn = document.getElementById('btn');
+
+  function gisReady() {
+    codeClient = google.accounts.oauth2.initCodeClient({
+      client_id: CLIENT_ID,
+      scope: SCOPES,
+      ux_mode: 'popup',
+      callback: async function (resp) {
+        if (!resp.code) { statusEl.innerHTML = '<span class="err">החיבור בוטל.</span>'; btn.disabled = false; return; }
+        statusEl.textContent = 'שומר את החיבור…';
+        try {
+          var r = await fetch(STORE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: resp.code }) });
+          var j = await r.json();
+          if (j.ok) {
+            statusEl.innerHTML = '<span class="ok">✅ החיבור הצליח! אפשר לסגור את החלון ולחזור לדשבורד.</span>';
+            btn.style.display = 'none';
+          } else if (j.error === 'wrong_account') {
+            statusEl.innerHTML = '<span class="err">התחברת עם חשבון אחר (' + (j.email || '') + '). יש להתחבר עם amirsportdiet@gmail.com.</span>';
+            btn.disabled = false;
+          } else {
+            statusEl.innerHTML = '<span class="err">שגיאה: ' + (j.error || '') + ' — נסה שוב.</span>';
+            btn.disabled = false;
+          }
+        } catch (e) {
+          statusEl.innerHTML = '<span class="err">שגיאת רשת — נסה שוב.</span>';
+          btn.disabled = false;
+        }
+      }
+    });
+    btn.disabled = false;
+  }
+  btn.onclick = function () { btn.disabled = true; statusEl.textContent = 'נפתח חלון של Google…'; codeClient.requestCode(); };
+</script>
+</body>
+</html>

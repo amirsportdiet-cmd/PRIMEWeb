@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>פניות נחקרים · מחקר PRIME</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{ box-sizing:border-box; margin:0; padding:0; }
+body{ font-family:"Rubik",Arial,sans-serif; background:#f0f4f8; color:#1f2937; }
+
+/* ===== מסך התחברות ===== */
+#auth-screen{ display:flex; align-items:center; justify-content:center; min-height:100vh; }
+.auth-box{ background:#fff; border-radius:18px; padding:38px 42px; text-align:center;
+           box-shadow:0 12px 40px rgba(22,48,79,.14); max-width:420px; }
+.auth-box h2{ font-size:22px; color:#16304f; margin-bottom:8px; }
+.auth-box p{ font-size:14px; color:#64748b; margin-bottom:22px; line-height:1.6; }
+.btn-google{ display:inline-flex; align-items:center; gap:10px; background:#fff; border:1.5px solid #dadce0;
+             border-radius:10px; padding:12px 22px; font-size:15px; font-weight:600; cursor:pointer;
+             font-family:inherit; color:#3c4043; }
+.btn-google svg{ width:22px; height:22px; }
+#auth-loading{ display:none; font-size:14px; color:#64748b; margin-top:14px; }
+#no-access-box{ display:none; }
+#no-access-box .msg{ background:#fef2f2; border:1px solid #fca5a5; color:#b91c1c; border-radius:10px;
+                     padding:14px 18px; font-size:14px; margin-bottom:16px; line-height:1.6; }
+.btn-plain{ background:#f1f5f9; color:#475569; border:none; border-radius:9px; padding:10px 20px;
+            font-size:14px; cursor:pointer; font-family:inherit; }
+
+/* ===== מסך ראשי ===== */
+#main{ display:none; max-width:1180px; margin:0 auto; padding:0 20px 60px; }
+.top{ background:#16304f; color:#fff; padding:14px 26px; display:flex; align-items:center;
+      justify-content:space-between; margin:0 -20px 22px; }
+.top h1{ font-size:19px; font-weight:700; }
+.top .who{ font-size:12.5px; color:#94c7f4; }
+.top .who button{ background:none; border:1px solid #94c7f4; color:#94c7f4; border-radius:7px;
+                  padding:5px 12px; font-size:11.5px; cursor:pointer; font-family:inherit; margin-right:10px; }
+
+.card{ background:#fff; border-radius:14px; padding:18px 22px; margin-bottom:18px;
+       box-shadow:0 2px 10px rgba(22,48,79,.06); }
+.card > h2{ font-size:16px; color:#16304f; margin-bottom:4px; }
+.card > .sub{ font-size:12.5px; color:#64748b; margin-bottom:14px; line-height:1.6; }
+
+.btn{ background:#0d9488; color:#fff; border:none; border-radius:9px; padding:10px 22px;
+      font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; }
+.btn:disabled{ opacity:.5; cursor:default; }
+.btn.sec{ background:#e2e8f0; color:#334155; }
+.btn.sm{ padding:6px 14px; font-size:12.5px; }
+
+.drop{ border:2px dashed #99c9c3; border-radius:12px; background:#f0fdfa; padding:20px;
+       text-align:center; cursor:pointer; }
+.drop:hover{ background:#ccfbf1; }
+.drop b{ color:#0f766e; font-size:14.5px; }
+.drop span{ display:block; font-size:12px; color:#5e9a92; margin-top:5px; }
+.status{ font-size:13px; font-weight:600; color:#0f766e; margin-top:10px; min-height:18px; }
+
+.stats{ display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; margin-top:14px; }
+.stat{ background:#f8fafc; border-radius:10px; padding:9px 12px; text-align:center; }
+.stat .n{ font-size:21px; font-weight:800; color:#16304f; }
+.stat .l{ font-size:11px; color:#64748b; margin-top:2px; }
+
+table{ width:100%; border-collapse:collapse; font-size:13px; }
+th{ text-align:right; font-size:11.5px; color:#64748b; font-weight:600; padding:7px 9px;
+    border-bottom:1.5px solid #e2e8f0; white-space:nowrap; }
+td{ padding:8px 9px; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
+tr:hover td{ background:#f8fafc; }
+.tag{ display:inline-block; border-radius:20px; padding:2px 10px; font-size:11px; font-weight:700; }
+.tag.int{ background:#dbeafe; color:#1d4ed8; }
+.tag.ctl{ background:#f1f5f9; color:#475569; }
+.tag.man{ background:#fef3c7; color:#92400e; }
+.tag.warn{ background:#fee2e2; color:#b91c1c; }
+.tag.ok{ background:#d1fae5; color:#047857; }
+.ltr{ direction:ltr; unicode-bidi:isolate; display:inline-block; }
+
+.field{ display:flex; gap:9px; flex-wrap:wrap; align-items:flex-end; }
+.field label{ display:block; font-size:11.5px; font-weight:600; color:#475569; margin-bottom:4px; }
+.field input, .field select{ padding:9px 11px; border:1.5px solid #cbd5e1; border-radius:9px;
+                             font-size:14px; font-family:inherit; }
+.field input:focus, .field select:focus{ outline:none; border-color:#0d9488; }
+textarea{ width:100%; min-height:120px; padding:11px 13px; border:1.5px solid #cbd5e1; border-radius:10px;
+          font-size:13.5px; font-family:inherit; line-height:1.6; resize:vertical; }
+textarea:focus{ outline:none; border-color:#0d9488; }
+
+.msg-box{ background:#f0fdf4; border:1px solid #86efac; border-radius:10px; padding:12px 14px;
+          font-size:13px; line-height:1.7; white-space:pre-wrap; margin-top:8px; }
+.empty{ text-align:center; color:#94a3b8; font-size:13px; padding:26px 0; }
+.err{ display:none; background:#fef2f2; border:1px solid #fca5a5; color:#b91c1c; border-radius:9px;
+      padding:9px 13px; font-size:13px; margin-top:10px; }
+.note{ font-size:11.5px; color:#94a3b8; margin-top:8px; line-height:1.55; }
+</style>
+</head>
+<body>
+
+<!-- ===== התחברות ===== -->
+<div id="auth-screen">
+  <div class="auth-box" id="auth-box">
+    <div style="font-size:40px; margin-bottom:10px;">📞</div>
+    <h2>פניות נחקרים · מחקר PRIME</h2>
+    <p>כלי פנימי למחקר. יש להתחבר עם חשבון Google מורשה.</p>
+    <button class="btn-google" onclick="signInWithGoogle()">
+      <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      <span>התחברות עם Google</span>
+    </button>
+    <div id="auth-loading">בודק הרשאות…</div>
+  </div>
+  <div class="auth-box" id="no-access-box">
+    <div style="font-size:40px; margin-bottom:10px;">🚫</div>
+    <h2>אין הרשאה</h2>
+    <div class="msg" id="no-access-msg"></div>
+    <button class="btn-plain" onclick="signOut()">התחברות עם חשבון אחר</button>
+  </div>
+</div>
+
+<!-- ===== מסך ראשי ===== -->
+<div id="main">
+  <div class="top">
+    <h1>📞 פניות נחקרים · מחקר PRIME</h1>
+    <div class="who"><span id="user-email"></span><button onclick="signOut()">יציאה</button></div>
+  </div>
+
+  <!-- רשימת הנחקרים -->
+  <div class="card">
+    <h2>רשימת הנחקרים</h2>
+    <div class="sub">מעלים את אותו קובץ REDCap שמשמש את מחולל הדו״חות. נטענים <b>רק נחקרים ששובצו לקבוצת מחקר</b>, מי שלא שובץ אינו מוצג כלל.</div>
+    <div class="drop" onclick="document.getElementById('csv-input').click()">
+      <b>לחצו לבחירת קובץ ה-CSV מ-REDCap</b>
+      <span>הקובץ נקרא בדפדפן בלבד ואינו נשלח לשום מקום</span>
+    </div>
+    <input type="file" id="csv-input" accept=".csv" style="display:none" onchange="onCsv(event)">
+    <div class="status" id="csv-status"></div>
+    <div class="stats" id="roster-stats" style="display:none"></div>
+    <div class="err" id="csv-err"></div>
+  </div>
+
+  <!-- הוספה ידנית -->
+  <div class="card">
+    <h2>הוספה ידנית</h2>
+    <div class="sub">למי שאין לו טלפון ב-REDCap, או למי שעדיין לא נכנס למערכת. רשומות ידניות נשמרות בנפרד והעלאת קובץ חדש אינה מוחקת אותן.</div>
+    <div class="field">
+      <div><label for="m-name">שם פרטי</label><input type="text" id="m-name" placeholder="לדוגמה: מיכל"></div>
+      <div><label for="m-phone">טלפון</label><input type="tel" id="m-phone" dir="ltr" placeholder="0521234567"></div>
+      <div><label for="m-sex">מין</label>
+        <select id="m-sex"><option value="f">נקבה</option><option value="m">זכר</option></select></div>
+      <div><label for="m-group">קבוצה</label>
+        <select id="m-group">
+          <option value="">לא ידוע</option>
+          <option value="intervention">התערבות</option>
+          <option value="control">ביקורת</option>
+        </select></div>
+      <button class="btn" onclick="addManual()">הוספה</button>
+    </div>
+    <div class="err" id="man-err"></div>
+    <div id="man-list" style="margin-top:14px"></div>
+  </div>
+
+  <!-- פניות -->
+  <div class="card">
+    <h2>פניות שהתקבלו</h2>
+    <div class="sub">הדבקת גוף המייל תחלץ את הטלפון, המרכז הרפואי וקבוצת המחקר, ותצליב מול הרשימה. אפשר להדביק כמה מיילים יחד.</div>
+    <textarea id="paste" placeholder="הדביקו כאן את גוף המייל…"></textarea>
+    <div style="margin-top:10px; display:flex; gap:9px;">
+      <button class="btn" onclick="parsePasted()">חילוץ פניות</button>
+      <button class="btn sec" onclick="document.getElementById('paste').value=''">ניקוי</button>
+    </div>
+    <div class="err" id="parse-err"></div>
+    <div class="note">בהמשך המערכת תקרא את המיילים ישירות מהתיבה, וההדבקה תישאר כגיבוי לפורמט חריג.</div>
+  </div>
+
+  <div class="card">
+    <h2>לטיפול</h2>
+    <div class="sub">הודעת הוואטסאפ מותאמת לפי מין הנחקר/ת. אחרי שליחה בוואטסאפ יש לסמן, כדי שלא תישלח פעמיים.</div>
+    <div id="alerts"></div>
+  </div>
+</div>
+
+<script>
+// =====================================================================
+// אחסון מקומי
+// =====================================================================
+const LS_ROSTER = 'prime_alerts_roster_v1';   // מ-REDCap
+const LS_MANUAL = 'prime_alerts_manual_v1';   // הוזן ידנית
+const LS_ALERTS = 'prime_alerts_items_v1';    // פניות + סימוני נשלח
+
+const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (e) { return d; } };
+const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+
+let roster = load(LS_ROSTER, []);
+let manual = load(LS_MANUAL, []);
+let alerts = load(LS_ALERTS, []);
+
+// =====================================================================
+// טלפונים — נרמול לצורת השוואה אחת
+// =====================================================================
+/** משאיר ספרות בלבד, מסיר קידומת 972 ומשלים אפס מוביל */
+function normPhone(raw) {
+  let d = String(raw || '').replace(/\D/g, '');
+  if (d.startsWith('972')) d = '0' + d.slice(3);
+  if (d.length === 9 && !d.startsWith('0')) d = '0' + d;
+  return d;
+}
+const prettyPhone = p => { const d = normPhone(p); return d.length === 10 ? d.slice(0,3) + '-' + d.slice(3) : d; };
+
+// =====================================================================
+// קריאת קובץ REDCap
+// =====================================================================
+function parseCSV(text) {
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const rows = []; let row = [], cur = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"') { if (text[i+1] === '"') { cur += '"'; i++; } else q = false; }
+      else cur += c;
+    } else if (c === '"') q = true;
+    else if (c === ',') { row.push(cur); cur = ''; }
+    else if (c === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; }
+    else if (c !== '\r') cur += c;
+  }
+  if (cur || row.length) { row.push(cur); rows.push(row); }
+  return rows.filter(r => r.length > 1);
+}
+
+const RC_ARM = { '1': 'intervention', '2': 'control' };
+
+window.onCsv = (ev) => {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const err = document.getElementById('csv-err'); err.style.display = 'none';
+  const rd = new FileReader();
+  rd.onload = () => {
+    try {
+      const rows = parseCSV(rd.result);
+      const H = {}; rows[0].forEach((h, i) => H[h.trim()] = i);
+      const need = ['record_id', 'redcap_event_name', 'arm_allocation', 'screen_phone', 'cand_fname', 'cand_sex'];
+      const miss = need.filter(n => H[n] == null);
+      if (miss.length) throw new Error('חסרות עמודות בקובץ: ' + miss.join(', '));
+
+      // איחוד כל האירועים של אותו נחקר, ולקיחת הערך הראשון שאינו ריק
+      const byId = {};
+      rows.slice(1).forEach(r => {
+        const id = (r[H['record_id']] || '').trim();
+        if (!id) return;
+        (byId[id] = byId[id] || []).push(r);
+      });
+      const pick = (rs, col) => {
+        for (const r of rs) { const v = (r[H[col]] || '').trim(); if (v) return v; }
+        return '';
+      };
+
+      const out = []; let skipped = 0, noPhone = 0;
+      for (const id in byId) {
+        const rs = byId[id];
+        const arm = pick(rs, 'arm_allocation');
+        if (!arm) { skipped++; continue; }          // לא שובץ — לא מעניין אותנו
+        const phone = normPhone(pick(rs, 'screen_phone'));
+        const sexRaw = pick(rs, 'cand_sex');
+        const rec = {
+          id, phone,
+          name: pick(rs, 'cand_fname'),
+          last: pick(rs, 'cand_lname'),
+          sex: sexRaw === '1' ? 'm' : sexRaw === '2' ? 'f' : '',
+          group: RC_ARM[arm] || '',
+          code: pick(rs, 'code_participant')
+        };
+        if (!rec.phone) noPhone++;
+        out.push(rec);
+      }
+      roster = out; save(LS_ROSTER, roster);
+      document.getElementById('csv-status').textContent =
+        `✅ נטענו ${out.length} נחקרים משובצים · ${skipped} לא משובצים סוננו החוצה`;
+      renderRoster(skipped, noPhone);
+      renderAlerts();
+    } catch (e) {
+      err.textContent = '❌ ' + e.message; err.style.display = 'block';
+      document.getElementById('csv-status').textContent = '';
+    }
+  };
+  rd.readAsText(file, 'utf-8');
+};
+
+function renderRoster(skipped, noPhone) {
+  const box = document.getElementById('roster-stats');
+  if (!roster.length) { box.style.display = 'none'; return; }
+  const int = roster.filter(r => r.group === 'intervention').length;
+  const ctl = roster.filter(r => r.group === 'control').length;
+  const ready = roster.filter(r => r.phone && r.name && r.sex).length;
+  box.style.display = 'grid';
+  box.innerHTML =
+    stat(roster.length, 'משובצים') + stat(int, 'התערבות') + stat(ctl, 'ביקורת') +
+    stat(ready, 'מוכנים לזיהוי') + stat(noPhone || 0, 'ללא טלפון') +
+    stat(manual.length, 'הוזנו ידנית');
+}
+const stat = (n, l) => `<div class="stat"><div class="n">${n}</div><div class="l">${l}</div></div>`;
+
+// =====================================================================
+// הוספה ידנית
+// =====================================================================
+window.addManual = () => {
+  const err = document.getElementById('man-err'); err.style.display = 'none';
+  const name = document.getElementById('m-name').value.trim();
+  const phone = normPhone(document.getElementById('m-phone').value);
+  const sex = document.getElementById('m-sex').value;
+  const group = document.getElementById('m-group').value;
+  const fail = m => { err.textContent = '❌ ' + m; err.style.display = 'block'; };
+  if (!name) return fail('יש להזין שם פרטי.');
+  if (!/^05\d{8}$/.test(phone)) return fail('מספר הטלפון אינו תקין. פורמט: 0521234567');
+  if (findPerson(phone)) return fail('הטלפון הזה כבר קיים ברשימה.');
+  manual.push({ id: 'M' + Date.now(), phone, name, sex, group, manual: true });
+  save(LS_MANUAL, manual);
+  ['m-name', 'm-phone'].forEach(i => document.getElementById(i).value = '');
+  renderManual(); renderRoster(0, roster.filter(r => !r.phone).length); renderAlerts();
+};
+
+window.removeManual = (id) => {
+  manual = manual.filter(m => m.id !== id); save(LS_MANUAL, manual);
+  renderManual(); renderAlerts();
+};
+
+function renderManual() {
+  const box = document.getElementById('man-list');
+  if (!manual.length) { box.innerHTML = '<div class="empty">אין עדיין רשומות ידניות.</div>'; return; }
+  box.innerHTML = `<table><thead><tr><th>שם</th><th>טלפון</th><th>מין</th><th>קבוצה</th><th></th></tr></thead><tbody>` +
+    manual.map(m => `<tr>
+      <td><b>${esc(m.name)}</b></td>
+      <td><span class="ltr">${prettyPhone(m.phone)}</span></td>
+      <td>${m.sex === 'f' ? 'נקבה' : 'זכר'}</td>
+      <td>${groupTag(m.group)}</td>
+      <td><button class="btn sec sm" onclick="removeManual('${m.id}')">מחיקה</button></td>
+    </tr>`).join('') + '</tbody></table>';
+}
+const groupTag = g => g === 'intervention' ? '<span class="tag int">התערבות</span>'
+                   : g === 'control' ? '<span class="tag ctl">ביקורת</span>'
+                   : '<span class="tag ctl">לא ידוע</span>';
+const esc = s => String(s || '').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+
+/** מאתר אדם לפי טלפון, קודם ברשימה מ-REDCap ואז ברשומות הידניות */
+function findPerson(phone) {
+  const p = normPhone(phone);
+  if (!p) return null;
+  return roster.find(r => r.phone === p) || manual.find(m => m.phone === p) || null;
+}
+
+// =====================================================================
+// חילוץ פניות ממייל
+// =====================================================================
+const KIND = {
+  noAnswer: { key: 'noAnswer', label: 'לא מילא/ה שאלון שבועי', re: /אין\s*מענה|לא\s*מילא|שאלון\s*השבועי/ },
+  callback: { key: 'callback', label: 'מבקש/ת לדבר עם נציג', re: /לדבר\s*עם|נציג|ליצור\s*קשר|חזרה\s*טלפונית/ }
+};
+
+/** מחלץ מכל טקסט את הפניות שבתוכו. עובד גם על כמה מיילים שהודבקו יחד. */
+function extractAlerts(text) {
+  const out = [];
+  // כל מקטע מתחיל בטלפון ישראלי. חותכים לפי מיקומי הטלפונים כדי לתמוך בכמה מיילים
+  const phoneRe = /0\s?5\d[\s-]?\d{3}[\s-]?\d{4}/g;
+  const hits = [...text.matchAll(phoneRe)];
+  hits.forEach((h, i) => {
+    const from = Math.max(0, h.index - 400);
+    const to = i + 1 < hits.length ? hits[i + 1].index : text.length;
+    const ctx = text.slice(from, to);
+    const phone = normPhone(h[0]);
+    if (!/^05\d{8}$/.test(phone)) return;
+    if (out.some(o => o.phone === phone)) return;      // אותו טלפון פעמיים באותה הדבקה
+    const site = /איכילוב|תל\s*אביב|סוראסקי/.test(ctx) ? 'איכילוב'
+               : /אסותא/.test(ctx) ? 'אסותא' : '';
+    const group = /קבוצת\s*התערבות|התערבות/.test(ctx) ? 'intervention'
+                : /קבוצת\s*ביקורת|ביקורת/.test(ctx) ? 'control' : '';
+    let kind = '';
+    for (const k in KIND) if (KIND[k].re.test(ctx)) { kind = k; break; }
+    out.push({ phone, site, group, kind: kind || 'noAnswer', at: new Date().toISOString(), sent: null });
+  });
+  return out;
+}
+
+window.parsePasted = () => {
+  const err = document.getElementById('parse-err'); err.style.display = 'none';
+  const txt = document.getElementById('paste').value;
+  if (!txt.trim()) { err.textContent = '❌ אין טקסט להדביק.'; err.style.display = 'block'; return; }
+  const found = extractAlerts(txt);
+  if (!found.length) {
+    err.textContent = '❌ לא נמצא מספר טלפון בטקסט. ודאו שהודבק גוף המייל המלא.';
+    err.style.display = 'block'; return;
+  }
+  let added = 0;
+  found.forEach(f => {
+    // לא מוסיפים אותה פנייה פעמיים כל עוד לא סומנה כנשלחה
+    if (alerts.some(a => a.phone === f.phone && a.kind === f.kind && !a.sent)) return;
+    alerts.unshift({ ...f, id: 'A' + Date.now() + Math.floor(performance.now()) + added });
+    added++;
+  });
+  save(LS_ALERTS, alerts);
+  document.getElementById('paste').value = '';
+  renderAlerts();
+  if (!added) { err.textContent = 'כל הפניות שנמצאו כבר קיימות ברשימה.'; err.style.display = 'block'; }
+};
+
+// =====================================================================
+// הודעות וואטסאפ
+// =====================================================================
+/** נוסח זמני עד שנקבע את הסופי. משתנה לפי מין ולפי סוג הפנייה. */
+function waMessage(kind, person) {
+  const f = person && person.sex === 'f';
+  const name = person && person.name ? person.name : '';
+  const hi = name ? `היי ${name},` : 'היי,';
+  if (kind === 'callback') {
+    return `${hi}\nראינו שביקשת שניצור איתך קשר ${f ? 'ונשמח' : 'ונשמח'} לעזור.\nמתי ${f ? 'נוחה' : 'נוח'} לך שיחה?\n\nצוות מחקר PRIME`;
+  }
+  return `${hi}\nשמנו לב ש${f ? 'עדיין לא מילאת' : 'עדיין לא מילאת'} את השאלון השבועי.\nהוא ${f ? 'לוקח' : 'לוקח'} דקה או שתיים, ו${f ? 'חשובה' : 'חשוב'} לנו מאוד ${f ? 'שתמלאי' : 'שתמלא'} אותו כדי שנוכל להמשיך לעקוב.\n\nתודה רבה,\nצוות מחקר PRIME`;
+}
+
+window.copyMsg = async (id) => {
+  const a = alerts.find(x => x.id === id); if (!a) return;
+  const p = findPerson(a.phone);
+  try {
+    await navigator.clipboard.writeText(waMessage(a.kind, p));
+    const b = document.getElementById('cp-' + id);
+    if (b) { b.textContent = '✓ הועתק'; setTimeout(() => b.textContent = 'העתקת ההודעה', 1800); }
+  } catch (e) { alert('ההעתקה נכשלה, אפשר לסמן ולהעתיק ידנית.'); }
+};
+
+window.markSent = (id) => {
+  const a = alerts.find(x => x.id === id); if (!a) return;
+  a.sent = a.sent ? null : new Date().toISOString();
+  save(LS_ALERTS, alerts); renderAlerts();
+};
+window.dropAlert = (id) => {
+  alerts = alerts.filter(a => a.id !== id); save(LS_ALERTS, alerts); renderAlerts();
+};
+
+function renderAlerts() {
+  const box = document.getElementById('alerts');
+  if (!alerts.length) { box.innerHTML = '<div class="empty">אין פניות. הדביקו מייל למעלה כדי להתחיל.</div>'; return; }
+  box.innerHTML = `<table><thead><tr>
+      <th>סוג הפנייה</th><th>שם</th><th>טלפון</th><th>קבוצה</th><th>מרכז</th><th>הודעה</th><th>סטטוס</th><th></th>
+    </tr></thead><tbody>` +
+    alerts.map(a => {
+      const p = findPerson(a.phone);
+      const known = !!p;
+      const groupMismatch = known && p.group && a.group && p.group !== a.group;
+      const nameCell = known
+        ? `<b>${esc(p.name)}</b>${p.manual ? ' <span class="tag man">ידני</span>' : ''}`
+        : `<span class="tag warn">לא מזוהה</span>`;
+      const sexCell = known && !p.sex ? ' <span class="tag warn">אין מין</span>' : '';
+      return `<tr>
+        <td>${KIND[a.kind] ? KIND[a.kind].label : a.kind}</td>
+        <td>${nameCell}${sexCell}</td>
+        <td><span class="ltr">${prettyPhone(a.phone)}</span></td>
+        <td>${groupTag(a.group)}${groupMismatch ? ' <span class="tag warn">שונה מ-REDCap</span>' : ''}</td>
+        <td>${a.site || '—'}</td>
+        <td><button class="btn sm" id="cp-${a.id}" onclick="copyMsg('${a.id}')"
+             ${known && p.sex ? '' : 'disabled title="צריך שם ומין כדי לנסח הודעה"'}>העתקת ההודעה</button></td>
+        <td>${a.sent ? `<span class="tag ok">נשלח ${new Date(a.sent).toLocaleDateString('he-IL')}</span>`
+                     : '<span class="tag warn">ממתין</span>'}</td>
+        <td>
+          <button class="btn sec sm" onclick="markSent('${a.id}')">${a.sent ? 'ביטול' : 'סמן נשלח'}</button>
+          <button class="btn sec sm" onclick="dropAlert('${a.id}')">מחיקה</button>
+        </td>
+      </tr>` +
+      (known && p.sex ? `<tr><td colspan="8" style="padding-top:0;border:none;">
+          <div class="msg-box">${esc(waMessage(a.kind, p))}</div></td></tr>` : '');
+    }).join('') + '</tbody></table>';
+}
+
+// ציור ראשוני
+renderManual(); renderRoster(0, roster.filter(r => !r.phone).length); renderAlerts();
+if (roster.length) document.getElementById('csv-status').textContent =
+  `נטענו בעבר ${roster.length} נחקרים משובצים. אפשר להעלות קובץ מעודכן.`;
+</script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut as fbSignOut }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyCZR4jxDQ8hcmfslbgx06dlRQNIoTf3Wss",
+  authDomain:        "wellnessprojectar.firebaseapp.com",
+  projectId:         "wellnessprojectar",
+  storageBucket:     "wellnessprojectar.firebasestorage.app",
+  messagingSenderId: "665866758826",
+  appId:             "1:665866758826:web:ce53c50d2a4e3e161b7ed3"
+};
+const ALLOWED_EMAILS = ["amirsportdiet@gmail.com", "primerct2026@gmail.com"];
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+
+window.signInWithGoogle = () => {
+  document.getElementById('auth-loading').style.display = 'block';
+  signInWithPopup(auth, provider).catch(e => {
+    document.getElementById('auth-loading').textContent = 'ההתחברות נכשלה: ' + e.code;
+  });
+};
+window.signOut = async () => { await fbSignOut(auth); };
+
+onAuthStateChanged(auth, user => {
+  document.getElementById('auth-loading').style.display = 'none';
+  const show = (auth1, noacc, main) => {
+    document.getElementById('auth-screen').style.display = (auth1 || noacc) ? 'flex' : 'none';
+    document.getElementById('auth-box').style.display = auth1 ? 'block' : 'none';
+    document.getElementById('no-access-box').style.display = noacc ? 'block' : 'none';
+    document.getElementById('main').style.display = main ? 'block' : 'none';
+  };
+  if (!user) return show(true, false, false);
+  const email = (user.email || '').toLowerCase();
+  if (ALLOWED_EMAILS.includes(email)) {
+    document.getElementById('user-email').textContent = user.email;
+    show(false, false, true);
+  } else {
+    document.getElementById('no-access-msg').textContent = `החשבון ${user.email} אינו מורשה לגשת לכלי זה.`;
+    show(false, true, false);
+  }
+});
+</script>
+</body>
+</html>

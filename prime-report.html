@@ -2652,6 +2652,7 @@ async function buildPdf() {
     groups[i].forEach(el => wrap.appendChild(el.cloneNode(true)));
     document.body.appendChild(wrap);
     normalizeSpaces(wrap);          // בלי זה נבלעים רווחים ליד טקסט מודגש
+    flattenGrids(wrap);             // ספריית הרינדור לא מיישמת CSS Grid
     const cv = await html2canvas(wrap, { scale: 2, backgroundColor: '#ffffff', logging: false, useCORS: true });
     wrap.remove();
     const h = Math.min(cv.height * 210 / cv.width, 297);
@@ -2659,6 +2660,34 @@ async function buildPdf() {
     pdf.addImage(cv.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 210, h);
   }
   return pdf.output('datauristring').split(',')[1];   // base64 נקי
+}
+
+/**
+ * html2canvas אינו מיישם CSS Grid, ולכן כל רשת נשברת בעת ההמרה.
+ * ממיר כל רשת ל-flex עם רוחבי עמודות שכבר חושבו על ידי הדפדפן, כך שהתוצאה זהה.
+ * חייב לרוץ כשהאלמנט כבר מחובר ל-DOM, אחרת אין ערכים מחושבים.
+ */
+function flattenGrids(root) {
+  [root, ...root.querySelectorAll('*')].forEach(el => {
+    const cs = getComputedStyle(el);
+    if (cs.display !== 'grid' && cs.display !== 'inline-grid') return;
+    const cols = cs.gridTemplateColumns.split(/\s+/).filter(Boolean).map(parseFloat);
+    if (!cols.length || cols.some(isNaN)) return;
+    const cGap = parseFloat(cs.columnGap) || 0;
+    const rGap = parseFloat(cs.rowGap) || 0;
+    const kids = [...el.children];
+    el.style.display   = 'flex';
+    el.style.flexWrap  = 'wrap';
+    el.style.alignItems = 'stretch';
+    el.style.gap       = rGap + 'px ' + cGap + 'px';
+    kids.forEach((k, i) => {
+      const w = cols[i % cols.length];
+      if (!isFinite(w)) return;
+      k.style.boxSizing = 'border-box';
+      k.style.flex = '0 0 ' + w + 'px';
+      k.style.maxWidth = w + 'px';
+    });
+  });
 }
 
 /** html2canvas בולע רווחים שגובלים באלמנטים inline. זה מקבע אותם. */

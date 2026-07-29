@@ -3,3 +3,9 @@
 *.csv
 # קבצי ההנחיות למייל — פנימיים, לא לפרסום באתר
 mailer-backend/attachments/
+
+# Windows / Google Drive junk
+desktop.ini
+**/desktop.ini
+.firebase/
+.firebaserc

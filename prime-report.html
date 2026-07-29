@@ -1137,6 +1137,14 @@ window.setSex = (val) => {
   if (sexSF) { sexSF.classList.remove('simple-field--missing'); sexSF.classList.add('sf-filled'); }
 };
 
+// ניקוי בחירת הקבוצה, כשהייבוא לא מצא הקצאה ויש לבחור ידנית
+window.clearGroup = () => {
+  document.getElementById('f-group').value = '';
+  const sf = document.querySelector('.simple-field:has(#grp-control)');
+  sf?.querySelectorAll('.sex-btn').forEach(b => b.classList.remove('active'));
+  sf?.classList.remove('sf-filled');
+  setFieldCheck('group', '');
+};
 window.setGroup = (val) => {
   document.getElementById('f-group').value = val;
   const grpSF = document.querySelector('.simple-field:has(#grp-control)');
@@ -1363,9 +1371,16 @@ const RC_MAP = {
   hgr:'hgrip_top_right', hgl:'hgrip_top_left',
   sppb:'sppb_total_score', sts:'chair_stand_total', walk:'walk_total_distance',
   tbw:'bia_tbw', icw:'bia_icw', ecw:'bia_ecw',
+  // הערה: קבוצת המחקר אינה נטענת דרך המפה הזו — היא נקראת מעמודת arm_allocation
+  // באירוע t0 בלבד (ראו RC_ARM ו-rcLoad), משום שהיא אינה מדידה עם התחלה וסוף.
   // מסה רזה בגפיים מה-InBody. שים לב: עמודת רגל ימין נקראת bia_lrleg ב-REDCap
   lmra:'bia_rarm', lmla:'bia_larm', lmrl:'bia_lrleg', lmll:'bia_lleg'
 };
+/* ⚠️ פענוח קוד ההקצאה מ-REDCap (arm_allocation).
+   הייצוא הגולמי מחזיר 1 או 2 בלבד, בלי תווית. הקישור נקבע לפי אילו טפסים
+   מולאו בכל זרוע: לקוד 1 מולאו יומן, חוברת ומד דופק, ולקוד 2 לא מולא אף אחד מהם.
+   אם ההקצאה במחקר הפוכה, יש להחליף כאן את שתי המילים וזה כל השינוי הנדרש. */
+const RC_ARM = { '1': 'intervention', '2': 'control' };
 let RC_HEADER = null, RC_BY_ID = null;
 
 function rcCSV(text){
@@ -1495,12 +1510,18 @@ window.rcLoadParticipant = (id) => {
   document.getElementById('f-height').value = height;
   const sx = cell(scr,'cand_sex');
   if(sx === '1') setSex('m'); else if(sx === '2') setSex('f');
+  // קבוצת מחקר — arm_allocation נרשם באירוע t0. אם חסר, משאירים ריק לבחירה ידנית.
+  const arm = cell(t0,'arm_allocation') || cell(scr,'arm_allocation');
+  const grp = RC_ARM[arm];
+  if(grp) setGroup(grp); else clearGroup();
   rcSyncVisible();
   const code = document.getElementById('f-code').value;
+  const grpTxt = grp ? ' · קבוצה: ' + (grp === 'control' ? 'ביקורת' : 'התערבות')
+                     : ' · ⚠️ אין הקצאת קבוצה בקובץ, יש לבחור ידנית';
   document.getElementById('rc-status').textContent =
-    st.level === 'green'  ? '🟢 נטען קוד ' + code + ' (מלא) — בדוק ולחץ הפקת דו״ח.' :
-    st.level === 'yellow' ? '🟡 נטען קוד ' + code + ' — אין T6, הסוף נלקח מ-T3. בדוק ולחץ הפקת דו״ח.' :
-                            '🔴 נטען קוד ' + code + ' — התחלה בלבד, אין נתוני סוף; יש להשלים ידנית.';
+    (st.level === 'green'  ? '🟢 נטען קוד ' + code + ' (מלא)' :
+     st.level === 'yellow' ? '🟡 נטען קוד ' + code + ' — אין T6, הסוף נלקח מ-T3' :
+                             '🔴 נטען קוד ' + code + ' — התחלה בלבד, אין נתוני סוף') + grpTxt + '.';
   // גלילה חזרה לראש הטופס כדי לראות את השדות שהתמלאו
   document.querySelector('.form-body')?.scrollIntoView({ behavior:'smooth', block:'start' });
 };

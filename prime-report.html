@@ -1990,6 +1990,7 @@ window.generateReport = () => {
   const chBurnWidthS = 100 - fatBurnWidthS;
 
   const page1 = `
+<div class="sheet1">
 <div class="head">
   <div class="logo"><img src="images/prime/prime_logo.jpeg" alt="PRIME"></div>
   <div class="head-txt">
@@ -2086,6 +2087,7 @@ ${dateBarEnd}
   <div class="agenote">* ערכי הסף התלויים בגיל ובמין (אחוז שומן, קימה מכיסא) מותאמים לגיל ולמין של הנחקר/ת.</div>
 </div>
 <div class="foot"><span>קוד: ${D.code} · גיל ${age} · ${sex==='m'?'זכר':'נקבה'}</span><span>מחקר PRIME</span></div>
+</div>
 
 <div class="sheet1b pagebreak">
 <div class="head">
@@ -2637,45 +2639,35 @@ async function buildPdf() {
   await document.fonts.ready;                 // בלי זה הגופן עלול להיות שונה מהמסך
   const rc = document.getElementById('report-content');
 
-  /* מצלמים את הדו״ח האמיתי שעל המסך, לא שכפול לתוך מיכל אחר.
-     כל ניסיון לשכפל שינה את הפריסה, ולכן העמוד יצא שונה ממה שרואים.
-     התיקונים לספריית הרינדור מוחלים על השכפול הפנימי שלה דרך onclone. */
-  const sheets = [];
-  let cur = { top: null, bottom: null };
-  const rcTop = rc.getBoundingClientRect().top + window.scrollY;
-  for (const k of rc.children) {
-    const r = k.getBoundingClientRect();
-    const top = r.top + window.scrollY - rcTop, bottom = top + r.height;
-    if (k.classList.contains('pagebreak')) { if (cur.top !== null) sheets.push(cur); cur = { top, bottom }; }
-    else { if (cur.top === null) cur.top = top; cur.bottom = bottom; }
-  }
-  if (cur.top !== null) sheets.push(cur);
+  /* מצלמים כל עמוד כאלמנט אמיתי שעל המסך, אחד-אחד.
+     כל ניסיון לשכפל לתוך מיכל אחר, או לצלם הכול ולחתוך לפי קואורדינטות, שינה את
+     הפריסה או את הגובה ולכן העמוד יצא שונה ממה שרואים.
+     התיקונים לספריית הרינדור מוחלים על השכפול הפנימי שלה בלבד, דרך onclone. */
+  const sheets = [...rc.children].filter(k => /sheet1|sheet1b|sheet2|compare/.test(k.className));
+  if (!sheets.length) throw new Error('לא נמצאו עמודים בדו״ח');
 
-  const cv = await html2canvas(rc, {
-    scale: 2, backgroundColor: '#ffffff', logging: false, useCORS: true,
-    windowWidth: document.documentElement.clientWidth,
-    onclone: (doc) => {
-      const el = doc.getElementById('report-content');
-      normalizeSpaces(el);   // בלי זה נבלעים רווחים ליד טקסט מודגש
-      flattenGrids(el);      // ספריית הרינדור לא מיישמת CSS Grid
-    }
-  });
-
-  const s = cv.width / rc.getBoundingClientRect().width;   // פיקסלים בקנבס לכל פיקסל מסך
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-  const pad = 13 * 96 / 25.4;                              // ריפוד 13mm שכבר קיים באלמנט
 
-  sheets.forEach((sh, i) => {
-    const y = Math.max(0, Math.round((sh.top - pad) * s));
-    const h = Math.min(Math.round((sh.bottom - sh.top + pad * 2) * s), cv.height - y);
-    const slice = document.createElement('canvas');
-    slice.width = cv.width; slice.height = h;
-    slice.getContext('2d').drawImage(cv, 0, y, cv.width, h, 0, 0, cv.width, h);
+  for (let i = 0; i < sheets.length; i++) {
+    const el = sheets[i];
+    el.setAttribute('data-shoot', '1');
+    const cv = await html2canvas(el, {
+      scale: 2, backgroundColor: '#ffffff', logging: false, useCORS: true,
+      onclone: (doc) => {
+        const c = doc.querySelector('[data-shoot="1"]');
+        if (!c) return;
+        normalizeSpaces(c);   // בלי זה נבלעים רווחים ליד טקסט מודגש
+        flattenGrids(c);      // ספריית הרינדור לא מיישמת CSS Grid
+      }
+    });
+    el.removeAttribute('data-shoot');
     if (i > 0) pdf.addPage();
-    pdf.addImage(slice.toDataURL('image/jpeg', 0.94), 'JPEG', 0, 0, 210,
-                 Math.min(h * 210 / cv.width, 297));
-  });
+    // שוליים של 13mm כמו בהדפסה, והתמונה נכנסת לרוחב שנותר
+    const w = 210 - 26;
+    pdf.addImage(cv.toDataURL('image/jpeg', 0.94), 'JPEG', 13, 13, w,
+                 Math.min(cv.height * w / cv.width, 297 - 26));
+  }
   return pdf.output('datauristring').split(',')[1];   // base64 נקי
 }
 

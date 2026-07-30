@@ -6,7 +6,7 @@
  * היא יוצרת את תיקיית הקבצים, מתקינה את טריגר התזמון, ומדפיסה את הקישור לתיקייה.
  */
 
-const CODE_VERSION = 'v13-report';
+const CODE_VERSION = 'v14-inbox';
 const SECRET = 'lgGnSJZnAsfIs4W822y0k7F6';
 const SENDER_NAME = 'מחקר PRIME';
 const FOLDER_NAME = 'PRIME Mailer Files';
@@ -118,6 +118,9 @@ function doPost(e) {
     if (data.mode === 'cancel')     return json(cancelPending_(data.row));
     if (data.mode === 'reschedule') return json(reschedulePending_(data.row, data.sendAt));
 
+    // --- קריאת מיילי פניות נחקרים מהתיבה ---
+    if (data.mode === 'inbox')      return json(fetchAlertMails_(data.days, data.since));
+
     // --- שליחת דו״ח תוצאות אישי, עם PDF שנבנה בדפדפן ---
     // לפני בדיקת הכפילויות: לדו״ח אין שלב וקבוצה, והוא עשוי להישלח יותר מפעם אחת
     if (data.mode === 'report')     return json(sendReport_(data));
@@ -191,6 +194,49 @@ function sendReport_(data) {
   logSend_({ to: to, name: '(דו״ח תוצאות)', phase: 'דו״ח', group: '', site: '',
              sendAt: '', sentBy: data.sentBy, subject: data.subject }, 'דו״ח נשלח');
   return { ok: true, sent: true, to: to[0], kb: Math.round(bytes.length / 1024) };
+}
+
+// ===================== קריאת מיילי פניות =====================
+/* מיילי ההתראה מגיעים תמיד מאותו שולח. הם נשלחים במקור לתיבה האישית,
+   ומועברים לכאן בכלל אוטומטי, כי הסקריפט הזה רץ תחת primerct2026.
+   ההרשאה לקריאה כבר קיימת (https://mail.google.com/) ולכן אין צורך באישור נוסף. */
+const ALERT_SENDER = 'send.vpcontact.com';
+
+/**
+ * מחזיר את מיילי ההתראה מהתקופה האחרונה.
+ * הפרסור עצמו נעשה בדפדפן, כדי שנוסח חדש יטופל בלי לפרוס מחדש.
+ * since — חותמת ISO, מחזיר רק מה שחדש ממנה.
+ */
+function fetchAlertMails_(days, since) {
+  var d = Math.max(1, Math.min(365, days || 30));
+  var q = 'from:' + ALERT_SENDER + ' newer_than:' + d + 'd';
+  var threads = GmailApp.search(q, 0, 200);
+  var cut = since ? new Date(since).getTime() : 0;
+  var items = [];
+  for (var i = 0; i < threads.length; i++) {
+    var msgs = threads[i].getMessages();
+    for (var j = 0; j < msgs.length; j++) {
+      var m = msgs[j];
+      if (cut && m.getDate().getTime() <= cut) continue;
+      items.push({
+        id: m.getId(),
+        at: m.getDate().toISOString(),
+        subject: m.getSubject(),
+        body: m.getPlainBody().slice(0, 3000)
+      });
+    }
+  }
+  items.sort(function (a, b) { return a.at < b.at ? 1 : -1; });
+  return { ok: true, query: q, mailbox: Session.getEffectiveUser().getEmail(),
+           threads: threads.length, count: items.length, items: items };
+}
+
+/** בדיקה ידנית: כמה מיילי התראה יש בתיבה */
+function alertsSelfTest() {
+  var r = fetchAlertMails_(120, null);
+  Logger.log('תיבה: ' + r.mailbox + ' · שאילתה: ' + r.query);
+  Logger.log('נמצאו ' + r.count + ' מיילים ב-' + r.threads + ' שרשורים');
+  return r.count;
 }
 
 /** מאתר בתיקייה את הקבצים לפי שמם */

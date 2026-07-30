@@ -23,6 +23,11 @@ body{ font-family:"Rubik",Arial,sans-serif; background:#f0f4f8; color:#1f2937; }
              font-family:inherit; color:#3c4043; }
 .btn-google svg{ width:22px; height:22px; }
 #auth-loading{ display:none; font-size:14px; color:#64748b; margin-top:14px; }
+#pin-box{ display:none; }
+#pin-box input{ width:190px; padding:12px; border:1.5px solid #cbd5e1; border-radius:10px;
+                font-size:22px; text-align:center; letter-spacing:6px; font-family:inherit; }
+#pin-box input:focus{ outline:none; border-color:#0d9488; }
+.pin-err{ min-height:18px; font-size:12.5px; color:#b91c1c; font-weight:600; margin-top:8px; }
 #no-access-box{ display:none; }
 #no-access-box .msg{ background:#fef2f2; border:1px solid #fca5a5; color:#b91c1c; border-radius:10px;
                      padding:14px 18px; font-size:14px; margin-bottom:16px; line-height:1.6; }
@@ -34,7 +39,11 @@ body{ font-family:"Rubik",Arial,sans-serif; background:#f0f4f8; color:#1f2937; }
 .top{ background:#16304f; color:#fff; padding:14px 26px; display:flex; align-items:center;
       justify-content:space-between; margin:0 -20px 22px; }
 .top h1{ font-size:19px; font-weight:700; }
-.top .who{ font-size:12.5px; color:#94c7f4; }
+.top .who{ font-size:12.5px; color:#94c7f4; display:flex; align-items:center; gap:10px; }
+.cloud{ font-size:11.5px; border-radius:20px; padding:3px 10px; font-weight:600; }
+.cloud.ok{ background:#134e4a; color:#5eead4; }
+.cloud.saving{ background:#1e3a5f; color:#94c7f4; }
+.cloud.bad{ background:#7f1d1d; color:#fecaca; }
 .top .who button{ background:none; border:1px solid #94c7f4; color:#94c7f4; border-radius:7px;
                   padding:5px 12px; font-size:11.5px; cursor:pointer; font-family:inherit; margin-right:10px; }
 
@@ -75,6 +84,17 @@ tr:hover td{ background:#f8fafc; }
 .sexsel{ padding:4px 7px; border:1px solid #cbd5e1; border-radius:7px; font-size:12px; font-family:inherit; }
 .ltr{ direction:ltr; unicode-bidi:isolate; display:inline-block; }
 
+.gap-box{ background:#fff7ed; border:1.5px solid #fdba74; border-radius:12px; padding:13px 16px; margin-top:14px; }
+.gap-h{ font-size:14px; font-weight:700; color:#9a3412; margin-bottom:3px; }
+.gap-t{ font-size:12px; color:#b45309; margin-bottom:10px; line-height:1.55; }
+.gap-row{ display:flex; gap:8px; align-items:center; margin-bottom:7px; flex-wrap:wrap; }
+.gap-n{ flex:1 1 210px; font-size:13px; font-weight:600; color:#7c2d12; }
+.gap-row input{ width:150px; padding:7px 10px; border:1.5px solid #fdba74; border-radius:8px;
+                font-size:13.5px; font-family:inherit; }
+.gap-row input:focus{ outline:none; border-color:#ea580c; }
+.gap-e{ font-size:11.5px; color:#b91c1c; font-weight:600; }
+.gap-ok{ background:#ecfdf5; border:1px solid #6ee7b7; color:#047857; border-radius:10px;
+         padding:9px 14px; font-size:13px; margin-top:14px; font-weight:600; }
 .field{ display:flex; gap:9px; flex-wrap:wrap; align-items:flex-end; }
 .field label{ display:block; font-size:11.5px; font-weight:600; color:#475569; margin-bottom:4px; }
 .field input, .field select{ padding:9px 11px; border:1.5px solid #cbd5e1; border-radius:9px;
@@ -106,6 +126,16 @@ textarea:focus{ outline:none; border-color:#0d9488; }
     </button>
     <div id="auth-loading">בודק הרשאות…</div>
   </div>
+  <div class="auth-box" id="pin-box">
+    <div style="font-size:40px; margin-bottom:10px;">🔒</div>
+    <h2>קוד כניסה</h2>
+    <p>החשבון אומת. יש להזין את קוד הכניסה למערכת.</p>
+    <input type="password" id="pin-input" inputmode="numeric" autocomplete="off" maxlength="12"
+           placeholder="••••••" onkeydown="if(event.key==='Enter') checkPin()">
+    <div class="pin-err" id="pin-err"></div>
+    <button class="btn-plain" style="background:#0d9488;color:#fff;margin-top:12px" onclick="checkPin()">כניסה</button>
+    <div style="margin-top:14px"><button class="btn-plain" onclick="signOut()">יציאה</button></div>
+  </div>
   <div class="auth-box" id="no-access-box">
     <div style="font-size:40px; margin-bottom:10px;">🚫</div>
     <h2>אין הרשאה</h2>
@@ -118,7 +148,7 @@ textarea:focus{ outline:none; border-color:#0d9488; }
 <div id="main">
   <div class="top">
     <h1>📞 פניות נחקרים · מחקר PRIME</h1>
-    <div class="who"><span id="user-email"></span><button onclick="signOut()">יציאה</button></div>
+    <div class="who"><span class="cloud" id="cloud-status">☁</span><span id="user-email"></span><button onclick="signOut()">יציאה</button></div>
   </div>
 
   <!-- רשימת הנחקרים -->
@@ -133,6 +163,7 @@ textarea:focus{ outline:none; border-color:#0d9488; }
     <div class="status" id="csv-status"></div>
     <div class="stats" id="roster-stats" style="display:none"></div>
     <div class="err" id="csv-err"></div>
+    <div id="gaps"></div>
   </div>
 
   <!-- הוספה ידנית -->
@@ -183,6 +214,7 @@ textarea:focus{ outline:none; border-color:#0d9488; }
 const LS_ROSTER = 'prime_alerts_roster_v1';   // מ-REDCap
 const LS_MANUAL = 'prime_alerts_manual_v1';   // הוזן ידנית
 const LS_ALERTS = 'prime_alerts_items_v1';    // פניות + סימוני נשלח
+const LS_FILLS  = 'prime_alerts_fills_v1';    // טלפונים שהושלמו ידנית לנחקרי REDCap
 
 const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (e) { return d; } };
 const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
@@ -190,6 +222,22 @@ const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
 let roster = load(LS_ROSTER, []);
 let manual = load(LS_MANUAL, []);
 let alerts = load(LS_ALERTS, []);
+let fills  = load(LS_FILLS, {});
+
+/** מסנכרן לענן. עוטף כי מודול ה-Firebase נטען אחרי הסקריפט הזה. */
+const sync = () => { if (window.cloudSave) window.cloudSave(); };
+
+/** מה שנשמר בענן, ומה שנטען ממנו בכניסה */
+window.getState = () => ({ roster, manual, alerts, fills });
+window.setState = (d) => {
+  if (Array.isArray(d.roster)) { roster = d.roster; save(LS_ROSTER, roster); }
+  if (Array.isArray(d.manual)) { manual = d.manual; save(LS_MANUAL, manual); }
+  if (Array.isArray(d.alerts)) { alerts = d.alerts; save(LS_ALERTS, alerts); }
+  if (d.fills && typeof d.fills === 'object') { fills = d.fills; save(LS_FILLS, fills); }
+  renderManual(); renderRoster(); renderAlerts();
+  if (roster.length) document.getElementById('csv-status').textContent =
+    `הרשימה נטענה מהגיבוי: ${roster.length} נחקרים משובצים. אפשר להעלות קובץ מעודכן.`;
+};
 
 // =====================================================================
 // טלפונים — נרמול לצורת השוואה אחת
@@ -265,6 +313,7 @@ window.onCsv = (ev) => {
           group: RC_ARM[arm] || '',
           code: pick(rs, 'code_participant')
         };
+        if (!rec.phone && fills[id]) rec.phone = fills[id];   // השלמה ידנית קודמת
         if (!rec.phone) noPhone++;
         out.push(rec);
       }
@@ -273,6 +322,7 @@ window.onCsv = (ev) => {
         `✅ נטענו ${out.length} נחקרים משובצים · ${skipped} לא משובצים סוננו החוצה`;
       renderRoster(skipped, noPhone);
       renderAlerts();
+      sync();
     } catch (e) {
       err.textContent = '❌ ' + e.message; err.style.display = 'block';
       document.getElementById('csv-status').textContent = '';
@@ -290,10 +340,54 @@ function renderRoster(skipped, noPhone) {
   box.style.display = 'grid';
   box.innerHTML =
     stat(roster.length, 'משובצים') + stat(int, 'התערבות') + stat(ctl, 'ביקורת') +
-    stat(ready, 'מוכנים לזיהוי') + stat(noPhone || 0, 'ללא טלפון') +
+    stat(ready, 'מוכנים לזיהוי') + stat(gaps().length, 'חסר טלפון') +
     stat(manual.length, 'הוזנו ידנית');
+  renderGaps();
 }
 const stat = (n, l) => `<div class="stat"><div class="n">${n}</div><div class="l">${l}</div></div>`;
+
+/** נחקרים משובצים שאין להם טלפון, ועדיין לא הושלם ידנית */
+function gaps() {
+  return roster.filter(r => !r.phone && !fills[r.id]);
+}
+
+/**
+ * מציג במקום בולט את מי שחסר לו טלפון, עם שדה להשלמה.
+ * ההשלמה נשמרת בנפרד, ולכן העלאת קובץ REDCap חדש אינה מוחקת אותה.
+ */
+function renderGaps() {
+  const box = document.getElementById('gaps');
+  const list = gaps();
+  const filledCount = Object.keys(fills).length;
+  if (!list.length) {
+    box.innerHTML = filledCount
+      ? `<div class="gap-ok">✅ לכל הנחקרים המשובצים יש טלפון. ${filledCount} הושלמו ידנית.</div>` : '';
+    return;
+  }
+  box.innerHTML = `<div class="gap-box">
+    <div class="gap-h">⚠️ ${list.length} נחקרים משובצים ללא טלפון ב-REDCap</div>
+    <div class="gap-t">בלי טלפון אי אפשר לזהות אותם כשמגיעה פנייה. אפשר להשלים כאן, או להזין ב-REDCap ולהעלות קובץ מעודכן.</div>
+    ${list.map(r => `<div class="gap-row">
+      <div class="gap-n">${esc(r.name)} ${esc(r.last || '')} ${groupTag(r.group)}</div>
+      <input type="tel" dir="ltr" id="gap-${r.id}" placeholder="0521234567"
+             onkeydown="if(event.key==='Enter') fillPhone('${r.id}')">
+      <button class="btn sm" onclick="fillPhone('${r.id}')">שמירה</button>
+      <span class="gap-e" id="gape-${r.id}"></span>
+    </div>`).join('')}
+  </div>`;
+}
+
+window.fillPhone = (id) => {
+  const inp = document.getElementById('gap-' + id);
+  const errEl = document.getElementById('gape-' + id);
+  const p = normPhone(inp.value);
+  if (!/^05\d{7,8}$/.test(p)) { errEl.textContent = 'מספר לא תקין'; return; }
+  if (findPerson(p)) { errEl.textContent = 'הטלפון כבר קיים'; return; }
+  fills[id] = p; save(LS_FILLS, fills);
+  const r = roster.find(x => x.id === id); if (r) r.phone = p;
+  save(LS_ROSTER, roster);
+  renderRoster(); renderAlerts(); sync();
+};
 
 // =====================================================================
 // הוספה ידנית
@@ -311,12 +405,12 @@ window.addManual = () => {
   manual.push({ id: 'M' + Date.now(), phone, name, sex, group, manual: true });
   save(LS_MANUAL, manual);
   ['m-name', 'm-phone'].forEach(i => document.getElementById(i).value = '');
-  renderManual(); renderRoster(0, roster.filter(r => !r.phone).length); renderAlerts();
+  renderManual(); renderRoster(); renderAlerts(); sync();
 };
 
 window.removeManual = (id) => {
   manual = manual.filter(m => m.id !== id); save(LS_MANUAL, manual);
-  renderManual(); renderAlerts();
+  renderManual(); renderAlerts(); sync();
 };
 
 function renderManual() {
@@ -429,7 +523,7 @@ window.parsePasted = () => {
   });
   save(LS_ALERTS, alerts);
   document.getElementById('paste').value = '';
-  renderAlerts();
+  renderAlerts(); sync();
   if (!added) { err.textContent = 'כל הפניות שנמצאו כבר קיימות ברשימה.'; err.style.display = 'block'; }
 };
 
@@ -461,7 +555,7 @@ function sexFor(alert, person) {
 window.setSexFor = (id, val) => {
   const a = alerts.find(x => x.id === id); if (!a) return;
   a.sexOverride = val || null;
-  save(LS_ALERTS, alerts); renderAlerts();
+  save(LS_ALERTS, alerts); renderAlerts(); sync();
 };
 
 window.copyMsg = async (id) => {
@@ -477,10 +571,10 @@ window.copyMsg = async (id) => {
 window.markSent = (id) => {
   const a = alerts.find(x => x.id === id); if (!a) return;
   a.sent = a.sent ? null : new Date().toISOString();
-  save(LS_ALERTS, alerts); renderAlerts();
+  save(LS_ALERTS, alerts); renderAlerts(); sync();
 };
 window.dropAlert = (id) => {
-  alerts = alerts.filter(a => a.id !== id); save(LS_ALERTS, alerts); renderAlerts();
+  alerts = alerts.filter(a => a.id !== id); save(LS_ALERTS, alerts); renderAlerts(); sync();
 };
 
 function renderAlerts() {
@@ -523,7 +617,7 @@ function renderAlerts() {
 }
 
 // ציור ראשוני
-renderManual(); renderRoster(0, roster.filter(r => !r.phone).length); renderAlerts();
+renderManual(); renderRoster(); renderAlerts();
 if (roster.length) document.getElementById('csv-status').textContent =
   `נטענו בעבר ${roster.length} נחקרים משובצים. אפשר להעלות קובץ מעודכן.`;
 </script>
@@ -532,6 +626,8 @@ if (roster.length) document.getElementById('csv-status').textContent =
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut as fbSignOut }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey:            "AIzaSyCZR4jxDQ8hcmfslbgx06dlRQNIoTf3Wss",
@@ -543,9 +639,26 @@ const firebaseConfig = {
 };
 const ALLOWED_EMAILS = ["amirsportdiet@gmail.com", "primerct2026@gmail.com"];
 
-const app = initializeApp(firebaseConfig);
+/* קוד הכניסה נשמר כטביעת אצבע (SHA-256) ולא כטקסט גלוי.
+   הוא שכבה שנייה מעל ההתחברות: מונע גישה ממי שיושב מול דפדפן שכבר מחובר.
+   ההגנה על הנתונים עצמם היא בכללי Firestore, לא כאן. */
+const PIN_HASH = '4c2b97fc536d01263c29be9bf5c2d8527855e3e48f17a460005f44251169665f';
+const PIN_KEY  = 'prime_alerts_pin_ok';
+
+const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const db   = getFirestore(app);
 const provider = new GoogleAuthProvider();
+const CLOUD_DOC = doc(db, 'primeAlerts', 'state');
+
+const screens = (which) => {
+  const on = k => (which === k ? 'block' : 'none');
+  document.getElementById('auth-screen').style.display = which === 'main' ? 'none' : 'flex';
+  document.getElementById('auth-box').style.display      = on('login');
+  document.getElementById('pin-box').style.display       = on('pin');
+  document.getElementById('no-access-box').style.display = on('denied');
+  document.getElementById('main').style.display          = which === 'main' ? 'block' : 'none';
+};
 
 window.signInWithGoogle = () => {
   document.getElementById('auth-loading').style.display = 'block';
@@ -553,25 +666,77 @@ window.signInWithGoogle = () => {
     document.getElementById('auth-loading').textContent = 'ההתחברות נכשלה: ' + e.code;
   });
 };
-window.signOut = async () => { await fbSignOut(auth); };
+window.signOut = async () => { sessionStorage.removeItem(PIN_KEY); await fbSignOut(auth); };
 
-onAuthStateChanged(auth, user => {
-  document.getElementById('auth-loading').style.display = 'none';
-  const show = (auth1, noacc, main) => {
-    document.getElementById('auth-screen').style.display = (auth1 || noacc) ? 'flex' : 'none';
-    document.getElementById('auth-box').style.display = auth1 ? 'block' : 'none';
-    document.getElementById('no-access-box').style.display = noacc ? 'block' : 'none';
-    document.getElementById('main').style.display = main ? 'block' : 'none';
-  };
-  if (!user) return show(true, false, false);
-  const email = (user.email || '').toLowerCase();
-  if (ALLOWED_EMAILS.includes(email)) {
-    document.getElementById('user-email').textContent = user.email;
-    show(false, false, true);
-  } else {
-    document.getElementById('no-access-msg').textContent = `החשבון ${user.email} אינו מורשה לגשת לכלי זה.`;
-    show(false, true, false);
+async function sha256(s) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+window.checkPin = async () => {
+  const inp = document.getElementById('pin-input');
+  const err = document.getElementById('pin-err');
+  const h = await sha256(inp.value.trim());
+  if (h !== PIN_HASH) { err.textContent = 'קוד שגוי'; inp.value = ''; inp.focus(); return; }
+  err.textContent = '';
+  sessionStorage.setItem(PIN_KEY, '1');
+  await enterApp();
+};
+
+/* ===== גיבוי מאובטח ב-Firestore =====
+   הנתונים נשמרים במסמך אחד תחת primeAlerts/state, וקריאה או כתיבה אליו
+   מותרות רק לחשבונות המורשים לפי כללי האבטחה בצד השרת. */
+let cloudTimer = null, cloudReady = false;
+
+window.cloudSave = () => {
+  if (!cloudReady) return;
+  clearTimeout(cloudTimer);
+  cloudTimer = setTimeout(async () => {
+    const badge = document.getElementById('cloud-status');
+    try {
+      if (badge) { badge.textContent = 'שומר…'; badge.className = 'cloud saving'; }
+      await setDoc(CLOUD_DOC, {
+        roster: window.getState().roster, manual: window.getState().manual,
+        alerts: window.getState().alerts, fills: window.getState().fills,
+        updatedAt: serverTimestamp(), updatedBy: auth.currentUser ? auth.currentUser.email : ''
+      });
+      if (badge) { badge.textContent = '☁ מגובה'; badge.className = 'cloud ok'; }
+    } catch (e) {
+      if (badge) { badge.textContent = '⚠ הגיבוי נכשל'; badge.className = 'cloud bad'; badge.title = String(e); }
+    }
+  }, 900);
+};
+
+async function enterApp() {
+  screens('main');
+  const badge = document.getElementById('cloud-status');
+  try {
+    if (badge) { badge.textContent = 'טוען גיבוי…'; badge.className = 'cloud saving'; }
+    const snap = await getDoc(CLOUD_DOC);
+    if (snap.exists()) window.setState(snap.data());
+    cloudReady = true;
+    if (badge) { badge.textContent = '☁ מגובה'; badge.className = 'cloud ok'; }
+  } catch (e) {
+    cloudReady = false;
+    if (badge) {
+      badge.textContent = '⚠ אין חיבור לגיבוי, נשמר מקומית בלבד';
+      badge.className = 'cloud bad'; badge.title = String(e);
+    }
   }
+}
+
+onAuthStateChanged(auth, async user => {
+  document.getElementById('auth-loading').style.display = 'none';
+  if (!user) return screens('login');
+  const email = (user.email || '').toLowerCase();
+  if (!ALLOWED_EMAILS.includes(email)) {
+    document.getElementById('no-access-msg').textContent = `החשבון ${user.email} אינו מורשה לגשת לכלי זה.`;
+    return screens('denied');
+  }
+  document.getElementById('user-email').textContent = user.email;
+  if (sessionStorage.getItem(PIN_KEY) === '1') return enterApp();
+  screens('pin');
+  setTimeout(() => document.getElementById('pin-input').focus(), 80);
 });
 </script>
 </body>

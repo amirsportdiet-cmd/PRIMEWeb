@@ -116,6 +116,12 @@ textarea:focus{ outline:none; border-color:#0d9488; }
          display:inline-block; }
 .btn-wa.off{ background:#cbd5e1; pointer-events:none; }
 .snapbar{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; font-size:12px; color:#64748b; }
+.msg-fold > summary{ cursor:pointer; font-size:11.5px; color:#0f766e; font-weight:600;
+                     padding:2px 0 4px; list-style:none; }
+.msg-fold > summary::-webkit-details-marker{ display:none; }
+.msg-fold > summary::before{ content:'▸ '; }
+.msg-fold[open] > summary::before{ content:'▾ '; }
+.msg-fold > summary:hover{ text-decoration:underline; }
 .msg-box{ background:#f0fdf4; border:1px solid #86efac; border-radius:10px; padding:12px 14px;
           font-size:13px; line-height:1.7; white-space:pre-wrap; margin-top:8px;
           /* בלי גופן אימוג'י, סמלים חדשים מוצגים כריבוע. בוואטסאפ עצמו הם תקינים ממילא. */
@@ -735,7 +741,8 @@ function renderAlerts() {
         </td>
       </tr>` +
       (known && sexFor(a,p) ? `<tr><td colspan="10" style="padding-top:0;border:none;">
-          <div class="msg-box">${esc(waMessage(a.kind, p, sexFor(a,p)))}</div></td></tr>` : '');
+          <details class="msg-fold"><summary>הצגת ההודעה המוכנה</summary>
+          <div class="msg-box">${esc(waMessage(a.kind, p, sexFor(a,p)))}</div></details></td></tr>` : '');
     }).join('') + '</tbody></table>';
 }
 

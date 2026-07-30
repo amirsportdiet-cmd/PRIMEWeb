@@ -6,7 +6,7 @@
  * היא יוצרת את תיקיית הקבצים, מתקינה את טריגר התזמון, ומדפיסה את הקישור לתיקייה.
  */
 
-const CODE_VERSION = 'v14-inbox';
+const CODE_VERSION = 'v15-inbox';
 const SECRET = 'lgGnSJZnAsfIs4W822y0k7F6';
 const SENDER_NAME = 'מחקר PRIME';
 const FOLDER_NAME = 'PRIME Mailer Files';
@@ -230,14 +230,13 @@ function fetchAlertMails_(days, since) {
     }
   }
   items.sort(function (a, b) { return a.at < b.at ? 1 : -1; });
-  return { ok: true, query: q, mailbox: Session.getEffectiveUser().getEmail(),
-           threads: threads.length, count: items.length, items: items };
+  return { ok: true, query: q, threads: threads.length, count: items.length, items: items };
 }
 
 /** בדיקה ידנית: כמה מיילי התראה יש בתיבה */
 function alertsSelfTest() {
   var r = fetchAlertMails_(120, null);
-  Logger.log('תיבה: ' + r.mailbox + ' · שאילתה: ' + r.query);
+  Logger.log('שאילתה: ' + r.query);
   Logger.log('נמצאו ' + r.count + ' מיילים ב-' + r.threads + ' שרשורים');
   return r.count;
 }

@@ -201,6 +201,9 @@ function sendReport_(data) {
    ומועברים לכאן בכלל אוטומטי, כי הסקריפט הזה רץ תחת primerct2026.
    ההרשאה לקריאה כבר קיימת (https://mail.google.com/) ולכן אין צורך באישור נוסף. */
 const ALERT_SENDER = 'send.vpcontact.com';
+// תווית שהמסנן ב-primerct2026 מדביק למיילים שהועברו מהתיבה האישית.
+// החיפוש מקבל גם תווית וגם שולח, כדי שיעבוד עם המסנן ובלעדיו.
+const ALERT_LABEL = 'prime-alerts';
 
 /**
  * מחזיר את מיילי ההתראה מהתקופה האחרונה.
@@ -209,7 +212,7 @@ const ALERT_SENDER = 'send.vpcontact.com';
  */
 function fetchAlertMails_(days, since) {
   var d = Math.max(1, Math.min(365, days || 30));
-  var q = 'from:' + ALERT_SENDER + ' newer_than:' + d + 'd';
+  var q = '(label:' + ALERT_LABEL + ' OR from:' + ALERT_SENDER + ') newer_than:' + d + 'd';
   var threads = GmailApp.search(q, 0, 200);
   var cut = since ? new Date(since).getTime() : 0;
   var items = [];

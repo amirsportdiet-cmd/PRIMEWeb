@@ -725,7 +725,7 @@ function renderAlerts() {
   box.innerHTML =
     (active.length ? TBL_HEAD + active.map(alertRow).join('') + '</tbody></table>'
                    : '<div class="empty">אין פניות לטיפול. הכול טופל.</div>') +
-    (done.length ? `<details class="arch"><summary>ארכיון · ${done.length} פניות שטופלו</summary>` +
+    (done.length ? `<details class="arch"><summary>ארכיון · ${done.length === 1 ? 'פנייה אחת שטופלה' : done.length + ' פניות שטופלו'}</summary>` +
                    TBL_HEAD + done.map(alertRow).join('') + '</tbody></table></details>' : '');
 }
 

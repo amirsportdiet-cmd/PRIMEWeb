@@ -224,16 +224,28 @@ let manual = load(LS_MANUAL, []);
 let alerts = load(LS_ALERTS, []);
 let fills  = load(LS_FILLS, {});
 
-/** מסנכרן לענן. עוטף כי מודול ה-Firebase נטען אחרי הסקריפט הזה. */
-const sync = () => { if (window.cloudSave) window.cloudSave(); };
+/* סנכרון בין שני משתמשים.
+   הרשימה והמסננים נשמרים במסמך אחד, אבל כל פנייה נשמרת במסמך נפרד משלה.
+   כך שאם אמיר מסמן פנייה אחת ושירן מסמנת אחרת, אף אחד לא דורס את השני. */
+const sync      = () => { if (window.cloudSaveState)  window.cloudSaveState(); };
+const syncAlert = (a) => { if (window.cloudSaveAlert)  window.cloudSaveAlert(a); };
+const syncDrop  = (id) => { if (window.cloudDropAlert) window.cloudDropAlert(id); };
 
-/** מה שנשמר בענן, ומה שנטען ממנו בכניסה */
-window.getState = () => ({ roster, manual, alerts, fills });
-window.setState = (d) => {
-  if (Array.isArray(d.roster)) { roster = d.roster; save(LS_ROSTER, roster); }
-  if (Array.isArray(d.manual)) { manual = d.manual; save(LS_MANUAL, manual); }
-  if (Array.isArray(d.alerts)) { alerts = d.alerts; save(LS_ALERTS, alerts); }
-  if (d.fills && typeof d.fills === 'object') { fills = d.fills; save(LS_FILLS, fills); }
+/** הרשימה, ההזנות הידניות וההשלמות — משתנים לעיתים רחוקות */
+window.getState = () => ({ roster, manual, fills });
+
+/** נקרא בכל שינוי בענן, גם כשהשינוי הגיע מהמחשב של האחר */
+window.applyCloud = (d) => {
+  if (d.state) {
+    const s = d.state;
+    if (Array.isArray(s.roster)) { roster = s.roster; save(LS_ROSTER, roster); }
+    if (Array.isArray(s.manual)) { manual = s.manual; save(LS_MANUAL, manual); }
+    if (s.fills && typeof s.fills === 'object') { fills = s.fills; save(LS_FILLS, fills); }
+  }
+  if (Array.isArray(d.alerts)) {
+    alerts = d.alerts.sort((a, b) => (a.at < b.at ? 1 : -1));
+    save(LS_ALERTS, alerts);
+  }
   renderManual(); renderRoster(); renderAlerts();
   if (roster.length) document.getElementById('csv-status').textContent =
     `הרשימה נטענה מהגיבוי: ${roster.length} נחקרים משובצים. אפשר להעלות קובץ מעודכן.`;
@@ -523,7 +535,8 @@ window.parsePasted = () => {
   });
   save(LS_ALERTS, alerts);
   document.getElementById('paste').value = '';
-  renderAlerts(); sync();
+  renderAlerts();
+  alerts.slice(0, added).forEach(syncAlert);   // רק החדשות נכתבות לענן
   if (!added) { err.textContent = 'כל הפניות שנמצאו כבר קיימות ברשימה.'; err.style.display = 'block'; }
 };
 
@@ -555,7 +568,7 @@ function sexFor(alert, person) {
 window.setSexFor = (id, val) => {
   const a = alerts.find(x => x.id === id); if (!a) return;
   a.sexOverride = val || null;
-  save(LS_ALERTS, alerts); renderAlerts(); sync();
+  save(LS_ALERTS, alerts); renderAlerts(); syncAlert(a);
 };
 
 window.copyMsg = async (id) => {
@@ -570,11 +583,12 @@ window.copyMsg = async (id) => {
 
 window.markSent = (id) => {
   const a = alerts.find(x => x.id === id); if (!a) return;
-  a.sent = a.sent ? null : new Date().toISOString();
-  save(LS_ALERTS, alerts); renderAlerts(); sync();
+  if (a.sent) { a.sent = null; a.sentBy = null; }
+  else { a.sent = new Date().toISOString(); a.sentBy = (window.currentUser && window.currentUser()) || ''; }
+  save(LS_ALERTS, alerts); renderAlerts(); syncAlert(a);
 };
 window.dropAlert = (id) => {
-  alerts = alerts.filter(a => a.id !== id); save(LS_ALERTS, alerts); renderAlerts(); sync();
+  alerts = alerts.filter(a => a.id !== id); save(LS_ALERTS, alerts); renderAlerts(); syncDrop(id);
 };
 
 function renderAlerts() {
@@ -604,7 +618,7 @@ function renderAlerts() {
         <td>${a.site || '—'}</td>
         <td><button class="btn sm" id="cp-${a.id}" onclick="copyMsg('${a.id}')"
              ${known && sexFor(a,p) ? '' : 'disabled title="צריך שם ומין כדי לנסח הודעה"'}>העתקת ההודעה</button></td>
-        <td>${a.sent ? `<span class="tag ok">נשלח ${new Date(a.sent).toLocaleDateString('he-IL')}</span>`
+        <td>${a.sent ? `<span class="tag ok" title="${esc(a.sentBy || '')}">נשלח ${new Date(a.sent).toLocaleDateString('he-IL')}${a.sentBy ? ' · ' + esc(String(a.sentBy).split('@')[0]) : ''}</span>`
                      : '<span class="tag warn">ממתין</span>'}</td>
         <td>
           <button class="btn sec sm" onclick="markSent('${a.id}')">${a.sent ? 'ביטול' : 'סמן נשלח'}</button>
@@ -626,7 +640,7 @@ if (roster.length) document.getElementById('csv-status').textContent =
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut as fbSignOut }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, serverTimestamp }
+import { getFirestore, doc, collection, setDoc, deleteDoc, onSnapshot, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -649,7 +663,12 @@ const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getFirestore(app);
 const provider = new GoogleAuthProvider();
+/* הכול יושב באוסף primeAlerts, שכבר מותר בכללי האבטחה:
+   מסמך 'state' מחזיק את הרשימה, ולכל פנייה מסמך משלה בשם item_<id>.
+   כתיבה לפנייה אחת אינה נוגעת בפניות של המשתמש השני. */
+const CLOUD_COL = collection(db, 'primeAlerts');
 const CLOUD_DOC = doc(db, 'primeAlerts', 'state');
+const alertDoc  = (id) => doc(db, 'primeAlerts', 'item_' + id);
 
 const screens = (which) => {
   const on = k => (which === k ? 'block' : 'none');
@@ -686,43 +705,74 @@ window.checkPin = async () => {
 /* ===== גיבוי מאובטח ב-Firestore =====
    הנתונים נשמרים במסמך אחד תחת primeAlerts/state, וקריאה או כתיבה אליו
    מותרות רק לחשבונות המורשים לפי כללי האבטחה בצד השרת. */
-let cloudTimer = null, cloudReady = false;
+let cloudTimer = null, cloudReady = false, unsub = null;
 
-window.cloudSave = () => {
+window.currentUser = () => (auth.currentUser ? auth.currentUser.email : '');
+
+const badge = (txt, cls, tip) => {
+  const b = document.getElementById('cloud-status');
+  if (!b) return;
+  b.textContent = txt; b.className = 'cloud ' + cls; b.title = tip || '';
+};
+
+/** הרשימה וההזנות הידניות — מסמך אחד, נכתב בהשהיה קצרה */
+window.cloudSaveState = () => {
   if (!cloudReady) return;
   clearTimeout(cloudTimer);
   cloudTimer = setTimeout(async () => {
-    const badge = document.getElementById('cloud-status');
     try {
-      if (badge) { badge.textContent = 'שומר…'; badge.className = 'cloud saving'; }
-      await setDoc(CLOUD_DOC, {
-        roster: window.getState().roster, manual: window.getState().manual,
-        alerts: window.getState().alerts, fills: window.getState().fills,
-        updatedAt: serverTimestamp(), updatedBy: auth.currentUser ? auth.currentUser.email : ''
-      });
-      if (badge) { badge.textContent = '☁ מגובה'; badge.className = 'cloud ok'; }
-    } catch (e) {
-      if (badge) { badge.textContent = '⚠ הגיבוי נכשל'; badge.className = 'cloud bad'; badge.title = String(e); }
-    }
-  }, 900);
+      badge('שומר…', 'saving');
+      const s = window.getState();
+      await setDoc(CLOUD_DOC, { kind: 'state', roster: s.roster, manual: s.manual,
+        fills: s.fills, updatedAt: serverTimestamp(), updatedBy: window.currentUser() });
+      badge('☁ מגובה', 'ok');
+    } catch (e) { badge('⚠ הגיבוי נכשל', 'bad', String(e)); }
+  }, 700);
 };
+
+/** פנייה בודדת — נכתבת מיד ובנפרד, כדי שלא תדרוס פניות אחרות */
+window.cloudSaveAlert = async (a) => {
+  if (!cloudReady || !a) return;
+  try {
+    badge('שומר…', 'saving');
+    await setDoc(alertDoc(a.id), { kind: 'alert', ...a,
+      updatedAt: serverTimestamp(), updatedBy: window.currentUser() });
+    badge('☁ מגובה', 'ok');
+  } catch (e) { badge('⚠ הגיבוי נכשל', 'bad', String(e)); }
+};
+
+window.cloudDropAlert = async (id) => {
+  if (!cloudReady) return;
+  try { await deleteDoc(alertDoc(id)); badge('☁ מגובה', 'ok'); }
+  catch (e) { badge('⚠ המחיקה בענן נכשלה', 'bad', String(e)); }
+};
+
+/** מאזין חי: כל שינוי שאחד עושה מופיע אצל השני תוך שנייה */
+function listen() {
+  if (unsub) unsub();
+  badge('מתחבר…', 'saving');
+  unsub = onSnapshot(CLOUD_COL, (snap) => {
+    let state = null; const items = [];
+    snap.forEach(d => {
+      const v = d.data();
+      if (d.id === 'state') state = v;
+      else if (d.id.indexOf('item_') === 0) {
+        const { kind, updatedAt, ...rest } = v;
+        items.push(rest);
+      }
+    });
+    cloudReady = true;
+    window.applyCloud({ state, alerts: items });
+    badge('☁ מגובה · מסונכרן', 'ok', 'מתעדכן אוטומטית גם ממחשב אחר');
+  }, (err) => {
+    cloudReady = false;
+    badge('⚠ אין חיבור לגיבוי, נשמר מקומית בלבד', 'bad', String(err));
+  });
+}
 
 async function enterApp() {
   screens('main');
-  const badge = document.getElementById('cloud-status');
-  try {
-    if (badge) { badge.textContent = 'טוען גיבוי…'; badge.className = 'cloud saving'; }
-    const snap = await getDoc(CLOUD_DOC);
-    if (snap.exists()) window.setState(snap.data());
-    cloudReady = true;
-    if (badge) { badge.textContent = '☁ מגובה'; badge.className = 'cloud ok'; }
-  } catch (e) {
-    cloudReady = false;
-    if (badge) {
-      badge.textContent = '⚠ אין חיבור לגיבוי, נשמר מקומית בלבד';
-      badge.className = 'cloud bad'; badge.title = String(e);
-    }
-  }
+  listen();
 }
 
 onAuthStateChanged(auth, async user => {

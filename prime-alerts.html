@@ -72,6 +72,7 @@ tr:hover td{ background:#f8fafc; }
 .tag.man{ background:#fef3c7; color:#92400e; }
 .tag.warn{ background:#fee2e2; color:#b91c1c; }
 .tag.ok{ background:#d1fae5; color:#047857; }
+.sexsel{ padding:4px 7px; border:1px solid #cbd5e1; border-radius:7px; font-size:12px; font-family:inherit; }
 .ltr{ direction:ltr; unicode-bidi:isolate; display:inline-block; }
 
 .field{ display:flex; gap:9px; flex-wrap:wrap; align-items:flex-end; }
@@ -305,7 +306,7 @@ window.addManual = () => {
   const group = document.getElementById('m-group').value;
   const fail = m => { err.textContent = '❌ ' + m; err.style.display = 'block'; };
   if (!name) return fail('יש להזין שם פרטי.');
-  if (!/^05\d{8}$/.test(phone)) return fail('מספר הטלפון אינו תקין. פורמט: 0521234567');
+  if (!/^05\d{7,8}$/.test(phone)) return fail('מספר הטלפון אינו תקין. פורמט: 0521234567');
   if (findPerson(phone)) return fail('הטלפון הזה כבר קיים ברשימה.');
   manual.push({ id: 'M' + Date.now(), phone, name, sex, group, manual: true });
   save(LS_MANUAL, manual);
@@ -345,31 +346,67 @@ function findPerson(phone) {
 // =====================================================================
 // חילוץ פניות ממייל
 // =====================================================================
+/* שני סוגי המיילים שהמערכת מקבלת. הזיהוי נעשה לפי ניסוח ייחודי לכל אחד,
+   ולא לפי מילה בודדת, כדי ששינוי קל בנוסח לא יסווג פנייה לסוג הלא נכון. */
 const KIND = {
-  noAnswer: { key: 'noAnswer', label: 'לא מילא/ה שאלון שבועי', re: /אין\s*מענה|לא\s*מילא|שאלון\s*השבועי/ },
-  callback: { key: 'callback', label: 'מבקש/ת לדבר עם נציג', re: /לדבר\s*עם|נציג|ליצור\s*קשר|חזרה\s*טלפונית/ }
+  noAnswer: { label: 'לא מילא/ה שאלון שבועי',
+              re: /אין\s*מענה|לא\s*התקבל\s*מענה|לא\s*מילא|שאלון\s*השבועי/ },
+  callback: { label: 'מבקש/ת לדבר עם נציג',
+              re: /נציג\s*מצוות|בשיחה\s*עם\s*נציג|יצור\s*איתך\s*קשר|ייצור\s*איתך\s*קשר|ליצור\s*קשר/ }
 };
 
-/** מחלץ מכל טקסט את הפניות שבתוכו. עובד גם על כמה מיילים שהודבקו יחד. */
+/** קורא ערך של שדה מתויג, למשל "נייד: 0501234567" */
+function labelled(block, labels) {
+  for (const lab of labels) {
+    const m = block.match(new RegExp(lab + '\\s*:?\\s*([^\\n\\r]+)'));
+    if (m) return m[1].trim();
+  }
+  return '';
+}
+
+const siteOf  = t => /איכילוב|סוראסקי|תל\s*אביב/.test(t) ? 'איכילוב' : /אסותא/.test(t) ? 'אסותא' : '';
+const groupOf = t => /התערבות/.test(t) ? 'intervention' : /ביקורת/.test(t) ? 'control' : '';
+
+/**
+ * מחלץ פניות מטקסט מודבק. שני הפורמטים בנויים אותו דבר:
+ *   נייד: 0501234567 / שם המרכז הרפואי: אסותא / קבוצת מחקר: קבוצת התערבות
+ * ולכן מפרסרים לפי התוויות, ורק אם אין תוויות נופלים לסריקה חופשית.
+ * תומך בכמה מיילים שהודבקו יחד.
+ */
 function extractAlerts(text) {
   const out = [];
-  // כל מקטע מתחיל בטלפון ישראלי. חותכים לפי מיקומי הטלפונים כדי לתמוך בכמה מיילים
-  const phoneRe = /0\s?5\d[\s-]?\d{3}[\s-]?\d{4}/g;
-  const hits = [...text.matchAll(phoneRe)];
-  hits.forEach((h, i) => {
-    const from = Math.max(0, h.index - 400);
-    const to = i + 1 < hits.length ? hits[i + 1].index : text.length;
-    const ctx = text.slice(from, to);
-    const phone = normPhone(h[0]);
-    if (!/^05\d{8}$/.test(phone)) return;
+  const push = (phone, site, group, ctx) => {
+    // מספר תקין הוא 10 ספרות. מספר בן 9 מסומן ולא נזרק, כדי שפנייה לא תיעלם בשקט
+    if (!/^05\d{7,8}$/.test(phone)) return;
+    const shortPhone = phone.length === 9;
     if (out.some(o => o.phone === phone)) return;      // אותו טלפון פעמיים באותה הדבקה
-    const site = /איכילוב|תל\s*אביב|סוראסקי/.test(ctx) ? 'איכילוב'
-               : /אסותא/.test(ctx) ? 'אסותא' : '';
-    const group = /קבוצת\s*התערבות|התערבות/.test(ctx) ? 'intervention'
-                : /קבוצת\s*ביקורת|ביקורת/.test(ctx) ? 'control' : '';
     let kind = '';
     for (const k in KIND) if (KIND[k].re.test(ctx)) { kind = k; break; }
-    out.push({ phone, site, group, kind: kind || 'noAnswer', at: new Date().toISOString(), sent: null });
+    out.push({ phone, site, group, shortPhone, kind: kind || 'unknown',
+               at: new Date().toISOString(), sent: null });
+  };
+
+  /* חיתוך לפי מופעי "נייד:". גבול המקטע הוא באמצע הדרך בין שני מופעים,
+     כך שכל מקטע כולל גם את שורת הנושא שמעל השדות וגם את השדות עצמם. */
+  const marks = [...text.matchAll(/נייד\s*:/g)].map(m => m.index);
+  if (marks.length) {
+    marks.forEach((pos, i) => {
+      const from = i === 0 ? 0 : Math.floor((marks[i - 1] + pos) / 2);
+      const to = i + 1 < marks.length ? Math.floor((pos + marks[i + 1]) / 2) : text.length;
+      const block = text.slice(from, to);
+      const phone = normPhone(labelled(block, ['נייד', 'טלפון', 'פלאפון']));
+      push(phone, siteOf(labelled(block, ['שם המרכז הרפואי', 'מרכז רפואי']) || block),
+                  groupOf(labelled(block, ['קבוצת מחקר', 'קבוצה']) || block), block);
+    });
+    if (out.length) return out;
+  }
+
+  // גיבוי: אין תוויות מוכרות, סורקים לפי מספרי טלפון
+  const hits = [...text.matchAll(/0\s?5\d[\s-]?\d{3}[\s-]?\d{4}/g)];
+  hits.forEach((h, i) => {
+    const to = i + 1 < hits.length ? hits[i + 1].index : text.length;
+    const ctx = text.slice(Math.max(0, h.index - 400), to);
+    push(normPhone(h[0]), siteOf(ctx), groupOf(ctx), ctx);
   });
   return out;
 }
@@ -399,22 +436,39 @@ window.parsePasted = () => {
 // =====================================================================
 // הודעות וואטסאפ
 // =====================================================================
-/** נוסח זמני עד שנקבע את הסופי. משתנה לפי מין ולפי סוג הפנייה. */
-function waMessage(kind, person) {
-  const f = person && person.sex === 'f';
+/**
+ * נוסח הודעת הוואטסאפ. sex מגיע מהקובץ, ואפשר לעקוף אותו ידנית לכל פנייה.
+ * נוסח "מבקש/ת שיחה" הוא הנוסח שאמיר כתב. נוסח השאלון עדיין זמני.
+ */
+function waMessage(kind, person, sexOverride) {
+  const sex = sexOverride || (person && person.sex) || '';
+  const f = sex === 'f';
   const name = person && person.name ? person.name : '';
   const hi = name ? `היי ${name},` : 'היי,';
   if (kind === 'callback') {
-    return `${hi}\nראינו שביקשת שניצור איתך קשר ${f ? 'ונשמח' : 'ונשמח'} לעזור.\nמתי ${f ? 'נוחה' : 'נוח'} לך שיחה?\n\nצוות מחקר PRIME`;
+    return `${hi}\nראיתי שביקשת שאיש צוות מחקר יחזור אליך.\n${f ? 'תרצי' : 'תרצה'} לכתוב לי או שנתאם זמן לשוחח?`;
   }
-  return `${hi}\nשמנו לב ש${f ? 'עדיין לא מילאת' : 'עדיין לא מילאת'} את השאלון השבועי.\nהוא ${f ? 'לוקח' : 'לוקח'} דקה או שתיים, ו${f ? 'חשובה' : 'חשוב'} לנו מאוד ${f ? 'שתמלאי' : 'שתמלא'} אותו כדי שנוכל להמשיך לעקוב.\n\nתודה רבה,\nצוות מחקר PRIME`;
+  const dear = name ? `היי ${name} ${f ? 'היקרה' : 'היקר'},` : `היי,`;
+  return `${dear}\n\nכחלק מהמחקר אנחנו שולחים לך אחת לשבוע הודעה למעקב אחרי ההתמדה שלך.\n` +
+         `נשמח מאוד אם ${f ? 'תוכלי' : 'תוכל'} לענות להודעה שקיבלת השבוע.\n\n` +
+         `המענה שלך מסייע לנו מאוד בהצלחת המחקר 🫶.\n\nתודה ויום מצוין!`;
 }
+
+/** המין שבו משתמשים לפנייה מסוימת: עקיפה ידנית אם נבחרה, אחרת מה שבקובץ */
+function sexFor(alert, person) {
+  return alert.sexOverride || (person && person.sex) || '';
+}
+window.setSexFor = (id, val) => {
+  const a = alerts.find(x => x.id === id); if (!a) return;
+  a.sexOverride = val || null;
+  save(LS_ALERTS, alerts); renderAlerts();
+};
 
 window.copyMsg = async (id) => {
   const a = alerts.find(x => x.id === id); if (!a) return;
   const p = findPerson(a.phone);
   try {
-    await navigator.clipboard.writeText(waMessage(a.kind, p));
+    await navigator.clipboard.writeText(waMessage(a.kind, p, sexFor(a, p)));
     const b = document.getElementById('cp-' + id);
     if (b) { b.textContent = '✓ הועתק'; setTimeout(() => b.textContent = 'העתקת ההודעה', 1800); }
   } catch (e) { alert('ההעתקה נכשלה, אפשר לסמן ולהעתיק ידנית.'); }
@@ -433,7 +487,7 @@ function renderAlerts() {
   const box = document.getElementById('alerts');
   if (!alerts.length) { box.innerHTML = '<div class="empty">אין פניות. הדביקו מייל למעלה כדי להתחיל.</div>'; return; }
   box.innerHTML = `<table><thead><tr>
-      <th>סוג הפנייה</th><th>שם</th><th>טלפון</th><th>קבוצה</th><th>מרכז</th><th>הודעה</th><th>סטטוס</th><th></th>
+      <th>סוג הפנייה</th><th>שם</th><th>מין</th><th>טלפון</th><th>קבוצה</th><th>מרכז</th><th>הודעה</th><th>סטטוס</th><th></th>
     </tr></thead><tbody>` +
     alerts.map(a => {
       const p = findPerson(a.phone);
@@ -442,15 +496,20 @@ function renderAlerts() {
       const nameCell = known
         ? `<b>${esc(p.name)}</b>${p.manual ? ' <span class="tag man">ידני</span>' : ''}`
         : `<span class="tag warn">לא מזוהה</span>`;
-      const sexCell = known && !p.sex ? ' <span class="tag warn">אין מין</span>' : '';
       return `<tr>
-        <td>${KIND[a.kind] ? KIND[a.kind].label : a.kind}</td>
-        <td>${nameCell}${sexCell}</td>
-        <td><span class="ltr">${prettyPhone(a.phone)}</span></td>
+        <td>${KIND[a.kind] ? KIND[a.kind].label : '<span class="tag warn">סוג לא מזוהה</span>'}</td>
+        <td>${nameCell}</td>
+        <td><select class="sexsel" onchange="setSexFor('${a.id}', this.value)">
+          <option value=""${sexFor(a,p) ? '' : ' selected'}>לבחור…</option>
+          <option value="f"${sexFor(a,p)==='f' ? ' selected' : ''}>נקבה</option>
+          <option value="m"${sexFor(a,p)==='m' ? ' selected' : ''}>זכר</option>
+        </select>${a.sexOverride ? ' <span class="tag man">ידני</span>' : ''}</td>
+        <td><span class="ltr">${prettyPhone(a.phone)}</span>${a.shortPhone
+              ? ' <span class="tag warn" title="מספר בן 9 ספרות, כנראה חסרה ספרה">חסרה ספרה</span>' : ''}</td>
         <td>${groupTag(a.group)}${groupMismatch ? ' <span class="tag warn">שונה מ-REDCap</span>' : ''}</td>
         <td>${a.site || '—'}</td>
         <td><button class="btn sm" id="cp-${a.id}" onclick="copyMsg('${a.id}')"
-             ${known && p.sex ? '' : 'disabled title="צריך שם ומין כדי לנסח הודעה"'}>העתקת ההודעה</button></td>
+             ${known && sexFor(a,p) ? '' : 'disabled title="צריך שם ומין כדי לנסח הודעה"'}>העתקת ההודעה</button></td>
         <td>${a.sent ? `<span class="tag ok">נשלח ${new Date(a.sent).toLocaleDateString('he-IL')}</span>`
                      : '<span class="tag warn">ממתין</span>'}</td>
         <td>
@@ -458,8 +517,8 @@ function renderAlerts() {
           <button class="btn sec sm" onclick="dropAlert('${a.id}')">מחיקה</button>
         </td>
       </tr>` +
-      (known && p.sex ? `<tr><td colspan="8" style="padding-top:0;border:none;">
-          <div class="msg-box">${esc(waMessage(a.kind, p))}</div></td></tr>` : '');
+      (known && sexFor(a,p) ? `<tr><td colspan="9" style="padding-top:0;border:none;">
+          <div class="msg-box">${esc(waMessage(a.kind, p, sexFor(a,p)))}</div></td></tr>` : '');
     }).join('') + '</tbody></table>';
 }
 

@@ -204,7 +204,7 @@ textarea:focus{ outline:none; border-color:#0d9488; }
     <div class="sub">המערכת קוראת את מיילי ההתראה מהתיבה, מחלצת טלפון, מרכז רפואי וקבוצת מחקר, ומצליבה מול הרשימה. פנייה שכבר נמשכה לא תיווצר פעמיים.</div>
     <div class="pull">
       <button class="btn" id="pull-btn" onclick="pullInbox()">⬇ משיכת פניות מהמייל</button>
-      <span class="pull-t" id="pull-status">נקרא מתיבת primerct2026, מהמיילים שהועברו אליה אוטומטית</span>
+      <span class="pull-t" id="pull-status">נמשך אוטומטית בכל כניסה. הכפתור נועד לרענון באמצע העבודה.</span>
     </div>
     <div class="err" id="pull-err"></div>
     <details class="fallback">
@@ -552,7 +552,12 @@ function extractAlerts(text) {
 const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzK1-gQmpg2V1gX38GaS1cm2kl3skGloOA_aJgj8bZPAPghxB7au802swyvEZQ9GA6iAw/exec";
 const SEND_SECRET = "lgGnSJZnAsfIs4W822y0k7F6";
 
-window.pullInbox = async () => {
+let pulling = false;
+
+/** auto=true כשהמשיכה מופעלת לבד בכניסה, ואז לא מציפים הודעת שגיאה על המסך */
+window.pullInbox = async (auto) => {
+  if (pulling) return;
+  pulling = true;
   const btn = document.getElementById('pull-btn');
   const st  = document.getElementById('pull-status');
   const err = document.getElementById('pull-err');
@@ -586,9 +591,11 @@ window.pullInbox = async () => {
       ? `✅ נוספו ${added} פניות חדשות (נסרקו ${seen} מיילים)`
       : `אין פניות חדשות. נסרקו ${seen} מיילים ב-60 הימים האחרונים.`;
   } catch (e) {
-    err.textContent = '❌ ' + (e.message || e); err.style.display = 'block';
-    st.textContent = '';
+    // בכניסה אוטומטית מסתפקים בהודעה קטנה, בלי פס שגיאה אדום על כל המסך
+    if (auto) st.textContent = '⚠ לא ניתן לקרוא מהמייל כרגע. אפשר לנסות שוב בכפתור.';
+    else { err.textContent = '❌ ' + (e.message || e); err.style.display = 'block'; st.textContent = ''; }
   } finally {
+    pulling = false;
     btn.disabled = false; btn.textContent = '⬇ משיכת פניות מהמייל';
   }
 };
@@ -961,7 +968,9 @@ function listen() {
 async function enterApp() {
   screens('main');
   listen();
-  setTimeout(() => { if (window.renderSnapshots) window.renderSnapshots(); }, 1200);
+  // אחרי שהרשימה מהענן הגיעה: משיכה אוטומטית מהמייל, ואז תמונת המצב השבועית
+  setTimeout(() => { if (window.pullInbox) window.pullInbox(true); }, 1200);
+  setTimeout(() => { if (window.renderSnapshots) window.renderSnapshots(); }, 2600);
 }
 
 onAuthStateChanged(auth, async user => {

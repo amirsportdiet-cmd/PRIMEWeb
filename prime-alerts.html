@@ -104,6 +104,17 @@ textarea{ width:100%; min-height:120px; padding:11px 13px; border:1.5px solid #c
           font-size:13.5px; font-family:inherit; line-height:1.6; resize:vertical; }
 textarea:focus{ outline:none; border-color:#0d9488; }
 
+.pull{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+.pull-t{ font-size:12px; color:#64748b; }
+.fallback{ margin-top:16px; border-top:1px solid #e2e8f0; padding-top:12px; }
+.fallback > summary{ cursor:pointer; font-size:12.5px; color:#64748b; font-weight:600; }
+.fallback > summary:hover{ color:#0d9488; }
+.fallback textarea{ margin-top:10px; }
+.btn-wa{ background:#25D366; color:#fff; border:none; border-radius:9px; padding:6px 14px;
+         font-size:12.5px; font-weight:700; cursor:pointer; font-family:inherit; text-decoration:none;
+         display:inline-block; }
+.btn-wa.off{ background:#cbd5e1; pointer-events:none; }
+.snapbar{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; font-size:12px; color:#64748b; }
 .msg-box{ background:#f0fdf4; border:1px solid #86efac; border-radius:10px; padding:12px 14px;
           font-size:13px; line-height:1.7; white-space:pre-wrap; margin-top:8px; }
 .empty{ text-align:center; color:#94a3b8; font-size:13px; padding:26px 0; }
@@ -190,14 +201,32 @@ textarea:focus{ outline:none; border-color:#0d9488; }
   <!-- פניות -->
   <div class="card">
     <h2>פניות שהתקבלו</h2>
-    <div class="sub">הדבקת גוף המייל תחלץ את הטלפון, המרכז הרפואי וקבוצת המחקר, ותצליב מול הרשימה. אפשר להדביק כמה מיילים יחד.</div>
-    <textarea id="paste" placeholder="הדביקו כאן את גוף המייל…"></textarea>
-    <div style="margin-top:10px; display:flex; gap:9px;">
-      <button class="btn" onclick="parsePasted()">חילוץ פניות</button>
-      <button class="btn sec" onclick="document.getElementById('paste').value=''">ניקוי</button>
+    <div class="sub">המערכת קוראת את מיילי ההתראה מהתיבה, מחלצת טלפון, מרכז רפואי וקבוצת מחקר, ומצליבה מול הרשימה. פנייה שכבר נמשכה לא תיווצר פעמיים.</div>
+    <div class="pull">
+      <button class="btn" id="pull-btn" onclick="pullInbox()">⬇ משיכת פניות מהמייל</button>
+      <span class="pull-t" id="pull-status">נקרא מתיבת primerct2026, מהמיילים שהועברו אליה אוטומטית</span>
     </div>
-    <div class="err" id="parse-err"></div>
-    <div class="note">בהמשך המערכת תקרא את המיילים ישירות מהתיבה, וההדבקה תישאר כגיבוי לפורמט חריג.</div>
+    <div class="err" id="pull-err"></div>
+    <details class="fallback">
+      <summary>הדבקה ידנית, אם מייל הגיע בפורמט חריג</summary>
+      <textarea id="paste" placeholder="הדביקו כאן את גוף המייל…"></textarea>
+      <div style="margin-top:10px; display:flex; gap:9px;">
+        <button class="btn" onclick="parsePasted()">חילוץ פניות</button>
+        <button class="btn sec" onclick="document.getElementById('paste').value=''">ניקוי</button>
+      </div>
+      <div class="err" id="parse-err"></div>
+    </details>
+  </div>
+
+  <div class="card">
+    <h2>גיבוי ושחזור</h2>
+    <div class="sub">כל שינוי נשמר מיד. בנוסף נשמרת <b>תמונת מצב שבועית</b> שאפשר לחזור אליה אם משהו נמחק בטעות. התמונה נוצרת בפעם הראשונה שנכנסים אחרי יום שישי בצהריים.</div>
+    <div class="snapbar">
+      <button class="btn sm" onclick="makeSnapshot(true)">צור תמונת מצב עכשיו</button>
+      <span id="snap-status">טוען…</span>
+    </div>
+    <div id="snap-list" style="margin-top:12px"></div>
+    <div class="err" id="snap-err"></div>
   </div>
 
   <div class="card">
@@ -517,6 +546,53 @@ function extractAlerts(text) {
   return out;
 }
 
+/* ===== משיכת פניות מתיבת המחקר =====
+   אותו שרת Apps Script של מערכת המיילים. הוא רץ תחת primerct2026 ולכן
+   קורא את המיילים שהועברו לשם אוטומטית מהתיבה האישית. */
+const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzK1-gQmpg2V1gX38GaS1cm2kl3skGloOA_aJgj8bZPAPghxB7au802swyvEZQ9GA6iAw/exec";
+const SEND_SECRET = "lgGnSJZnAsfIs4W822y0k7F6";
+
+window.pullInbox = async () => {
+  const btn = document.getElementById('pull-btn');
+  const st  = document.getElementById('pull-status');
+  const err = document.getElementById('pull-err');
+  err.style.display = 'none';
+  btn.disabled = true; btn.textContent = 'קורא מהמייל…';
+  try {
+    const idToken = await window.__getIdToken();
+    const res = await fetch(BACKEND_URL, {
+      method: 'POST', headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ mode: 'inbox', secret: SEND_SECRET, idToken, days: 60 })
+    });
+    const j = await res.json();
+    if (!j.ok) throw new Error(j.error || 'הקריאה נכשלה');
+
+    let added = 0, seen = 0;
+    (j.items || []).forEach(msg => {
+      seen++;
+      // מייל שכבר נמשך בעבר לא ייצור פנייה כפולה
+      if (alerts.some(a => a.gmailId === msg.id)) return;
+      const found = extractAlerts((msg.subject || '') + String.fromCharCode(10) + (msg.body || ''));
+      found.forEach(f => {
+        if (alerts.some(a => a.phone === f.phone && a.kind === f.kind && !a.sent)) return;
+        const rec = { ...f, gmailId: msg.id, at: msg.at || f.at,
+                      id: 'A' + Date.now() + Math.floor(performance.now()) + added };
+        alerts.unshift(rec); syncAlert(rec); added++;
+      });
+    });
+    save(LS_ALERTS, alerts);
+    renderAlerts();
+    st.textContent = added
+      ? `✅ נוספו ${added} פניות חדשות (נסרקו ${seen} מיילים)`
+      : `אין פניות חדשות. נסרקו ${seen} מיילים ב-60 הימים האחרונים.`;
+  } catch (e) {
+    err.textContent = '❌ ' + (e.message || e); err.style.display = 'block';
+    st.textContent = '';
+  } finally {
+    btn.disabled = false; btn.textContent = '⬇ משיכת פניות מהמייל';
+  }
+};
+
 window.parsePasted = () => {
   const err = document.getElementById('parse-err'); err.style.display = 'none';
   const txt = document.getElementById('paste').value;
@@ -571,6 +647,12 @@ window.setSexFor = (id, val) => {
   save(LS_ALERTS, alerts); renderAlerts(); syncAlert(a);
 };
 
+/** קישור שפותח את השיחה בוואטסאפ עם ההודעה כבר בפנים */
+function waLink(a, p) {
+  const digits = normPhone(a.phone).replace(/^0/, '972');
+  return 'https://wa.me/' + digits + '?text=' + encodeURIComponent(waMessage(a.kind, p, sexFor(a, p)));
+}
+
 window.copyMsg = async (id) => {
   const a = alerts.find(x => x.id === id); if (!a) return;
   const p = findPerson(a.phone);
@@ -616,8 +698,11 @@ function renderAlerts() {
               ? ' <span class="tag warn" title="מספר בן 9 ספרות, כנראה חסרה ספרה">חסרה ספרה</span>' : ''}</td>
         <td>${groupTag(a.group)}${groupMismatch ? ' <span class="tag warn">שונה מ-REDCap</span>' : ''}</td>
         <td>${a.site || '—'}</td>
-        <td><button class="btn sm" id="cp-${a.id}" onclick="copyMsg('${a.id}')"
-             ${known && sexFor(a,p) ? '' : 'disabled title="צריך שם ומין כדי לנסח הודעה"'}>העתקת ההודעה</button></td>
+        <td style="white-space:nowrap;">
+          <a class="btn-wa ${known && sexFor(a,p) ? '' : 'off'}" target="_blank" rel="noopener"
+             href="${known && sexFor(a,p) ? waLink(a, p) : '#'}">פתיחה בוואטסאפ</a>
+          <button class="btn sm" id="cp-${a.id}" onclick="copyMsg('${a.id}')"
+             ${known && sexFor(a,p) ? '' : 'disabled title="צריך שם ומין כדי לנסח הודעה"'}>העתקה</button></td>
         <td>${a.sent ? `<span class="tag ok" title="${esc(a.sentBy || '')}">נשלח ${new Date(a.sent).toLocaleDateString('he-IL')}${a.sentBy ? ' · ' + esc(String(a.sentBy).split('@')[0]) : ''}</span>`
                      : '<span class="tag warn">ממתין</span>'}</td>
         <td>
@@ -630,6 +715,62 @@ function renderAlerts() {
     }).join('') + '</tbody></table>';
 }
 
+/* ===== תמונות מצב שבועיות =====
+   נשמרות באותו אוסף, בשם snap_<תאריך>, ולכן מכוסות באותם כללי אבטחה.
+   המאזין החי מתעלם מהן, כי הוא קורא רק מסמכים שמתחילים ב-item_. */
+const snapId = (d) => 'snap_' + d.toISOString().slice(0, 10);
+
+/** האם הגיע הזמן לתמונה חדשה: אין תמונה מהשבוע האחרון, ועברנו את שישי בצהריים */
+function snapshotDue(list) {
+  const now = new Date();
+  const last = list.length ? new Date(list[0].date) : null;
+  if (last && (now - last) < 6 * 24 * 3600 * 1000) return false;
+  if (!last) return true;
+  const friAfternoon = now.getDay() === 5 && now.getHours() >= 12;
+  return friAfternoon || (now - last) >= 7 * 24 * 3600 * 1000;
+}
+
+window.makeSnapshot = async (manual) => {
+  const err = document.getElementById('snap-err'); err.style.display = 'none';
+  try {
+    await window.cloudSnapshot({ ...window.getState(), alerts });
+    await renderSnapshots();
+    if (manual) document.getElementById('snap-status').textContent = '✅ תמונת מצב נשמרה';
+  } catch (e) {
+    err.textContent = '❌ ' + (e.message || e); err.style.display = 'block';
+  }
+};
+
+window.renderSnapshots = async () => {
+  const box = document.getElementById('snap-list');
+  const st  = document.getElementById('snap-status');
+  let list = [];
+  try { list = await window.cloudListSnapshots(); }
+  catch (e) { st.textContent = 'לא ניתן לקרוא תמונות מצב'; return; }
+  st.textContent = list.length
+    ? `נשמרו ${list.length} תמונות מצב. האחרונה: ${new Date(list[0].date).toLocaleDateString('he-IL')}`
+    : 'עדיין אין תמונות מצב';
+  box.innerHTML = list.length ? `<table><thead><tr><th>תאריך</th><th>פניות</th><th>נחקרים</th><th></th></tr></thead><tbody>` +
+    list.slice(0, 8).map(s => `<tr>
+      <td>${new Date(s.date).toLocaleDateString('he-IL')}</td>
+      <td>${s.alerts}</td><td>${s.roster}</td>
+      <td><button class="btn sec sm" onclick="restoreSnapshot('${s.id}')">שחזור</button></td>
+    </tr>`).join('') + '</tbody></table>' : '';
+  if (snapshotDue(list)) window.makeSnapshot(false);
+};
+
+window.restoreSnapshot = async (id) => {
+  if (!confirm('לשחזר את המצב מתמונה זו? המצב הנוכחי יוחלף.')) return;
+  try {
+    const d = await window.cloudReadSnapshot(id);
+    if (!d) throw new Error('התמונה לא נמצאה');
+    await window.cloudRestore(d);
+  } catch (e) {
+    const err = document.getElementById('snap-err');
+    err.textContent = '❌ ' + (e.message || e); err.style.display = 'block';
+  }
+};
+
 // ציור ראשוני
 renderManual(); renderRoster(); renderAlerts();
 if (roster.length) document.getElementById('csv-status').textContent =
@@ -640,7 +781,7 @@ if (roster.length) document.getElementById('csv-status').textContent =
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut as fbSignOut }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, collection, setDoc, deleteDoc, onSnapshot, serverTimestamp }
+import { getFirestore, doc, collection, setDoc, getDoc, getDocs, deleteDoc, onSnapshot, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -747,6 +888,53 @@ window.cloudDropAlert = async (id) => {
   catch (e) { badge('⚠ המחיקה בענן נכשלה', 'bad', String(e)); }
 };
 
+/** אסימון זהות עבור קריאת המיילים מהשרת */
+window.__getIdToken = async () => {
+  const u = auth.currentUser;
+  if (!u) throw new Error('אין חיבור פעיל, יש להתחבר מחדש');
+  return u.getIdToken();
+};
+
+/** שומר תמונת מצב מלאה תחת snap_<תאריך> */
+window.cloudSnapshot = async (state) => {
+  const id = 'snap_' + new Date().toISOString().slice(0, 10);
+  await setDoc(doc(db, 'primeAlerts', id), {
+    kind: 'snapshot', date: new Date().toISOString(),
+    roster: state.roster || [], manual: state.manual || [],
+    fills: state.fills || {}, alerts: state.alerts || [],
+    by: window.currentUser()
+  });
+};
+
+window.cloudListSnapshots = async () => {
+  const snap = await getDocs(CLOUD_COL);
+  const out = [];
+  snap.forEach(d => {
+    if (d.id.indexOf('snap_') !== 0) return;
+    const v = d.data();
+    out.push({ id: d.id, date: v.date, alerts: (v.alerts || []).length, roster: (v.roster || []).length });
+  });
+  return out.sort((a, b) => (a.date < b.date ? 1 : -1));
+};
+
+window.cloudReadSnapshot = async (id) => {
+  const s = await getDoc(doc(db, 'primeAlerts', id));
+  return s.exists() ? s.data() : null;
+};
+
+/** מחזיר את המצב מתמונה: כותב מחדש את המסמכים ומוחק פניות שלא היו בה */
+window.cloudRestore = async (d) => {
+  const keep = new Set((d.alerts || []).map(a => 'item_' + a.id));
+  const cur = await getDocs(CLOUD_COL);
+  const dels = [];
+  cur.forEach(x => { if (x.id.indexOf('item_') === 0 && !keep.has(x.id)) dels.push(deleteDoc(x.ref)); });
+  await Promise.all(dels);
+  await Promise.all((d.alerts || []).map(a =>
+    setDoc(alertDoc(a.id), { kind: 'alert', ...a, updatedAt: serverTimestamp(), updatedBy: window.currentUser() })));
+  await setDoc(CLOUD_DOC, { kind: 'state', roster: d.roster || [], manual: d.manual || [],
+    fills: d.fills || {}, updatedAt: serverTimestamp(), updatedBy: window.currentUser() });
+};
+
 /** מאזין חי: כל שינוי שאחד עושה מופיע אצל השני תוך שנייה */
 function listen() {
   if (unsub) unsub();
@@ -773,6 +961,7 @@ function listen() {
 async function enterApp() {
   screens('main');
   listen();
+  setTimeout(() => { if (window.renderSnapshots) window.renderSnapshots(); }, 1200);
 }
 
 onAuthStateChanged(auth, async user => {

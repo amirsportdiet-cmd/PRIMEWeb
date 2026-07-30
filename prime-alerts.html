@@ -888,7 +888,7 @@ window.cloudSaveState = () => {
     try {
       badge('שומר…', 'saving');
       const s = window.getState();
-      await setDoc(CLOUD_DOC, { kind: 'state', roster: s.roster, manual: s.manual,
+      await setDoc(CLOUD_DOC, { _doc: 'state', roster: s.roster, manual: s.manual,
         fills: s.fills, updatedAt: serverTimestamp(), updatedBy: window.currentUser() });
       badge('☁ מגובה', 'ok');
     } catch (e) { badge('⚠ הגיבוי נכשל', 'bad', String(e)); }
@@ -900,7 +900,7 @@ window.cloudSaveAlert = async (a) => {
   if (!cloudReady || !a) return;
   try {
     badge('שומר…', 'saving');
-    await setDoc(alertDoc(a.id), { kind: 'alert', ...a,
+    await setDoc(alertDoc(a.id), { _doc: 'alert', ...a,
       updatedAt: serverTimestamp(), updatedBy: window.currentUser() });
     badge('☁ מגובה', 'ok');
   } catch (e) { badge('⚠ הגיבוי נכשל', 'bad', String(e)); }
@@ -923,7 +923,7 @@ window.__getIdToken = async () => {
 window.cloudSnapshot = async (state) => {
   const id = 'snap_' + new Date().toISOString().slice(0, 10);
   await setDoc(doc(db, 'primeAlerts', id), {
-    kind: 'snapshot', date: new Date().toISOString(),
+    _doc: 'snapshot', date: new Date().toISOString(),
     roster: state.roster || [], manual: state.manual || [],
     fills: state.fills || {}, alerts: state.alerts || [],
     by: window.currentUser()
@@ -954,8 +954,8 @@ window.cloudRestore = async (d) => {
   cur.forEach(x => { if (x.id.indexOf('item_') === 0 && !keep.has(x.id)) dels.push(deleteDoc(x.ref)); });
   await Promise.all(dels);
   await Promise.all((d.alerts || []).map(a =>
-    setDoc(alertDoc(a.id), { kind: 'alert', ...a, updatedAt: serverTimestamp(), updatedBy: window.currentUser() })));
-  await setDoc(CLOUD_DOC, { kind: 'state', roster: d.roster || [], manual: d.manual || [],
+    setDoc(alertDoc(a.id), { _doc: 'alert', ...a, updatedAt: serverTimestamp(), updatedBy: window.currentUser() })));
+  await setDoc(CLOUD_DOC, { _doc: 'state', roster: d.roster || [], manual: d.manual || [],
     fills: d.fills || {}, updatedAt: serverTimestamp(), updatedBy: window.currentUser() });
 };
 
@@ -969,7 +969,7 @@ function listen() {
       const v = d.data();
       if (d.id === 'state') state = v;
       else if (d.id.indexOf('item_') === 0) {
-        const { kind, updatedAt, ...rest } = v;
+        const { _doc, updatedAt, ...rest } = v;   // מסירים רק שדות שירות, לא את סוג הפנייה
         items.push(rest);
       }
     });

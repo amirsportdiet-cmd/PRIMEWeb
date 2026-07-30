@@ -81,6 +81,7 @@ tr:hover td{ background:#f8fafc; }
 .tag.man{ background:#fef3c7; color:#92400e; }
 .tag.warn{ background:#fee2e2; color:#b91c1c; }
 .tag.ok{ background:#d1fae5; color:#047857; }
+.when{ font-size:11.5px; color:#64748b; white-space:nowrap; }
 .sexsel{ padding:4px 7px; border:1px solid #cbd5e1; border-radius:7px; font-size:12px; font-family:inherit; }
 .ltr{ direction:ltr; unicode-bidi:isolate; display:inline-block; }
 
@@ -116,7 +117,9 @@ textarea:focus{ outline:none; border-color:#0d9488; }
 .btn-wa.off{ background:#cbd5e1; pointer-events:none; }
 .snapbar{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; font-size:12px; color:#64748b; }
 .msg-box{ background:#f0fdf4; border:1px solid #86efac; border-radius:10px; padding:12px 14px;
-          font-size:13px; line-height:1.7; white-space:pre-wrap; margin-top:8px; }
+          font-size:13px; line-height:1.7; white-space:pre-wrap; margin-top:8px;
+          /* בלי גופן אימוג'י, סמלים חדשים מוצגים כריבוע. בוואטסאפ עצמו הם תקינים ממילא. */
+          font-family:"Rubik","Segoe UI Emoji","Noto Color Emoji","Apple Color Emoji",Arial,sans-serif; }
 .empty{ text-align:center; color:#94a3b8; font-size:13px; padding:26px 0; }
 .err{ display:none; background:#fef2f2; border:1px solid #fca5a5; color:#b91c1c; border-radius:9px;
       padding:9px 13px; font-size:13px; margin-top:10px; }
@@ -466,13 +469,26 @@ function renderManual() {
       <td><button class="btn sec sm" onclick="removeManual('${m.id}')">מחיקה</button></td>
     </tr>`).join('') + '</tbody></table>';
 }
+/** מתי הפנייה התקבלה, בצורה קריאה */
+function whenText(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d)) return '—';
+  const today = new Date();
+  const sameDay = d.toDateString() === today.toDateString();
+  const time = d.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+  return sameDay ? 'היום ' + time
+                 : d.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit' }) + ' ' + time;
+}
 const groupTag = g => g === 'intervention' ? '<span class="tag int">התערבות</span>'
                    : g === 'control' ? '<span class="tag ctl">ביקורת</span>'
                    : '<span class="tag ctl">לא ידוע</span>';
 const esc = s => String(s || '').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
 
-/** מאתר אדם לפי טלפון, קודם ברשימה מ-REDCap ואז ברשומות הידניות */
-function findPerson(phone) {
+/** מאתר אדם לפי טלפון, קודם ברשימה מ-REDCap ואז ברשומות הידניות.
+    לפניות דוגמה מוחזר אדם מדומה, כדי שההודעה תיראה מלאה בלי נתונים אמיתיים. */
+function findPerson(phone, alert) {
+  if (alert && alert.demo) return alert.demoPerson;
   const p = normPhone(phone);
   if (!p) return null;
   return roster.find(r => r.phone === p) || manual.find(m => m.phone === p) || null;
@@ -662,7 +678,7 @@ function waLink(a, p) {
 
 window.copyMsg = async (id) => {
   const a = alerts.find(x => x.id === id); if (!a) return;
-  const p = findPerson(a.phone);
+  const p = findPerson(a.phone, a);
   try {
     await navigator.clipboard.writeText(waMessage(a.kind, p, sexFor(a, p)));
     const b = document.getElementById('cp-' + id);
@@ -684,16 +700,17 @@ function renderAlerts() {
   const box = document.getElementById('alerts');
   if (!alerts.length) { box.innerHTML = '<div class="empty">אין פניות. הדביקו מייל למעלה כדי להתחיל.</div>'; return; }
   box.innerHTML = `<table><thead><tr>
-      <th>סוג הפנייה</th><th>שם</th><th>מין</th><th>טלפון</th><th>קבוצה</th><th>מרכז</th><th>הודעה</th><th>סטטוס</th><th></th>
+      <th>התקבל</th><th>סוג הפנייה</th><th>שם</th><th>מין</th><th>טלפון</th><th>קבוצה</th><th>מרכז</th><th>הודעה</th><th>סטטוס</th><th></th>
     </tr></thead><tbody>` +
     alerts.map(a => {
-      const p = findPerson(a.phone);
+      const p = findPerson(a.phone, a);
       const known = !!p;
       const groupMismatch = known && p.group && a.group && p.group !== a.group;
       const nameCell = known
         ? `<b>${esc(p.name)}</b>${p.manual ? ' <span class="tag man">ידני</span>' : ''}`
         : `<span class="tag warn">לא מזוהה</span>`;
       return `<tr>
+        <td class="when">${whenText(a.at)}${a.demo ? ' <span class="tag man">דוגמה</span>' : ''}</td>
         <td>${KIND[a.kind] ? KIND[a.kind].label : '<span class="tag warn">סוג לא מזוהה</span>'}</td>
         <td>${nameCell}</td>
         <td><select class="sexsel" onchange="setSexFor('${a.id}', this.value)">
@@ -717,7 +734,7 @@ function renderAlerts() {
           <button class="btn sec sm" onclick="dropAlert('${a.id}')">מחיקה</button>
         </td>
       </tr>` +
-      (known && sexFor(a,p) ? `<tr><td colspan="9" style="padding-top:0;border:none;">
+      (known && sexFor(a,p) ? `<tr><td colspan="10" style="padding-top:0;border:none;">
           <div class="msg-box">${esc(waMessage(a.kind, p, sexFor(a,p)))}</div></td></tr>` : '');
     }).join('') + '</tbody></table>';
 }

@@ -60,8 +60,6 @@ body { font-family:"Rubik","Assistant","Heebo",sans-serif; direction:rtl; margin
 .mode-btn.active { background:#0d9488; border-color:#0d9488; color:#fff; }
 .mode-btn.sm { font-size:12.5px; padding:8px 0; }
 .mode-hint { margin-top:9px; font-size:12px; color:#64748b; text-align:center; line-height:1.6; }
-/* במצב נקודת זמן אחת, הצד שאינו בשימוש מעומעם כדי שלא ימלאו אותו לחינם */
-body.one-s .field-tab.end, body.one-e .field-tab.start { opacity:.38; }
 .rc-import { margin:0 24px 18px; border:2px dashed #99f6e4; border-radius:14px; background:#f0fdfa; padding:16px 18px; text-align:center; }
 .rc-import-head { font-size:15px; font-weight:800; color:#0f766e; margin-bottom:12px; }
 .rc-import-body { display:flex; flex-direction:column; align-items:center; gap:10px; }
@@ -110,10 +108,14 @@ body.one-s .field-tab.end, body.one-e .field-tab.start { opacity:.38; }
 .field-tab { flex:1; padding:7px 0; border:2px solid #e2e8f0; border-radius:7px; background:#f1f5f9; color:#94a3b8; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; transition:.15s; }
 .field-tab:hover:not(.active) { border-color:#0d9488; color:#0d9488; }
 .field-tab.active.start { background:#e2e8f0; border-color:#94a3b8; color:#334155; }
+.field-tab.active.mid { background:#64748b; border-color:#64748b; color:#fff; }
 .field-tab.active.end { background:#0d9488; border-color:#0d9488; color:#fff; }
 .field-tab.filled:not(.active) { border-color:#16a34a; color:#16a34a; background:#f0fdf4; }
 .field-tab.active.start.filled { background:#dcfce7; border-color:#16a34a; color:#15803d; }
+.field-tab.active.mid.filled { background:#15803d; border-color:#15803d; color:#fff; }
 .field-tab.active.end.filled { background:#15803d; border-color:#15803d; color:#fff; }
+/* נקודת זמן שאינה חלק מהדו״ח שנבחר, כדי שלא ימלאו אותה לחינם */
+.field-tab.dim:not(.active) { opacity:.35; }
 /* card done = both sides filled → green border */
 .field-card.card-done { border:2px solid #16a34a !important; background:#f0fdf4 !important; }
 .field-card.card-done .field-label { color:#15803d; }
@@ -599,12 +601,18 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
     <div class="mode-pick no-print">
       <div class="mode-head">מבנה הדו״ח</div>
       <div class="mode-row">
-        <button type="button" class="mode-btn active" id="mode-compare" onclick="setMode('compare')">השוואה · התחלה מול סוף</button>
+        <button type="button" class="mode-btn active" id="mode-compare" onclick="setMode('compare')">השוואה בין שתי מדידות</button>
         <button type="button" class="mode-btn" id="mode-single" onclick="setMode('single')">נקודת זמן אחת</button>
       </div>
+      <div class="mode-row" id="mode-pair-row">
+        <button type="button" class="mode-btn sm active" id="pair-se" onclick="setPair('s','e')">התחלה מול סוף</button>
+        <button type="button" class="mode-btn sm" id="pair-sm" onclick="setPair('s','m')">התחלה מול אמצע</button>
+        <button type="button" class="mode-btn sm" id="pair-me" onclick="setPair('m','e')">אמצע מול סוף</button>
+      </div>
       <div class="mode-row" id="mode-side-row" style="display:none;">
-        <button type="button" class="mode-btn sm" id="side-s" onclick="setSide('s')">לפי מדידת הכניסה למחקר</button>
-        <button type="button" class="mode-btn sm active" id="side-e" onclick="setSide('e')">לפי מדידת סוף המחקר</button>
+        <button type="button" class="mode-btn sm" id="side-s" onclick="setSide('s')">מדידת הכניסה</button>
+        <button type="button" class="mode-btn sm" id="side-m" onclick="setSide('m')">מדידת האמצע</button>
+        <button type="button" class="mode-btn sm active" id="side-e" onclick="setSide('e')">מדידת הסוף</button>
       </div>
       <div class="mode-hint" id="mode-hint"></div>
     </div>
@@ -669,13 +677,14 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
           <div class="field-card">
             <div class="field-label">תאריך מדידה <span class="req">*</span></div>
             <div class="field-tab-row">
-              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-date','s')">התחלה</button>
-              <button type="button" class="field-tab end" onclick="switchTab(this,'f-date','e')">סוף</button>
+              <button type="button" class="field-tab start active" data-side="s" onclick="switchTab(this,'f-date','s')">התחלה</button>
+              <button type="button" class="field-tab mid" data-side="m" onclick="switchTab(this,'f-date','m')">אמצע</button>
+              <button type="button" class="field-tab end" data-side="e" onclick="switchTab(this,'f-date','e')">סוף</button>
             </div>
             <input type="date" class="field-active-input" data-field="f-date" data-side="s"
-              data-ph-s="" data-ph-e="" oninput="storeVal(this)">
+              data-ph-s="" data-ph-m="" data-ph-e="" oninput="storeVal(this)">
             <button type="button" class="btn-today" onclick="setDateToday(this)" style="display:none;">📅 קבע לתאריך של היום</button>
-            <input type="hidden" id="f-date-s"><input type="hidden" id="f-date-e">
+            <input type="hidden" id="f-date-s"><input type="hidden" id="f-date-m"><input type="hidden" id="f-date-e">
           </div>
         </div>
       </div>
@@ -692,40 +701,44 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
           <div class="field-card">
             <div class="field-label">REE — הוצאה אנרגטית במנוחה (קק״ל/יום) <span class="req">*</span></div>
             <div class="field-tab-row">
-              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-ree','s')">התחלה</button>
-              <button type="button" class="field-tab end" onclick="switchTab(this,'f-ree','e')">סוף</button>
+              <button type="button" class="field-tab start active" data-side="s" onclick="switchTab(this,'f-ree','s')">התחלה</button>
+              <button type="button" class="field-tab mid" data-side="m" onclick="switchTab(this,'f-ree','m')">אמצע</button>
+              <button type="button" class="field-tab end" data-side="e" onclick="switchTab(this,'f-ree','e')">סוף</button>
             </div>
-            <input type="number" class="field-active-input" data-field="f-ree" data-side="s" data-ph-s="לדוגמה: 1735" data-ph-e="לדוגמה: 1720" placeholder="לדוגמה: 1735" min="500" max="5000" inputmode="decimal" oninput="storeVal(this)">
-            <input type="hidden" id="f-ree-s"><input type="hidden" id="f-ree-e">
+            <input type="number" class="field-active-input" data-field="f-ree" data-side="s" data-ph-s="לדוגמה: 1735" data-ph-m="לדוגמה: 1720" data-ph-e="לדוגמה: 1720" placeholder="לדוגמה: 1735" min="500" max="5000" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-ree-s"><input type="hidden" id="f-ree-m"><input type="hidden" id="f-ree-e">
           </div>
           <div class="field-card">
             <div class="field-label">RER — מנת הנשימה <span class="req">*</span></div>
             <div class="field-tab-row">
-              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-rer','s')">התחלה</button>
-              <button type="button" class="field-tab end" onclick="switchTab(this,'f-rer','e')">סוף</button>
+              <button type="button" class="field-tab start active" data-side="s" onclick="switchTab(this,'f-rer','s')">התחלה</button>
+              <button type="button" class="field-tab mid" data-side="m" onclick="switchTab(this,'f-rer','m')">אמצע</button>
+              <button type="button" class="field-tab end" data-side="e" onclick="switchTab(this,'f-rer','e')">סוף</button>
             </div>
-            <input type="number" class="field-active-input" data-field="f-rer" data-side="s" data-ph-s="לדוגמה: 0.84" data-ph-e="לדוגמה: 0.82" placeholder="לדוגמה: 0.84" min="0.5" max="1.3" step="0.01" inputmode="decimal" oninput="storeVal(this)">
-            <input type="hidden" id="f-rer-s"><input type="hidden" id="f-rer-e">
+            <input type="number" class="field-active-input" data-field="f-rer" data-side="s" data-ph-s="לדוגמה: 0.84" data-ph-m="לדוגמה: 0.82" data-ph-e="לדוגמה: 0.82" placeholder="לדוגמה: 0.84" min="0.5" max="1.3" step="0.01" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-rer-s"><input type="hidden" id="f-rer-m"><input type="hidden" id="f-rer-e">
           </div>
         </div>
         <div class="form-row">
           <div class="field-card">
             <div class="field-label">% שריפת שומן <span class="req">*</span></div>
             <div class="field-tab-row">
-              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-fatburn','s')">התחלה</button>
-              <button type="button" class="field-tab end" onclick="switchTab(this,'f-fatburn','e')">סוף</button>
+              <button type="button" class="field-tab start active" data-side="s" onclick="switchTab(this,'f-fatburn','s')">התחלה</button>
+              <button type="button" class="field-tab mid" data-side="m" onclick="switchTab(this,'f-fatburn','m')">אמצע</button>
+              <button type="button" class="field-tab end" data-side="e" onclick="switchTab(this,'f-fatburn','e')">סוף</button>
             </div>
-            <input type="number" class="field-active-input" data-field="f-fatburn" data-side="s" data-ph-s="לדוגמה: 60" data-ph-e="לדוגמה: 67" placeholder="לדוגמה: 60" min="0" max="100" inputmode="decimal" oninput="storeVal(this)">
-            <input type="hidden" id="f-fatburn-s"><input type="hidden" id="f-fatburn-e">
+            <input type="number" class="field-active-input" data-field="f-fatburn" data-side="s" data-ph-s="לדוגמה: 60" data-ph-m="לדוגמה: 67" data-ph-e="לדוגמה: 67" placeholder="לדוגמה: 60" min="0" max="100" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-fatburn-s"><input type="hidden" id="f-fatburn-m"><input type="hidden" id="f-fatburn-e">
           </div>
           <div class="field-card">
             <div class="field-label">% שריפת פחמימה <span class="opt">רשות</span></div>
             <div class="field-tab-row">
-              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-chburn','s')">התחלה</button>
-              <button type="button" class="field-tab end" onclick="switchTab(this,'f-chburn','e')">סוף</button>
+              <button type="button" class="field-tab start active" data-side="s" onclick="switchTab(this,'f-chburn','s')">התחלה</button>
+              <button type="button" class="field-tab mid" data-side="m" onclick="switchTab(this,'f-chburn','m')">אמצע</button>
+              <button type="button" class="field-tab end" data-side="e" onclick="switchTab(this,'f-chburn','e')">סוף</button>
             </div>
-            <input type="number" class="field-active-input" data-field="f-chburn" data-side="s" data-ph-s="לדוגמה: 40" data-ph-e="לדוגמה: 33" placeholder="לדוגמה: 40" min="0" max="100" inputmode="decimal" oninput="storeVal(this)">
-            <input type="hidden" id="f-chburn-s"><input type="hidden" id="f-chburn-e">
+            <input type="number" class="field-active-input" data-field="f-chburn" data-side="s" data-ph-s="לדוגמה: 40" data-ph-m="לדוגמה: 33" data-ph-e="לדוגמה: 33" placeholder="לדוגמה: 40" min="0" max="100" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-chburn-s"><input type="hidden" id="f-chburn-m"><input type="hidden" id="f-chburn-e">
           </div>
         </div>
       </div>
@@ -748,105 +761,116 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
           <div class="field-card">
             <div class="field-label">משקל (ק״ג) <span class="req">*</span></div>
             <div class="field-tab-row">
-              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-wt','s')">התחלה</button>
-              <button type="button" class="field-tab end" onclick="switchTab(this,'f-wt','e')">סוף</button>
+              <button type="button" class="field-tab start active" data-side="s" onclick="switchTab(this,'f-wt','s')">התחלה</button>
+              <button type="button" class="field-tab mid" data-side="m" onclick="switchTab(this,'f-wt','m')">אמצע</button>
+              <button type="button" class="field-tab end" data-side="e" onclick="switchTab(this,'f-wt','e')">סוף</button>
             </div>
-            <input type="number" class="field-active-input" data-field="f-wt" data-side="s" data-ph-s="לדוגמה: 92.0" data-ph-e="לדוגמה: 88.0" placeholder="לדוגמה: 92.0" min="20" max="300" step="0.1" inputmode="decimal" oninput="storeVal(this)">
-            <input type="hidden" id="f-wt-s"><input type="hidden" id="f-wt-e">
+            <input type="number" class="field-active-input" data-field="f-wt" data-side="s" data-ph-s="לדוגמה: 92.0" data-ph-m="לדוגמה: 88.0" data-ph-e="לדוגמה: 88.0" placeholder="לדוגמה: 92.0" min="20" max="300" step="0.1" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-wt-s"><input type="hidden" id="f-wt-m"><input type="hidden" id="f-wt-e">
           </div>
           <div class="field-card">
             <div class="field-label">מסת שומן FM (ק״ג) <span class="req">*</span></div>
             <div class="field-tab-row">
-              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-fm','s')">התחלה</button>
-              <button type="button" class="field-tab end" onclick="switchTab(this,'f-fm','e')">סוף</button>
+              <button type="button" class="field-tab start active" data-side="s" onclick="switchTab(this,'f-fm','s')">התחלה</button>
+              <button type="button" class="field-tab mid" data-side="m" onclick="switchTab(this,'f-fm','m')">אמצע</button>
+              <button type="button" class="field-tab end" data-side="e" onclick="switchTab(this,'f-fm','e')">סוף</button>
             </div>
-            <input type="number" class="field-active-input" data-field="f-fm" data-side="s" data-ph-s="לדוגמה: 24.8" data-ph-e="לדוגמה: 20.5" placeholder="לדוגמה: 24.8" min="0" max="200" step="0.1" inputmode="decimal" oninput="storeVal(this)">
-            <input type="hidden" id="f-fm-s"><input type="hidden" id="f-fm-e">
+            <input type="number" class="field-active-input" data-field="f-fm" data-side="s" data-ph-s="לדוגמה: 24.8" data-ph-m="לדוגמה: 20.5" data-ph-e="לדוגמה: 20.5" placeholder="לדוגמה: 24.8" min="0" max="200" step="0.1" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-fm-s"><input type="hidden" id="f-fm-m"><input type="hidden" id="f-fm-e">
           </div>
         </div>
         <div class="form-row">
           <div class="field-card">
             <div class="field-label">מסת שריר SMM (ק״ג) <span class="req">*</span></div>
             <div class="field-tab-row">
-              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-smm','s')">התחלה</button>
-              <button type="button" class="field-tab end" onclick="switchTab(this,'f-smm','e')">סוף</button>
+              <button type="button" class="field-tab start active" data-side="s" onclick="switchTab(this,'f-smm','s')">התחלה</button>
+              <button type="button" class="field-tab mid" data-side="m" onclick="switchTab(this,'f-smm','m')">אמצע</button>
+              <button type="button" class="field-tab end" data-side="e" onclick="switchTab(this,'f-smm','e')">סוף</button>
             </div>
-            <input type="number" class="field-active-input" data-field="f-smm" data-side="s" data-ph-s="לדוגמה: 35.5" data-ph-e="לדוגמה: 35.8" placeholder="לדוגמה: 35.5" min="0" max="100" step="0.1" inputmode="decimal" oninput="storeVal(this)">
-            <input type="hidden" id="f-smm-s"><input type="hidden" id="f-smm-e">
+            <input type="number" class="field-active-input" data-field="f-smm" data-side="s" data-ph-s="לדוגמה: 35.5" data-ph-m="לדוגמה: 35.8" data-ph-e="לדוגמה: 35.8" placeholder="לדוגמה: 35.5" min="0" max="100" step="0.1" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-smm-s"><input type="hidden" id="f-smm-m"><input type="hidden" id="f-smm-e">
           </div>
           <div class="field-card">
             <div class="field-label">SMI — מדד מסת שריר (ק״ג/מ²) <span class="opt">רשות</span></div>
             <div class="field-tab-row">
-              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-smi','s')">התחלה</button>
-              <button type="button" class="field-tab end" onclick="switchTab(this,'f-smi','e')">סוף</button>
+              <button type="button" class="field-tab start active" data-side="s" onclick="switchTab(this,'f-smi','s')">התחלה</button>
+              <button type="button" class="field-tab mid" data-side="m" onclick="switchTab(this,'f-smi','m')">אמצע</button>
+              <button type="button" class="field-tab end" data-side="e" onclick="switchTab(this,'f-smi','e')">סוף</button>
             </div>
-            <input type="number" class="field-active-input" data-field="f-smi" data-side="s" data-ph-s="לדוגמה: 7.2" data-ph-e="לדוגמה: 7.4" placeholder="לדוגמה: 7.2" min="0" max="20" step="0.01" inputmode="decimal" oninput="storeVal(this)">
-            <input type="hidden" id="f-smi-s"><input type="hidden" id="f-smi-e">
+            <input type="number" class="field-active-input" data-field="f-smi" data-side="s" data-ph-s="לדוגמה: 7.2" data-ph-m="לדוגמה: 7.4" data-ph-e="לדוגמה: 7.4" placeholder="לדוגמה: 7.2" min="0" max="20" step="0.01" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-smi-s"><input type="hidden" id="f-smi-m"><input type="hidden" id="f-smi-e">
           </div>
           <div class="field-card">
             <div class="field-label">מסה רזה, יד ימין (ק״ג) <span class="opt">רשות</span></div>
             <div class="field-tab-row">
-              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-lmra','s')">התחלה</button>
-              <button type="button" class="field-tab end" onclick="switchTab(this,'f-lmra','e')">סוף</button>
+              <button type="button" class="field-tab start active" data-side="s" onclick="switchTab(this,'f-lmra','s')">התחלה</button>
+              <button type="button" class="field-tab mid" data-side="m" onclick="switchTab(this,'f-lmra','m')">אמצע</button>
+              <button type="button" class="field-tab end" data-side="e" onclick="switchTab(this,'f-lmra','e')">סוף</button>
             </div>
-            <input type="number" class="field-active-input" data-field="f-lmra" data-side="s" data-ph-s="לדוגמה: 3.10" data-ph-e="לדוגמה: 3.15" placeholder="לדוגמה: 3.10" min="0" max="20" step="0.01" inputmode="decimal" oninput="storeVal(this)">
-            <input type="hidden" id="f-lmra-s"><input type="hidden" id="f-lmra-e">
+            <input type="number" class="field-active-input" data-field="f-lmra" data-side="s" data-ph-s="לדוגמה: 3.10" data-ph-m="לדוגמה: 3.15" data-ph-e="לדוגמה: 3.15" placeholder="לדוגמה: 3.10" min="0" max="20" step="0.01" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-lmra-s"><input type="hidden" id="f-lmra-m"><input type="hidden" id="f-lmra-e">
           </div>
           <div class="field-card">
             <div class="field-label">מסה רזה, יד שמאל (ק״ג) <span class="opt">רשות</span></div>
             <div class="field-tab-row">
-              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-lmla','s')">התחלה</button>
-              <button type="button" class="field-tab end" onclick="switchTab(this,'f-lmla','e')">סוף</button>
+              <button type="button" class="field-tab start active" data-side="s" onclick="switchTab(this,'f-lmla','s')">התחלה</button>
+              <button type="button" class="field-tab mid" data-side="m" onclick="switchTab(this,'f-lmla','m')">אמצע</button>
+              <button type="button" class="field-tab end" data-side="e" onclick="switchTab(this,'f-lmla','e')">סוף</button>
             </div>
-            <input type="number" class="field-active-input" data-field="f-lmla" data-side="s" data-ph-s="לדוגמה: 3.00" data-ph-e="לדוגמה: 3.08" placeholder="לדוגמה: 3.00" min="0" max="20" step="0.01" inputmode="decimal" oninput="storeVal(this)">
-            <input type="hidden" id="f-lmla-s"><input type="hidden" id="f-lmla-e">
+            <input type="number" class="field-active-input" data-field="f-lmla" data-side="s" data-ph-s="לדוגמה: 3.00" data-ph-m="לדוגמה: 3.08" data-ph-e="לדוגמה: 3.08" placeholder="לדוגמה: 3.00" min="0" max="20" step="0.01" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-lmla-s"><input type="hidden" id="f-lmla-m"><input type="hidden" id="f-lmla-e">
           </div>
           <div class="field-card">
             <div class="field-label">מסה רזה, רגל ימין (ק״ג) <span class="opt">רשות</span></div>
             <div class="field-tab-row">
-              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-lmrl','s')">התחלה</button>
-              <button type="button" class="field-tab end" onclick="switchTab(this,'f-lmrl','e')">סוף</button>
+              <button type="button" class="field-tab start active" data-side="s" onclick="switchTab(this,'f-lmrl','s')">התחלה</button>
+              <button type="button" class="field-tab mid" data-side="m" onclick="switchTab(this,'f-lmrl','m')">אמצע</button>
+              <button type="button" class="field-tab end" data-side="e" onclick="switchTab(this,'f-lmrl','e')">סוף</button>
             </div>
-            <input type="number" class="field-active-input" data-field="f-lmrl" data-side="s" data-ph-s="לדוגמה: 8.40" data-ph-e="לדוגמה: 8.55" placeholder="לדוגמה: 8.40" min="0" max="40" step="0.01" inputmode="decimal" oninput="storeVal(this)">
-            <input type="hidden" id="f-lmrl-s"><input type="hidden" id="f-lmrl-e">
+            <input type="number" class="field-active-input" data-field="f-lmrl" data-side="s" data-ph-s="לדוגמה: 8.40" data-ph-m="לדוגמה: 8.55" data-ph-e="לדוגמה: 8.55" placeholder="לדוגמה: 8.40" min="0" max="40" step="0.01" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-lmrl-s"><input type="hidden" id="f-lmrl-m"><input type="hidden" id="f-lmrl-e">
           </div>
           <div class="field-card">
             <div class="field-label">מסה רזה, רגל שמאל (ק״ג) <span class="opt">רשות</span></div>
             <div class="field-tab-row">
-              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-lmll','s')">התחלה</button>
-              <button type="button" class="field-tab end" onclick="switchTab(this,'f-lmll','e')">סוף</button>
+              <button type="button" class="field-tab start active" data-side="s" onclick="switchTab(this,'f-lmll','s')">התחלה</button>
+              <button type="button" class="field-tab mid" data-side="m" onclick="switchTab(this,'f-lmll','m')">אמצע</button>
+              <button type="button" class="field-tab end" data-side="e" onclick="switchTab(this,'f-lmll','e')">סוף</button>
             </div>
-            <input type="number" class="field-active-input" data-field="f-lmll" data-side="s" data-ph-s="לדוגמה: 8.25" data-ph-e="לדוגמה: 8.45" placeholder="לדוגמה: 8.25" min="0" max="40" step="0.01" inputmode="decimal" oninput="storeVal(this)">
-            <input type="hidden" id="f-lmll-s"><input type="hidden" id="f-lmll-e">
+            <input type="number" class="field-active-input" data-field="f-lmll" data-side="s" data-ph-s="לדוגמה: 8.25" data-ph-m="לדוגמה: 8.45" data-ph-e="לדוגמה: 8.45" placeholder="לדוגמה: 8.25" min="0" max="40" step="0.01" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-lmll-s"><input type="hidden" id="f-lmll-m"><input type="hidden" id="f-lmll-e">
           </div>
           <div class="field-card">
             <div class="field-label">TBW — סך נוזלים (ליטר) <span class="opt">רשות</span></div>
             <div class="field-tab-row">
-              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-tbw','s')">התחלה</button>
-              <button type="button" class="field-tab end" onclick="switchTab(this,'f-tbw','e')">סוף</button>
+              <button type="button" class="field-tab start active" data-side="s" onclick="switchTab(this,'f-tbw','s')">התחלה</button>
+              <button type="button" class="field-tab mid" data-side="m" onclick="switchTab(this,'f-tbw','m')">אמצע</button>
+              <button type="button" class="field-tab end" data-side="e" onclick="switchTab(this,'f-tbw','e')">סוף</button>
             </div>
-            <input type="number" class="field-active-input" data-field="f-tbw" data-side="s" data-ph-s="לדוגמה: 49.2" data-ph-e="לדוגמה: 49.0" placeholder="לדוגמה: 49.2" min="0" max="100" step="0.1" inputmode="decimal" oninput="storeVal(this)">
-            <input type="hidden" id="f-tbw-s"><input type="hidden" id="f-tbw-e">
+            <input type="number" class="field-active-input" data-field="f-tbw" data-side="s" data-ph-s="לדוגמה: 49.2" data-ph-m="לדוגמה: 49.0" data-ph-e="לדוגמה: 49.0" placeholder="לדוגמה: 49.2" min="0" max="100" step="0.1" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-tbw-s"><input type="hidden" id="f-tbw-m"><input type="hidden" id="f-tbw-e">
           </div>
         </div>
         <div class="form-row">
           <div class="field-card">
             <div class="field-label">ICW — תוך-תאיים (ליטר) <span class="opt">רשות</span></div>
             <div class="field-tab-row">
-              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-icw','s')">התחלה</button>
-              <button type="button" class="field-tab end" onclick="switchTab(this,'f-icw','e')">סוף</button>
+              <button type="button" class="field-tab start active" data-side="s" onclick="switchTab(this,'f-icw','s')">התחלה</button>
+              <button type="button" class="field-tab mid" data-side="m" onclick="switchTab(this,'f-icw','m')">אמצע</button>
+              <button type="button" class="field-tab end" data-side="e" onclick="switchTab(this,'f-icw','e')">סוף</button>
             </div>
-            <input type="number" class="field-active-input" data-field="f-icw" data-side="s" data-ph-s="לדוגמה: 30.7" data-ph-e="לדוגמה: 30.5" placeholder="לדוגמה: 30.7" min="0" max="80" step="0.1" inputmode="decimal" oninput="storeVal(this)">
-            <input type="hidden" id="f-icw-s"><input type="hidden" id="f-icw-e">
+            <input type="number" class="field-active-input" data-field="f-icw" data-side="s" data-ph-s="לדוגמה: 30.7" data-ph-m="לדוגמה: 30.5" data-ph-e="לדוגמה: 30.5" placeholder="לדוגמה: 30.7" min="0" max="80" step="0.1" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-icw-s"><input type="hidden" id="f-icw-m"><input type="hidden" id="f-icw-e">
           </div>
           <div class="field-card">
             <div class="field-label">ECW — חוץ-תאיים (ליטר) <span class="opt">רשות</span></div>
             <div class="field-tab-row">
-              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-ecw','s')">התחלה</button>
-              <button type="button" class="field-tab end" onclick="switchTab(this,'f-ecw','e')">סוף</button>
+              <button type="button" class="field-tab start active" data-side="s" onclick="switchTab(this,'f-ecw','s')">התחלה</button>
+              <button type="button" class="field-tab mid" data-side="m" onclick="switchTab(this,'f-ecw','m')">אמצע</button>
+              <button type="button" class="field-tab end" data-side="e" onclick="switchTab(this,'f-ecw','e')">סוף</button>
             </div>
-            <input type="number" class="field-active-input" data-field="f-ecw" data-side="s" data-ph-s="לדוגמה: 18.5" data-ph-e="לדוגמה: 18.5" placeholder="לדוגמה: 18.5" min="0" max="50" step="0.1" inputmode="decimal" oninput="storeVal(this)">
-            <input type="hidden" id="f-ecw-s"><input type="hidden" id="f-ecw-e">
+            <input type="number" class="field-active-input" data-field="f-ecw" data-side="s" data-ph-s="לדוגמה: 18.5" data-ph-m="לדוגמה: 18.5" data-ph-e="לדוגמה: 18.5" placeholder="לדוגמה: 18.5" min="0" max="50" step="0.1" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-ecw-s"><input type="hidden" id="f-ecw-m"><input type="hidden" id="f-ecw-e">
           </div>
         </div>
       </div>
@@ -863,20 +887,22 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
           <div class="field-card">
             <div class="field-label">היקף מותניים (ס״מ) <span class="req">*</span></div>
             <div class="field-tab-row">
-              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-waist','s')">התחלה</button>
-              <button type="button" class="field-tab end" onclick="switchTab(this,'f-waist','e')">סוף</button>
+              <button type="button" class="field-tab start active" data-side="s" onclick="switchTab(this,'f-waist','s')">התחלה</button>
+              <button type="button" class="field-tab mid" data-side="m" onclick="switchTab(this,'f-waist','m')">אמצע</button>
+              <button type="button" class="field-tab end" data-side="e" onclick="switchTab(this,'f-waist','e')">סוף</button>
             </div>
-            <input type="number" class="field-active-input" data-field="f-waist" data-side="s" data-ph-s="לדוגמה: 104" data-ph-e="לדוגמה: 98" placeholder="לדוגמה: 104" min="40" max="200" step="0.5" inputmode="decimal" oninput="storeVal(this)">
-            <input type="hidden" id="f-waist-s"><input type="hidden" id="f-waist-e">
+            <input type="number" class="field-active-input" data-field="f-waist" data-side="s" data-ph-s="לדוגמה: 104" data-ph-m="לדוגמה: 98" data-ph-e="לדוגמה: 98" placeholder="לדוגמה: 104" min="40" max="200" step="0.5" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-waist-s"><input type="hidden" id="f-waist-m"><input type="hidden" id="f-waist-e">
           </div>
           <div class="field-card">
             <div class="field-label">היקף שוק (ס״מ) <span class="req">*</span></div>
             <div class="field-tab-row">
-              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-calf','s')">התחלה</button>
-              <button type="button" class="field-tab end" onclick="switchTab(this,'f-calf','e')">סוף</button>
+              <button type="button" class="field-tab start active" data-side="s" onclick="switchTab(this,'f-calf','s')">התחלה</button>
+              <button type="button" class="field-tab mid" data-side="m" onclick="switchTab(this,'f-calf','m')">אמצע</button>
+              <button type="button" class="field-tab end" data-side="e" onclick="switchTab(this,'f-calf','e')">סוף</button>
             </div>
-            <input type="number" class="field-active-input" data-field="f-calf" data-side="s" data-ph-s="לדוגמה: 37" data-ph-e="לדוגמה: 37" placeholder="לדוגמה: 37" min="10" max="80" step="0.5" inputmode="decimal" oninput="storeVal(this)">
-            <input type="hidden" id="f-calf-s"><input type="hidden" id="f-calf-e">
+            <input type="number" class="field-active-input" data-field="f-calf" data-side="s" data-ph-s="לדוגמה: 37" data-ph-m="לדוגמה: 37" data-ph-e="לדוגמה: 37" placeholder="לדוגמה: 37" min="10" max="80" step="0.5" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-calf-s"><input type="hidden" id="f-calf-m"><input type="hidden" id="f-calf-e">
           </div>
         </div>
       </div>
@@ -894,51 +920,56 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
           <div class="field-card">
             <div class="field-label">כוח לפיתה — יד ימין (ק״ג) <span class="req">*</span></div>
             <div class="field-tab-row">
-              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-hgr','s')">התחלה</button>
-              <button type="button" class="field-tab end" onclick="switchTab(this,'f-hgr','e')">סוף</button>
+              <button type="button" class="field-tab start active" data-side="s" onclick="switchTab(this,'f-hgr','s')">התחלה</button>
+              <button type="button" class="field-tab mid" data-side="m" onclick="switchTab(this,'f-hgr','m')">אמצע</button>
+              <button type="button" class="field-tab end" data-side="e" onclick="switchTab(this,'f-hgr','e')">סוף</button>
             </div>
-            <input type="number" class="field-active-input" data-field="f-hgr" data-side="s" data-ph-s="לדוגמה: 38" data-ph-e="לדוגמה: 40" placeholder="לדוגמה: 38" min="0" max="100" step="0.5" inputmode="decimal" oninput="storeVal(this)">
-            <input type="hidden" id="f-hgr-s"><input type="hidden" id="f-hgr-e">
+            <input type="number" class="field-active-input" data-field="f-hgr" data-side="s" data-ph-s="לדוגמה: 38" data-ph-m="לדוגמה: 40" data-ph-e="לדוגמה: 40" placeholder="לדוגמה: 38" min="0" max="100" step="0.5" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-hgr-s"><input type="hidden" id="f-hgr-m"><input type="hidden" id="f-hgr-e">
           </div>
           <div class="field-card">
             <div class="field-label">כוח לפיתה — יד שמאל (ק״ג) <span class="req">*</span></div>
             <div class="field-tab-row">
-              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-hgl','s')">התחלה</button>
-              <button type="button" class="field-tab end" onclick="switchTab(this,'f-hgl','e')">סוף</button>
+              <button type="button" class="field-tab start active" data-side="s" onclick="switchTab(this,'f-hgl','s')">התחלה</button>
+              <button type="button" class="field-tab mid" data-side="m" onclick="switchTab(this,'f-hgl','m')">אמצע</button>
+              <button type="button" class="field-tab end" data-side="e" onclick="switchTab(this,'f-hgl','e')">סוף</button>
             </div>
-            <input type="number" class="field-active-input" data-field="f-hgl" data-side="s" data-ph-s="לדוגמה: 36" data-ph-e="לדוגמה: 38" placeholder="לדוגמה: 36" min="0" max="100" step="0.5" inputmode="decimal" oninput="storeVal(this)">
-            <input type="hidden" id="f-hgl-s"><input type="hidden" id="f-hgl-e">
+            <input type="number" class="field-active-input" data-field="f-hgl" data-side="s" data-ph-s="לדוגמה: 36" data-ph-m="לדוגמה: 38" data-ph-e="לדוגמה: 38" placeholder="לדוגמה: 36" min="0" max="100" step="0.5" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-hgl-s"><input type="hidden" id="f-hgl-m"><input type="hidden" id="f-hgl-e">
           </div>
         </div>
         <div class="form-row">
           <div class="field-card">
             <div class="field-label">SPPB (0–12) <span class="req">*</span></div>
             <div class="field-tab-row">
-              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-sppb','s')">התחלה</button>
-              <button type="button" class="field-tab end" onclick="switchTab(this,'f-sppb','e')">סוף</button>
+              <button type="button" class="field-tab start active" data-side="s" onclick="switchTab(this,'f-sppb','s')">התחלה</button>
+              <button type="button" class="field-tab mid" data-side="m" onclick="switchTab(this,'f-sppb','m')">אמצע</button>
+              <button type="button" class="field-tab end" data-side="e" onclick="switchTab(this,'f-sppb','e')">סוף</button>
             </div>
-            <input type="number" class="field-active-input" data-field="f-sppb" data-side="s" data-ph-s="לדוגמה: 11" data-ph-e="לדוגמה: 12" placeholder="לדוגמה: 11" min="0" max="12" inputmode="numeric" oninput="storeVal(this)">
-            <input type="hidden" id="f-sppb-s"><input type="hidden" id="f-sppb-e">
+            <input type="number" class="field-active-input" data-field="f-sppb" data-side="s" data-ph-s="לדוגמה: 11" data-ph-m="לדוגמה: 12" data-ph-e="לדוגמה: 12" placeholder="לדוגמה: 11" min="0" max="12" inputmode="numeric" oninput="storeVal(this)">
+            <input type="hidden" id="f-sppb-s"><input type="hidden" id="f-sppb-m"><input type="hidden" id="f-sppb-e">
           </div>
         </div>
         <div class="form-row">
           <div class="field-card">
             <div class="field-label">קימה מכיסא 30 שנ׳ (חזרות) <span class="req">*</span></div>
             <div class="field-tab-row">
-              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-sts','s')">התחלה</button>
-              <button type="button" class="field-tab end" onclick="switchTab(this,'f-sts','e')">סוף</button>
+              <button type="button" class="field-tab start active" data-side="s" onclick="switchTab(this,'f-sts','s')">התחלה</button>
+              <button type="button" class="field-tab mid" data-side="m" onclick="switchTab(this,'f-sts','m')">אמצע</button>
+              <button type="button" class="field-tab end" data-side="e" onclick="switchTab(this,'f-sts','e')">סוף</button>
             </div>
-            <input type="number" class="field-active-input" data-field="f-sts" data-side="s" data-ph-s="לדוגמה: 15" data-ph-e="לדוגמה: 17" placeholder="לדוגמה: 15" min="0" max="60" inputmode="numeric" oninput="storeVal(this)">
-            <input type="hidden" id="f-sts-s"><input type="hidden" id="f-sts-e">
+            <input type="number" class="field-active-input" data-field="f-sts" data-side="s" data-ph-s="לדוגמה: 15" data-ph-m="לדוגמה: 17" data-ph-e="לדוגמה: 17" placeholder="לדוגמה: 15" min="0" max="60" inputmode="numeric" oninput="storeVal(this)">
+            <input type="hidden" id="f-sts-s"><input type="hidden" id="f-sts-m"><input type="hidden" id="f-sts-e">
           </div>
           <div class="field-card">
             <div class="field-label">הליכה 2 דקות (מטר) <span class="req">*</span></div>
             <div class="field-tab-row">
-              <button type="button" class="field-tab start active" onclick="switchTab(this,'f-walk','s')">התחלה</button>
-              <button type="button" class="field-tab end" onclick="switchTab(this,'f-walk','e')">סוף</button>
+              <button type="button" class="field-tab start active" data-side="s" onclick="switchTab(this,'f-walk','s')">התחלה</button>
+              <button type="button" class="field-tab mid" data-side="m" onclick="switchTab(this,'f-walk','m')">אמצע</button>
+              <button type="button" class="field-tab end" data-side="e" onclick="switchTab(this,'f-walk','e')">סוף</button>
             </div>
-            <input type="number" class="field-active-input" data-field="f-walk" data-side="s" data-ph-s="לדוגמה: 178" data-ph-e="לדוגמה: 190" placeholder="לדוגמה: 178" min="0" max="500" inputmode="numeric" oninput="storeVal(this)">
-            <input type="hidden" id="f-walk-s"><input type="hidden" id="f-walk-e">
+            <input type="number" class="field-active-input" data-field="f-walk" data-side="s" data-ph-s="לדוגמה: 178" data-ph-m="לדוגמה: 190" data-ph-e="לדוגמה: 190" placeholder="לדוגמה: 178" min="0" max="500" inputmode="numeric" oninput="storeVal(this)">
+            <input type="hidden" id="f-walk-s"><input type="hidden" id="f-walk-m"><input type="hidden" id="f-walk-e">
           </div>
         </div>
       </div>
@@ -1064,18 +1095,21 @@ function handleUser(user) {
 }
 
 // ---- Sign in ----
+/* שלוש נקודות זמן: התחלה, אמצע וסוף. TAB_HE הוא גם התווית על הכפתור
+   וגם המילה שמופיעה בהודעות השגיאה על שדות חסרים. */
+const TAB_CLS = { s:'start', m:'mid', e:'end' };
+const TAB_HE  = { s:'התחלה', m:'אמצע', e:'סוף' };
+
 window.markTab = (card, side, filled) => {
-  const btn = card.querySelector(`.field-tab.${side === 's' ? 'start' : 'end'}`);
+  const btn = card.querySelector('.field-tab.' + TAB_CLS[side]);
   if (!btn) return;
-  const label = side === 's' ? 'התחלה' : 'סוף';
-  btn.textContent = filled ? '✓ ' + label : label;
+  btn.textContent = filled ? '✓ ' + TAB_HE[side] : TAB_HE[side];
   btn.classList.toggle('filled', filled);
-  // green card border when both sides filled
-  const sBtn = card.querySelector('.field-tab.start');
-  const eBtn = card.querySelector('.field-tab.end');
-  const bothDone = sBtn?.classList.contains('filled') && eBtn?.classList.contains('filled');
-  card.classList.toggle('card-done', bothDone);
-  if (bothDone) card.classList.remove('field-card--missing');
+  /* מסגרת ירוקה כשכל נקודות הזמן שהדו״ח הנבחר צריך מולאו */
+  const need = typeof activeSides === 'function' ? activeSides() : ['s','e'];
+  const done = need.every(sd => card.querySelector('.field-tab.' + TAB_CLS[sd])?.classList.contains('filled'));
+  card.classList.toggle('card-done', done);
+  if (done) card.classList.remove('field-card--missing');
 };
 
 window.switchTab = (btn, field, side) => {
@@ -1094,7 +1128,7 @@ window.switchTab = (btn, field, side) => {
   inp.placeholder = inp.dataset['ph' + side.charAt(0).toUpperCase() + side.slice(1)] || '';
   // "today" button only on the end-date side
   const todayBtn = card.querySelector('.btn-today');
-  if (todayBtn) todayBtn.style.display = (side === 'e') ? 'block' : 'none';
+  if (todayBtn) todayBtn.style.display = (side === 's') ? 'none' : 'block';
   inp.focus();
 };
 
@@ -1213,7 +1247,7 @@ window.clearForm = () => {
     inp.value = '';
     const card = inp.closest('.field-card');
     if (!card) return;
-    card.querySelectorAll('.field-tab').forEach(b => { b.classList.remove('active','filled'); b.textContent = b.classList.contains('start') ? 'התחלה' : 'סוף'; });
+    card.querySelectorAll('.field-tab').forEach(b => { b.classList.remove('active','filled'); b.textContent = TAB_HE[b.dataset.side]; });
     card.querySelector('.field-tab.start')?.classList.add('active');
     inp.dataset.side = 's';
     inp.placeholder = inp.dataset.phS || '';
@@ -1461,9 +1495,10 @@ function markPos(val, lo, hi) {
 }
 
 /**
- * שורת "מאז הכניסה למחקר": ערך התחלתי, ההפרש (חיסור) והשינוי באחוזים (חילוק).
- * מוצגת בעמודים 1-2 מתחת לערך הנוכחי.
+ * שורת ההשוואה מתחת לערך: הערך במדידה הקודמת, ההפרש והשינוי באחוזים.
+ * שם המדידה נקבע לפי נקודת הזמן שנבחרה להשוואה (ראו SINCE_LABEL).
  */
+let SINCE_LABEL = 'בכניסה למחקר';
 function since(startVal, endVal, unit, dec, mdc) {
   const s = +startVal, e = +endVal;
   if (!isFinite(s) || !isFinite(e) || s === 0) return '';
@@ -1474,7 +1509,7 @@ function since(startVal, endVal, unit, dec, mdc) {
   // הסוגריים עם הסימן מבודדים ל-LTR, אחרת דו-כיווניות ה-RTL מעיפה את ה-+/− לצד השני
   const amount = flat ? ''
               : ` ${n(Math.abs(diff), dec)}${unit} <span dir="ltr">(${pct > 0 ? '+' : '−'}${n(Math.abs(pct), 1)}%)</span>`;
-  return `<div class="since">בכניסה למחקר: <b>${n(s, dec)}${unit}</b> · שינוי: ${arrow}${amount}${sigTag(diff, mdc, flat)}</div>`;
+  return `<div class="since">${SINCE_LABEL}: <b>${n(s, dec)}${unit}</b> · שינוי: ${arrow}${amount}${sigTag(diff, mdc, flat)}</div>`;
 }
 
 /**
@@ -1553,12 +1588,14 @@ function rcCSV(text){
   return rows;
 }
 
+/* שלוש נקודות זמן במחקר, ולכל אחת אירוע משלה ב-REDCap.
+   הרמה נקבעת לפי מה שאפשר להפיק בפועל: השוואה עד הסוף, השוואה עד האמצע, או התחלה בלבד. */
+const RC_EVENT = { s:'t0_arm_1', m:'t3_arm_1', e:'followup_arm_1' };
 function rcStatus(rec, H){
-  const has = ev => rec[ev] && (rec[ev][H['rmr_measured']]||'').trim();
-  const start = has('t0_arm_1'), mid = has('t3_arm_1'), end = has('followup_arm_1');
-  if(end)  return { level:'green',  endRow:rec['followup_arm_1'], endSource:'T6', start, mid, end };
-  if(mid)  return { level:'yellow', endRow:rec['t3_arm_1'],       endSource:'t3', start, mid, end };
-  return       { level:'red',    endRow:null,                  endSource:null, start, mid, end };
+  const rowOf = sd => { const r = rec[RC_EVENT[sd]]; return (r && (r[H['rmr_measured']]||'').trim()) ? r : null; };
+  const rows = { s: rowOf('s'), m: rowOf('m'), e: rowOf('e') };
+  const level = (rows.s && rows.e) ? 'green' : (rows.s && rows.m) ? 'yellow' : 'red';
+  return { level, rows, start:!!rows.s, mid:!!rows.m, end:!!rows.e };
 }
 
 window.rcHandleFile = (inp) => {
@@ -1611,8 +1648,8 @@ function rcParse(text){
   const sel = document.getElementById('rc-select');
   sel.innerHTML = '<option value="">— בחר נחקר —</option>';
   const DECO = {
-    green:  { dot:'🟢', color:'#16a34a', note:'' },
-    yellow: { dot:'🟡', color:'#b45309', note:' — חסר T6 (הסוף לפי T3)' },
+    green:  { dot:'🟢', color:'#16a34a', note:' — התחלה וסוף' },
+    yellow: { dot:'🟡', color:'#b45309', note:' — התחלה ואמצע, אין סוף' },
     red:    { dot:'🔴', color:'#dc2626', note:' — התחלה בלבד' }
   };
   let ng=0, ny=0, nr=0;
@@ -1627,7 +1664,7 @@ function rcParse(text){
   });
   sel.style.display = 'block';
   status.innerHTML = list.length
-    ? ('נטענו ' + list.length + ' נחקרים — 🟢 ' + ng + ' מלאים · 🟡 ' + ny + ' חסר T6 · 🔴 ' + nr + ' התחלה בלבד')
+    ? ('נטענו ' + list.length + ' נחקרים — 🟢 ' + ng + ' עם סוף · 🟡 ' + ny + ' עם אמצע בלבד · 🔴 ' + nr + ' התחלה בלבד')
     : 'לא נמצאו נחקרים עם מדידות t0 בקובץ.';
 }
 
@@ -1638,32 +1675,28 @@ window.rcLoadParticipant = (id) => {
   const scr = rec['screening_arm_1'] || null;
   const t0  = rec['t0_arm_1'] || null;
   const st = rcStatus(rec, H);
-  const endRow = st.endRow;
+  const rows = st.rows;
   /** הערך של המדד בשורה, מהעמודה הראשונה שיש בה ערך. */
   const pick = (row, key) => { for(const c of rcCols(H, key)){ const v = cell(row, c); if(v) return v; } return ''; };
-  for(const key in RC_MAP){
-    rcSet('f-'+key+'-s', pick(t0, key));
-    rcSet('f-'+key+'-e', endRow ? pick(endRow, key) : '');
+  // כל שלוש נקודות הזמן ממולאות, וההחלטה מה להשוות למה נעשית אחר כך בטופס
+  for(const sd of ['s','m','e']){
+    const row = rows[sd];
+    for(const key in RC_MAP) rcSet('f-'+key+'-'+sd, row ? pick(row, key) : '');
+    // FM (ק״ג) = משקל × אחוז שומן / 100
+    rcSet('f-fm-'+sd, row ? rcFM(cell(row,'bia_weight'), cell(row,'bia_pbf')) : '');
+    rcSet('f-date-'+sd, row ? cell(row,'metabolism_date') : '');
   }
   // האם נמצאו בקובץ נתוני נוזלים, ומה בדיוק נטען — נכנס להודעת הסטטוס בהמשך
   const fluidCols = ['tbw','icw','ecw'].filter(k => rcCols(H, k).length);
-  const fluidVals = ['tbw','icw','ecw'].filter(k => {
-    const s = document.getElementById('f-'+k+'-s'), e = document.getElementById('f-'+k+'-e');
-    return (s && s.value.trim()) || (e && e.value.trim());
-  });
-  // FM (ק״ג) = משקל × אחוז שומן / 100
-  rcSet('f-fm-s', rcFM(cell(t0,'bia_weight'), cell(t0,'bia_pbf')));
-  rcSet('f-fm-e', endRow ? rcFM(cell(endRow,'bia_weight'), cell(endRow,'bia_pbf')) : '');
-  // תאריכים
-  rcSet('f-date-s', cell(t0,'metabolism_date'));
-  rcSet('f-date-e', endRow ? cell(endRow,'metabolism_date') : '');
+  const fluidVals = ['tbw','icw','ecw'].filter(k =>
+    ['s','m','e'].some(sd => { const el = document.getElementById('f-'+k+'-'+sd); return el && el.value.trim(); }));
   // שדות פשוטים
   document.getElementById('f-code').value = cell(t0,'code_participant') || id;
   document.getElementById('f-age').value = cell(scr,'cand_age');
   // גובה — שרשרת גיבוי בין עמודות ואירועים
   let height = '';
   const heightCols = ['baseline_inbody_height_avg','bia_height','dxa_inbody_height','baseline_inbody_height'];
-  for(const row of [t0, scr, endRow]){ if(height) break; for(const nm of heightCols){ const v = cell(row, nm); if(v){ height = v; break; } } }
+  for(const row of [t0, scr, rows.e, rows.m]){ if(height) break; for(const nm of heightCols){ const v = cell(row, nm); if(v){ height = v; break; } } }
   document.getElementById('f-height').value = height;
   const sx = cell(scr,'cand_sex');
   if(sx === '1') setSex('m'); else if(sx === '2') setSex('f');
@@ -1679,13 +1712,16 @@ window.rcLoadParticipant = (id) => {
   const fluidTxt = fluidVals.length ? ' · נוזלים: ' + fluidVals.map(k => k.toUpperCase()).join('/') + ' נטענו'
                  : fluidCols.length ? ' · נוזלים: העמודות קיימות בקובץ אך ריקות לנחקר/ת זה, אפשר להשלים ידנית או להשאיר ריק'
                                     : ' · נוזלים: אין עמודות TBW בקובץ, השדות אינם חובה';
+  const found = ['s','m','e'].filter(sd => st.rows[sd]).map(sd => SIDE_SHORT[sd]).join(' · ');
+  const dot = st.level === 'green' ? '🟢' : st.level === 'yellow' ? '🟡' : '🔴';
   document.getElementById('rc-status').textContent =
-    (st.level === 'green'  ? '🟢 נטען קוד ' + code + ' (מלא)' :
-     st.level === 'yellow' ? '🟡 נטען קוד ' + code + ' — אין T6, הסוף נלקח מ-T3' :
-                             '🔴 נטען קוד ' + code + ' — התחלה בלבד, אין נתוני סוף') + grpTxt + fluidTxt + '.';
-  /* אין מדידת סוף? אין מה להשוות. עוברים אוטומטית לדו״ח של נקודת זמן אחת
-     לפי מדידת הכניסה. אם יש מדידת סוף לא נוגעים בבחירה של החוקר/ת. */
-  if(!endRow){ setMode('single'); setSide('s'); }
+    dot + ' נטען קוד ' + code + ' · מדידות בקובץ: ' + (found || 'אין') + grpTxt + fluidTxt + '.';
+  /* בוחרים אוטומטית את הדו״ח הרחב ביותר שהנתונים מאפשרים,
+     והחוקר/ת יכולים לשנות אחר כך לכל צירוף אחר. */
+  if(st.rows.s && st.rows.e)      { setMode('compare'); setPair('s','e'); }
+  else if(st.rows.s && st.rows.m) { setMode('compare'); setPair('s','m'); }
+  else if(st.rows.m && st.rows.e) { setMode('compare'); setPair('m','e'); }
+  else { setMode('single'); setSide(st.rows.e ? 'e' : st.rows.m ? 'm' : 's'); }
   // גלילה חזרה לראש הטופס כדי לראות את השדות שהתמלאו
   document.querySelector('.form-body')?.scrollIntoView({ behavior:'smooth', block:'start' });
 };
@@ -1698,9 +1734,10 @@ function rcSyncVisible(){
     const df = inp.dataset.field, side = inp.dataset.side || 's';
     const h = document.getElementById(df+'-'+side); if(h) inp.value = h.value;
     const card = inp.closest('.field-card'); if(!card) return;
-    const sEl = document.getElementById(df+'-s'), eEl = document.getElementById(df+'-e');
-    markTab(card, 's', !!(sEl && sEl.value.trim()));
-    markTab(card, 'e', !!(eEl && eEl.value.trim()));
+    ['s','m','e'].forEach(sd => {
+      const el = document.getElementById(df+'-'+sd);
+      markTab(card, sd, !!(el && el.value.trim()));
+    });
   });
   ['code','age','height'].forEach(chk => {
     const el = document.getElementById('f-'+chk);
@@ -1743,6 +1780,12 @@ window.loadSample = () => {
     markTab(card, 's', true);
     const he = document.getElementById(df + '-e');
     if (he && endMap[df] !== undefined) { he.value = endMap[df]; markTab(card, 'e', true); }
+    // מדידת האמצע בדוגמה היא בדיוק באמצע הדרך בין ההתחלה לסוף
+    const hm = document.getElementById(df + '-m');
+    if (hm && endMap[df] !== undefined) {
+      const a = parseFloat(startMap[df]), b = parseFloat(endMap[df]);
+      if (isFinite(a) && isFinite(b)) { hm.value = ((a + b) / 2).toFixed(2).replace(/\.?0+$/, ''); markTab(card, 'm', true); }
+    }
   });
   // dates: start = 3 months ago, end = today
   const iso = d => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
@@ -1750,7 +1793,9 @@ window.loadSample = () => {
   const start = new Date(today); start.setMonth(start.getMonth() - 3);
   const dateInp = document.querySelector('.field-active-input[data-field="f-date"]');
   if (dateInp) { dateInp.dataset.side = 's'; dateInp.value = iso(start); markTab(dateInp.closest('.field-card'), 's', true); markTab(dateInp.closest('.field-card'), 'e', true); }
+  const mid = new Date(today); mid.setMonth(mid.getMonth() - 1);
   document.getElementById('f-date-s').value = iso(start);
+  document.getElementById('f-date-m').value = iso(mid);
   document.getElementById('f-date-e').value = iso(today);
   // simple fields
   [['f-code','לדוגמה','code'],['f-age','65','age'],['f-height','172','height']].forEach(([id,val,chk]) => {
@@ -1761,6 +1806,7 @@ window.loadSample = () => {
   });
   setSex('m');
   setGroup('intervention');
+  setMode('compare'); setPair('s','e');
   generateReport();
 };
 
@@ -1769,34 +1815,49 @@ window.loadSample = () => {
    במצב נקודת זמן אחת נדרש רק הצד שנבחר, וכל מה שמשווה בין התחלה לסוף
    (עמוד ההשוואה, "השינוי מאז הכניסה", פירוק הירידה במשקל) פשוט לא מוצג.
    ===================================================================== */
-let REPORT_MODE = 'compare';   // 'compare' | 'single'
-let SINGLE_SIDE = 'e';         // 's' = מדידת הכניסה · 'e' = מדידת הסוף
+let REPORT_MODE = 'compare';           // 'compare' | 'single'
+let CMP_FROM = 's', CMP_TO = 'e';      // איזו מדידה מול איזו, בדו״ח השוואה
+let SINGLE_SIDE = 'e';                 // איזו מדידה, בדו״ח של נקודת זמן אחת
+
+/* שם המדידה בשתי צורות: ארוכה למשפטים, וקצרה לכותרות טבלה ולתוויות */
+const SIDE_LONG  = { s:'הכניסה למחקר', m:'אמצע המחקר', e:'סוף המחקר' };
+const SIDE_SHORT = { s:'התחלה',        m:'אמצע',       e:'סוף' };
+/* אותו דבר אחרי אות היחס ב׳: "בכניסה למחקר" ולא "בהכניסה למחקר" */
+const sideB = (sd) => SIDE_LONG[sd].replace(/^ה/, '');
+/** נקודות הזמן שהדו״ח שנבחר צריך בפועל. */
+function activeSides(){ return REPORT_MODE === 'single' ? [SINGLE_SIDE] : [CMP_FROM, CMP_TO]; }
 
 window.setMode = (m) => {
   REPORT_MODE = m;
   document.getElementById('mode-compare').classList.toggle('active', m === 'compare');
   document.getElementById('mode-single').classList.toggle('active', m === 'single');
+  document.getElementById('mode-pair-row').style.display = m === 'compare' ? 'flex' : 'none';
   document.getElementById('mode-side-row').style.display = m === 'single' ? 'flex' : 'none';
+  modeHint();
+};
+window.setPair = (from, to) => {
+  CMP_FROM = from; CMP_TO = to;
+  [['pair-se','s','e'],['pair-sm','s','m'],['pair-me','m','e']].forEach(([id,f,tt]) =>
+    document.getElementById(id).classList.toggle('active', from === f && to === tt));
   modeHint();
 };
 window.setSide = (s) => {
   SINGLE_SIDE = s;
-  document.getElementById('side-s').classList.toggle('active', s === 's');
-  document.getElementById('side-e').classList.toggle('active', s === 'e');
+  ['s','m','e'].forEach(sd => document.getElementById('side-' + sd).classList.toggle('active', s === sd));
   modeHint();
 };
 function modeHint(){
   const one = REPORT_MODE === 'single';
-  const sideHe = SINGLE_SIDE === 's' ? 'הכניסה למחקר' : 'סוף המחקר';
-  document.body.classList.toggle('one-s', one && SINGLE_SIDE === 's');
-  document.body.classList.toggle('one-e', one && SINGLE_SIDE === 'e');
+  const need = activeSides();
+  // מעמעמים בטופס את נקודות הזמן שאינן חלק מהדו״ח הנבחר
+  document.querySelectorAll('.field-tab').forEach(b => b.classList.toggle('dim', !need.includes(b.dataset.side)));
   document.getElementById('mode-hint').textContent = one
-    ? `הדו״ח יוצג לפי מדידת ${sideHe} בלבד, ללא עמוד השוואה. במקומו יופיע עמוד סיכום.`
-    : 'הדו״ח יכלול עמוד השוואה בין תחילת המחקר לסופו, ולכן נדרשים ערכי התחלה וגם ערכי סוף.';
+    ? `הדו״ח יוצג לפי מדידת ${SIDE_LONG[SINGLE_SIDE]} בלבד, ללא עמוד השוואה. במקומו יופיע עמוד סיכום.`
+    : `הדו״ח יכלול עמוד השוואה בין מדידת ${SIDE_LONG[CMP_FROM]} למדידת ${SIDE_LONG[CMP_TO]}, ולכן נדרשים הערכים של שתיהן.`;
   const legend = '<div style="margin-top:6px; font-weight:600; font-size:12px;">שדה עם <span class="req">*</span> הוא חובה. שדה המסומן <span class="opt">רשות</span> יתמלא לבד אם הנתון קיים בקובץ, ואפשר להשאיר אותו ריק.</div>';
   document.getElementById('req-note').innerHTML = (one
-    ? `&#9432; יש להזין את כל שדות החובה של מדידת <b>${sideHe}</b>. הצד השני אינו נדרש`
-    : '&#9432; יש להזין את כל שדות החובה, כולל ערכי תחילת המחקר וסוף המחקר') + legend;
+    ? `&#9432; יש להזין את כל שדות החובה של מדידת <b>${SIDE_LONG[SINGLE_SIDE]}</b>. שאר נקודות הזמן אינן נדרשות`
+    : `&#9432; יש להזין את כל שדות החובה של מדידת <b>${SIDE_LONG[CMP_FROM]}</b> ושל מדידת <b>${SIDE_LONG[CMP_TO]}</b>`) + legend;
 }
 modeHint();
 
@@ -1809,12 +1870,11 @@ const PAIRED_FIELDS = [
   ['f-hgr','כוח לפיתה יד ימין'], ['f-hgl','כוח לפיתה יד שמאל'],
   ['f-sppb','SPPB'], ['f-sts','קימה מכיסא'], ['f-walk','הליכה 2 דקות']
 ];
-const SIDE_HE = { s:'התחלה', e:'סוף' };
 
 window.generateReport = () => {
   flushActiveInputs();
 
-  const sides = REPORT_MODE === 'single' ? [SINGLE_SIDE] : ['s','e'];
+  const sides = activeSides();
   const REQUIRED = [
     { id:'f-code',     label:'קוד נחקר/ת' },
     { id:'f-age',      label:'גיל' },
@@ -1824,7 +1884,7 @@ window.generateReport = () => {
   ].concat(
     // TBW / ICW / ECW אינם ברשימה: הם אינם חובה (חסרים לרוב ב-REDCap)
     PAIRED_FIELDS.flatMap(([id, label]) =>
-      sides.map(sd => ({ id: id + '-' + sd, label: label + ' — ' + SIDE_HE[sd] })))
+      sides.map(sd => ({ id: id + '-' + sd, label: label + ' — ' + SIDE_SHORT[sd] })))
   );
 
   const missing = REQUIRED.filter(f => {
@@ -1868,7 +1928,15 @@ window.generateReport = () => {
   const groupHe = group === 'intervention' ? 'קבוצת התערבות' : 'קבוצת ביקורת';
   const height = +document.getElementById('f-height').value;
 
-  const g = id => +document.getElementById(id).value || 0;
+  /* הדו״ח בנוי סביב שתי נקודות: המדידה שממנה משווים (הסיומת S) ואליה (הסיומת E).
+     כאן מחליטים אילו שדות בטופס מזינים כל אחת מהן, וכל שאר הקוד לא צריך לדעת
+     איזו נקודת זמן נבחרה בפועל. בדו״ח של נקודה אחת אין "ממנה", ולכן ערכי ה-S
+     יוצאים ריקים, ו-since() ו-delta() ממילא לא מציגים כלום כשאין ערך התחלה. */
+  const ONE  = REPORT_MODE === 'single';
+  const FROM = ONE ? null : CMP_FROM;
+  const TO   = ONE ? SINGLE_SIDE : CMP_TO;
+  const gS = key => FROM ? (+document.getElementById('f-' + key + '-' + FROM).value || 0) : 0;
+  const gE = key => +document.getElementById('f-' + key + '-' + TO).value || 0;
 
   const fmtDate = d => {
     if (!d) return '';
@@ -1879,57 +1947,45 @@ window.generateReport = () => {
   const D = {
     code: document.getElementById('f-code').value || '—',
     age, sex, height,
-    dateS: fmtDate(document.getElementById('f-date-s').value),
-    dateE: fmtDate(document.getElementById('f-date-e').value),
+    dateS: FROM ? fmtDate(document.getElementById('f-date-' + FROM).value) : '',
+    dateE: fmtDate(document.getElementById('f-date-' + TO).value),
     // metabolism
-    reeS: g('f-ree-s'), reeE: g('f-ree-e'),
-    rerS: g('f-rer-s'), rerE: g('f-rer-e'),
-    fatburnS: g('f-fatburn-s'), fatburnE: g('f-fatburn-e'),
-    chburnS: g('f-chburn-s'), chburnE: g('f-chburn-e'),
+    reeS: gS('ree'), reeE: gE('ree'),
+    rerS: gS('rer'), rerE: gE('rer'),
+    fatburnS: gS('fatburn'), fatburnE: gE('fatburn'),
+    chburnS: gS('chburn'), chburnE: gE('chburn'),
     // body comp
-    wtS: g('f-wt-s'), wtE: g('f-wt-e'),
-    fmS: g('f-fm-s'), fmE: g('f-fm-e'),
-    smmS: g('f-smm-s'), smmE: g('f-smm-e'),
-    smiS: g('f-smi-s'), smiE: g('f-smi-e'),
-    lmraS: g('f-lmra-s'), lmraE: g('f-lmra-e'),
-    lmlaS: g('f-lmla-s'), lmlaE: g('f-lmla-e'),
-    lmrlS: g('f-lmrl-s'), lmrlE: g('f-lmrl-e'),
-    lmllS: g('f-lmll-s'), lmllE: g('f-lmll-e'),
-    tbwS: g('f-tbw-s'), tbwE: g('f-tbw-e'),
-    icwS: g('f-icw-s'), icwE: g('f-icw-e'),
-    ecwS: g('f-ecw-s'), ecwE: g('f-ecw-e'),
+    wtS: gS('wt'), wtE: gE('wt'),
+    fmS: gS('fm'), fmE: gE('fm'),
+    smmS: gS('smm'), smmE: gE('smm'),
+    smiS: gS('smi'), smiE: gE('smi'),
+    lmraS: gS('lmra'), lmraE: gE('lmra'),
+    lmlaS: gS('lmla'), lmlaE: gE('lmla'),
+    lmrlS: gS('lmrl'), lmrlE: gE('lmrl'),
+    lmllS: gS('lmll'), lmllE: gE('lmll'),
+    tbwS: gS('tbw'), tbwE: gE('tbw'),
+    icwS: gS('icw'), icwE: gE('icw'),
+    ecwS: gS('ecw'), ecwE: gE('ecw'),
     // circumferences
-    waistS: g('f-waist-s'), waistE: g('f-waist-e'),
-    calfS: g('f-calf-s'), calfE: g('f-calf-e'),
+    waistS: gS('waist'), waistE: gE('waist'),
+    calfS: gS('calf'), calfE: gE('calf'),
     // functional
-    hgrS: g('f-hgr-s'), hgrE: g('f-hgr-e'),
-    hglS: g('f-hgl-s'), hglE: g('f-hgl-e'),
-    sppbS: g('f-sppb-s'), sppbE: g('f-sppb-e'),
-    stsS: g('f-sts-s'), stsE: g('f-sts-e'),
-    walkS: g('f-walk-s'), walkE: g('f-walk-e'),
+    hgrS: gS('hgr'), hgrE: gE('hgr'),
+    hglS: gS('hgl'), hglE: gE('hgl'),
+    sppbS: gS('sppb'), sppbE: gE('sppb'),
+    stsS: gS('sts'), stsE: gE('sts'),
+    walkS: gS('walk'), walkE: gE('walk'),
   };
 
-  /* דו״ח של נקודת זמן אחת.
-     כל הדו״ח בנוי סביב ערכי הסוף (הסיומת E), ולכן די למפות אליהם את הצד שנבחר
-     ולנקות את ערכי ההתחלה. מכאן והלאה שאר הקוד לא צריך לדעת באיזה מצב הוא נמצא:
-     since() ו-delta() מחזירים מחרוזת ריקה כשאין ערך התחלה, וקופסת פירוק
-     הירידה במשקל ממילא מוצגת רק כשיש ירידה. */
-  const ONE = REPORT_MODE === 'single';
-  if (ONE) {
-    Object.keys(D).forEach(k => {
-      if (!k.endsWith('S')) return;
-      const ek = k.slice(0, -1) + 'E';
-      if (!(ek in D)) return;
-      if (SINGLE_SIDE === 's') D[ek] = D[k];
-      D[k] = (typeof D[k] === 'string') ? '' : 0;
-    });
-  }
-  /* איך לקרוא למדידה שמוצגת בדו״ח: בדו״ח השוואה תמיד "סוף המחקר",
-     ובדו״ח של נקודה אחת לפי הצד שנבחר בפועל. */
-  const measureHe = !ONE ? 'סוף המחקר'
-                  : (SINGLE_SIDE === 's' ? 'הכניסה למחקר' : 'סוף המחקר');
-  // אותו דבר בלי ה״א הידיעה, לשימוש אחרי אות היחס ב׳ ("בכניסה למחקר", ולא "בהכניסה")
-  const measureB  = measureHe.replace(/^ה/, '');
+  // שמות נקודות הזמן שהדו״ח הזה מציג, לשימוש בכל הכותרות והמשפטים
+  const measureHe = SIDE_LONG[TO];        // "סוף המחקר"
+  const measureB  = sideB(TO);            // "סוף המחקר", אחרי ב׳
+  const fromHe    = FROM ? SIDE_LONG[FROM] : '';
+  const fromB     = FROM ? sideB(FROM) : '';
+  const fromShort = FROM ? SIDE_SHORT[FROM] : '';
+  // since() משתמשת בזה כדי לומר מאיזו מדידה נלקח ערך ההשוואה
+  SINCE_LABEL = FROM ? 'ב' + fromB : '';
+  const toShort   = SIDE_SHORT[TO];
 
   // Derived — END values
   const htM = height / 100;
@@ -1988,9 +2044,9 @@ window.generateReport = () => {
 
   // הערה 39 — פס תאריכים בראש כל עמוד, כדי שתאריך המדידה תמיד מול העיניים
   const dateBarEnd = (D.dateE || D.dateS)
-    ? `<div class="datebar">התוצאות בעמוד זה הן ממדידת <b>${measureHe}</b>${D.dateE ? `, ${D.dateE}` : ''}${D.dateS ? ` · מדידת הכניסה למחקר: ${D.dateS}` : ''}</div>` : '';
+    ? `<div class="datebar">התוצאות בעמוד זה הן ממדידת <b>${measureHe}</b>${D.dateE ? `, ${D.dateE}` : ''}${D.dateS ? ` · מדידת ${fromHe}: ${D.dateS}` : ''}</div>` : '';
   const dateBarCmp = (D.dateE || D.dateS)
-    ? `<div class="datebar">כניסה למחקר: <b>${D.dateS || '—'}</b> ← סוף המחקר: <b>${D.dateE || '—'}</b></div>` : '';
+    ? `<div class="datebar">${fromHe}: <b>${D.dateS || '—'}</b> ← ${measureHe}: <b>${D.dateE || '—'}</b></div>` : '';
   const walkExp = walkExpected(age, sex);
 
   const tBmi = tagOk(bmiE, NORMS.bmi.ok[0], NORMS.bmi.ok[1]);
@@ -2161,9 +2217,9 @@ ${dateBarEnd}
   ${ONE
     ? `<p>הערכים המוצגים בדו״ח הם מהבדיקה שביצעת ב<b>${measureB}</b>${D.dateE ? ` (${D.dateE})` : ''},
        ולצד כל תוצאה מופיע הטווח התקין לגילך ולמינך. בעמוד האחרון מרוכזות כל התוצאות במבט אחד.</p>`
-    : `<p>הערכים המוצגים בעמודים <span dir="ltr">1–2</span> הם מהבדיקה <b>האחרונה</b> שביצעת${D.dateE ? ` (${D.dateE})` : ''},
-       ובעמוד האחרון מוצגת <b>השוואה מלאה בין הבדיקה בכניסה למחקר${D.dateS ? ` (${D.dateS})` : ''} לבין הבדיקה האחרונה</b>,
-       כדי לראות את המגמה והשינוי לאורך המחקר.</p>`}
+    : `<p>הערכים המוצגים בעמודים <span dir="ltr">1–2</span> הם מהבדיקה שביצעת ב<b>${measureB}</b>${D.dateE ? ` (${D.dateE})` : ''},
+       ובעמוד האחרון מוצגת <b>השוואה מלאה בין הבדיקה ב${fromB}${D.dateS ? ` (${D.dateS})` : ''} לבין הבדיקה ב${measureB}</b>,
+       כדי לראות את המגמה והשינוי בין שתי נקודות הזמן.</p>`}
 </div>
 
 <div class="ptbar">
@@ -2172,8 +2228,8 @@ ${dateBarEnd}
   <div class="pt"><span class="ptl">קבוצה במחקר</span><span class="ptv">${groupHe}</span></div>
   ${ONE
     ? `<div class="pt"><span class="ptl">תאריך הבדיקה</span><span class="ptv">${D.dateE || '—'}</span></div>`
-    : `<div class="pt"><span class="ptl">כניסה למחקר</span><span class="ptv">${D.dateS || '—'}</span></div>
-       <div class="pt"><span class="ptl">בדיקה אחרונה</span><span class="ptv">${D.dateE || '—'}</span></div>`}
+    : `<div class="pt"><span class="ptl">${fromHe}</span><span class="ptv">${D.dateS || '—'}</span></div>
+       <div class="pt"><span class="ptl">${measureHe}</span><span class="ptv">${D.dateE || '—'}</span></div>`}
 </div>
 
 <div class="qbanner">
@@ -2506,11 +2562,11 @@ ${dateBarEnd}
 <div class="pagebreak compare">
 <div class="head">
   <div class="logo"><img src="images/prime/prime_logo.jpeg" alt="PRIME"></div>
-  <div class="head-txt"><h1>השוואת תוצאות, התחלה מול סוף</h1><div class="sub">המגמה שלך לאורך המחקר</div></div>
+  <div class="head-txt"><h1>השוואת תוצאות, ${fromShort} מול ${toShort}</h1><div class="sub">המגמה שלך לאורך המחקר</div></div>
   <div class="head-badge">מחקר PRIME</div>
 </div>
 ${dateBarCmp}
-<div class="lead">התוצאות שלך ב<b>תחילת המחקר</b> (מימין) לעומת <b>סופו</b> (משמאל). <b>החץ</b> מראה את כיוון השינוי, עלייה או ירידה, ו<b>הצבע</b> מראה אם השינוי הוא לטובה. שים לב שלא בכל מדד עלייה היא דבר טוב: למשל ירידה באחוז השומן היא שיפור, ולכן היא מסומנת בירוק.</div>
+<div class="lead">התוצאות שלך ב<b>${fromB}</b> (מימין) לעומת <b>${measureB}</b> (משמאל). <b>החץ</b> מראה את כיוון השינוי, עלייה או ירידה, ו<b>הצבע</b> מראה אם השינוי הוא לטובה. שים לב שלא בכל מדד עלייה היא דבר טוב: למשל ירידה באחוז השומן היא שיפור, ולכן היא מסומנת בירוק.</div>
 <div class="clegend">
   <span><span class="chip up" style="padding:1px 7px;">&#9650; ✓</span> שינוי בכיוון הרצוי</span>
   <span><span class="chip down" style="padding:1px 7px;">&#9660;</span> שינוי בכיוון ההפוך</span>
@@ -2523,18 +2579,18 @@ ${dateBarCmp}
       <div class="ccard">
         <div class="cl">הוצאה אנרגטית במנוחה (REE)</div>
         <div class="crow">
-          <div class="cside"><div class="ct">התחלה</div><div class="cv s">${Math.round(D.reeS).toLocaleString('he')}<span class="ex">קק״ל</span></div></div>
+          <div class="cside"><div class="ct">${fromShort}</div><div class="cv s">${Math.round(D.reeS).toLocaleString('he')}<span class="ex">קק״ל</span></div></div>
           ${cRee}
-          <div class="cside"><div class="ct">סוף</div><div class="cv e">${Math.round(D.reeE).toLocaleString('he')}<span class="ex">קק״ל</span></div></div>
+          <div class="cside"><div class="ct">${toShort}</div><div class="cv e">${Math.round(D.reeE).toLocaleString('he')}<span class="ex">קק״ל</span></div></div>
         </div>
         <div class="cinterp">${iRee}</div>
       </div>
       <div class="ccard">
         <div class="cl">מנת הנשימה (RER)</div>
         <div class="crow">
-          <div class="cside"><div class="ct">התחלה</div><div class="cv s">${n(D.rerS,2)}</div></div>
+          <div class="cside"><div class="ct">${fromShort}</div><div class="cv s">${n(D.rerS,2)}</div></div>
           ${cRer}
-          <div class="cside"><div class="ct">סוף</div><div class="cv e">${n(D.rerE,2)}</div></div>
+          <div class="cside"><div class="ct">${toShort}</div><div class="cv e">${n(D.rerE,2)}</div></div>
         </div>
         <div class="cinterp">${iRer}</div>
       </div>
@@ -2554,9 +2610,9 @@ ${dateBarCmp}
       <div class="ccard">
         <div class="cl">משקל</div>
         <div class="crow">
-          <div class="cside"><div class="ct">התחלה</div><div class="cv s">${n(D.wtS,1)}<span class="ex">ק״ג</span></div></div>
+          <div class="cside"><div class="ct">${fromShort}</div><div class="cv s">${n(D.wtS,1)}<span class="ex">ק״ג</span></div></div>
           ${cWt}
-          <div class="cside"><div class="ct">סוף</div><div class="cv e">${n(D.wtE,1)}<span class="ex">ק״ג</span></div></div>
+          <div class="cside"><div class="ct">${toShort}</div><div class="cv e">${n(D.wtE,1)}<span class="ex">ק״ג</span></div></div>
         </div>
         <div class="cinterp">${iWt}</div>
       </div>
@@ -2576,18 +2632,18 @@ ${dateBarCmp}
       <div class="ccard">
         <div class="cl">מסה רזה (FFM)</div>
         <div class="crow">
-          <div class="cside"><div class="ct">התחלה</div><div class="cv s">${n(ffmS,1)}<span class="ex">ק״ג</span></div></div>
+          <div class="cside"><div class="ct">${fromShort}</div><div class="cv s">${n(ffmS,1)}<span class="ex">ק״ג</span></div></div>
           ${cFfm}
-          <div class="cside"><div class="ct">סוף</div><div class="cv e">${n(ffmE,1)}<span class="ex">ק״ג</span></div></div>
+          <div class="cside"><div class="ct">${toShort}</div><div class="cv e">${n(ffmE,1)}<span class="ex">ק״ג</span></div></div>
         </div>
         <div class="cinterp">${iFfm}</div>
       </div>
       <div class="ccard">
         <div class="cl">מסת שריר (SMM)</div>
         <div class="crow">
-          <div class="cside"><div class="ct">התחלה</div><div class="cv s">${n(D.smmS,1)}<span class="ex">ק״ג</span></div></div>
+          <div class="cside"><div class="ct">${fromShort}</div><div class="cv s">${n(D.smmS,1)}<span class="ex">ק״ג</span></div></div>
           ${cSmm}
-          <div class="cside"><div class="ct">סוף</div><div class="cv e">${n(D.smmE,1)}<span class="ex">ק״ג</span></div></div>
+          <div class="cside"><div class="ct">${toShort}</div><div class="cv e">${n(D.smmE,1)}<span class="ex">ק״ג</span></div></div>
         </div>
         <div class="cinterp">${iSmm}</div>
       </div>
@@ -2599,36 +2655,36 @@ ${dateBarCmp}
       <div class="ccard">
         <div class="cl">BMI</div>
         <div class="crow">
-          <div class="cside"><div class="ct">התחלה</div><div class="cv s">${n(bmiS,1)}</div></div>
+          <div class="cside"><div class="ct">${fromShort}</div><div class="cv s">${n(bmiS,1)}</div></div>
           ${cBmi}
-          <div class="cside"><div class="ct">סוף</div><div class="cv e">${n(bmiE,1)}</div></div>
+          <div class="cside"><div class="ct">${toShort}</div><div class="cv e">${n(bmiE,1)}</div></div>
         </div>
         <div class="cinterp">${iBmi}</div>
       </div>
       <div class="ccard">
         <div class="cl">היקף מותניים</div>
         <div class="crow">
-          <div class="cside"><div class="ct">התחלה</div><div class="cv s">${n(D.waistS,0)}<span class="ex">ס״מ</span></div></div>
+          <div class="cside"><div class="ct">${fromShort}</div><div class="cv s">${n(D.waistS,0)}<span class="ex">ס״מ</span></div></div>
           ${cWaist}
-          <div class="cside"><div class="ct">סוף</div><div class="cv e">${n(D.waistE,0)}<span class="ex">ס״מ</span></div></div>
+          <div class="cside"><div class="ct">${toShort}</div><div class="cv e">${n(D.waistE,0)}<span class="ex">ס״מ</span></div></div>
         </div>
         <div class="cinterp">${iWaist}</div>
       </div>
       <div class="ccard">
         <div class="cl">יחס מותן-גובה (WHtR)</div>
         <div class="crow">
-          <div class="cside"><div class="ct">התחלה</div><div class="cv s">${n(whtrS,2)}</div></div>
+          <div class="cside"><div class="ct">${fromShort}</div><div class="cv s">${n(whtrS,2)}</div></div>
           ${cWhtr}
-          <div class="cside"><div class="ct">סוף</div><div class="cv e">${n(whtrE,2)}</div></div>
+          <div class="cside"><div class="ct">${toShort}</div><div class="cv e">${n(whtrE,2)}</div></div>
         </div>
         <div class="cinterp">${iWhtr}</div>
       </div>
       <div class="ccard">
         <div class="cl">היקף שוק</div>
         <div class="crow">
-          <div class="cside"><div class="ct">התחלה</div><div class="cv s">${n(D.calfS,0)}<span class="ex">ס״מ</span></div></div>
+          <div class="cside"><div class="ct">${fromShort}</div><div class="cv s">${n(D.calfS,0)}<span class="ex">ס״מ</span></div></div>
           ${cCalf}
-          <div class="cside"><div class="ct">סוף</div><div class="cv e">${n(D.calfE,0)}<span class="ex">ס״מ</span></div></div>
+          <div class="cside"><div class="ct">${toShort}</div><div class="cv e">${n(D.calfE,0)}<span class="ex">ס״מ</span></div></div>
         </div>
         <div class="cinterp">${iCalf}</div>
       </div>
@@ -2640,45 +2696,45 @@ ${dateBarCmp}
       <div class="ccard">
         <div class="cl">כוח לפיתה, יד ימין</div>
         <div class="crow">
-          <div class="cside"><div class="ct">התחלה</div><div class="cv s">${n(D.hgrS,1)}<span class="ex">ק״ג</span></div></div>
+          <div class="cside"><div class="ct">${fromShort}</div><div class="cv s">${n(D.hgrS,1)}<span class="ex">ק״ג</span></div></div>
           ${cHgR}
-          <div class="cside"><div class="ct">סוף</div><div class="cv e">${n(D.hgrE,1)}<span class="ex">ק״ג</span></div></div>
+          <div class="cside"><div class="ct">${toShort}</div><div class="cv e">${n(D.hgrE,1)}<span class="ex">ק״ג</span></div></div>
         </div>
         <div class="cinterp">${iHgR}${mSig(D.hgrS, D.hgrE, NORMS.mdc.hg)}</div>
       </div>
       <div class="ccard">
         <div class="cl">כוח לפיתה, יד שמאל</div>
         <div class="crow">
-          <div class="cside"><div class="ct">התחלה</div><div class="cv s">${n(D.hglS,1)}<span class="ex">ק״ג</span></div></div>
+          <div class="cside"><div class="ct">${fromShort}</div><div class="cv s">${n(D.hglS,1)}<span class="ex">ק״ג</span></div></div>
           ${cHgL}
-          <div class="cside"><div class="ct">סוף</div><div class="cv e">${n(D.hglE,1)}<span class="ex">ק״ג</span></div></div>
+          <div class="cside"><div class="ct">${toShort}</div><div class="cv e">${n(D.hglE,1)}<span class="ex">ק״ג</span></div></div>
         </div>
         <div class="cinterp">${iHgL}${mSig(D.hglS, D.hglE, NORMS.mdc.hg)}</div>
       </div>
       <div class="ccard">
         <div class="cl">סוללת מבחנים קצרה <span dir="ltr">(SPPB)</span></div>
         <div class="crow">
-          <div class="cside"><div class="ct">התחלה</div><div class="cv s">${D.sppbS}<span class="ex" dir="ltr">/12</span></div></div>
+          <div class="cside"><div class="ct">${fromShort}</div><div class="cv s">${D.sppbS}<span class="ex" dir="ltr">/12</span></div></div>
           ${cSppb}
-          <div class="cside"><div class="ct">סוף</div><div class="cv e">${D.sppbE}<span class="ex" dir="ltr">/12</span></div></div>
+          <div class="cside"><div class="ct">${toShort}</div><div class="cv e">${D.sppbE}<span class="ex" dir="ltr">/12</span></div></div>
         </div>
         <div class="cinterp">${iSppb}${mSig(D.sppbS, D.sppbE, NORMS.mdc.sppb)}</div>
       </div>
       <div class="ccard">
         <div class="cl">קימה מכיסא <span class="nb" dir="ltr">(30s STS)</span></div>
         <div class="crow">
-          <div class="cside"><div class="ct">התחלה</div><div class="cv s">${D.stsS}<span class="ex">חזרות</span></div></div>
+          <div class="cside"><div class="ct">${fromShort}</div><div class="cv s">${D.stsS}<span class="ex">חזרות</span></div></div>
           ${cSts}
-          <div class="cside"><div class="ct">סוף</div><div class="cv e">${D.stsE}<span class="ex">חזרות</span></div></div>
+          <div class="cside"><div class="ct">${toShort}</div><div class="cv e">${D.stsE}<span class="ex">חזרות</span></div></div>
         </div>
         <div class="cinterp">${iSts}${mSig(D.stsS, D.stsE, NORMS.mdc.sts)}</div>
       </div>
       <div class="ccard">
         <div class="cl">הליכה 2 דקות <span dir="ltr">(2-min walk)</span></div>
         <div class="crow">
-          <div class="cside"><div class="ct">התחלה</div><div class="cv s">${D.walkS}<span class="ex">מטר</span></div></div>
+          <div class="cside"><div class="ct">${fromShort}</div><div class="cv s">${D.walkS}<span class="ex">מטר</span></div></div>
           ${cWalk}
-          <div class="cside"><div class="ct">סוף</div><div class="cv e">${D.walkE}<span class="ex">מטר</span></div></div>
+          <div class="cside"><div class="ct">${toShort}</div><div class="cv e">${D.walkE}<span class="ex">מטר</span></div></div>
         </div>
         <div class="cinterp">${iWalk}${mSig(D.walkS, D.walkE, NORMS.mdc.walk)}</div>
       </div>
@@ -2805,7 +2861,7 @@ ${dateBarEnd}
   document.getElementById('form-screen').style.display = 'none';
   document.getElementById('report-screen').style.display = 'block';
   // נתונים שחלון השליחה צריך: קוד לשם הקובץ, ומין לניסוח הפנייה
-  window.__report = { code: D.code, sex: sex, one: ONE, when: measureHe };
+  window.__report = { code: D.code, sex: sex, one: ONE, when: measureHe, whenB: measureB, from: fromB };
   window.scrollTo(0, 0);
 };
 
@@ -2823,13 +2879,15 @@ const SEND_SECRET = "lgGnSJZnAsfIs4W822y0k7F6";
 function mailBody(sex) {
   /* בדו״ח של נקודת זמן אחת אין השוואה, ולכן ההודעה לא מבטיחה כזו */
   const one  = !!(window.__report && window.__report.one);
-  const when = (window.__report && window.__report.when) || 'סוף המחקר';
+  const when  = (window.__report && window.__report.when)  || 'סוף המחקר';   // עם ה״א הידיעה
+  const whenB = (window.__report && window.__report.whenB) || 'סוף המחקר';   // אחרי אות היחס ב׳
+  const from  = (window.__report && window.__report.from)  || 'כניסה למחקר';
   const scope = one
     ? `, מבדיקת ${when}.`
-    : ', בהשוואה בין תחילת המחקר לסופו.';
+    : `, בהשוואה בין הבדיקה ב${from} לבדיקה ב${whenB}.`;
   const purpose = one
     ? 'הדו״ח נועד לתת לך תמונה ברורה על הגוף שלך ועל מיקום התוצאות שלך מול הטווחים המומלצים לגילך ולמינך.'
-    : 'הדו״ח נועד לתת לך תמונה ברורה על הגוף שלך ועל השינויים שעברת במהלך המחקר.';
+    : 'הדו״ח נועד לתת לך תמונה ברורה על הגוף שלך ועל השינויים שעברת בין שתי נקודות הזמן.';
   return `שלום,
 
 תודה רבה על ההשתתפות שלך במחקר PRIME ועל שיתוף הפעולה לאורך הדרך.

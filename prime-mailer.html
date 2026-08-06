@@ -159,7 +159,17 @@
     <button type="button" class="phase-tab" id="grp-control" onclick="setGroup('control','manual')">👥 קבוצת ביקורת</button>
     <button type="button" class="phase-tab" id="grp-interv" onclick="setGroup('intervention','manual')">💪 קבוצת התערבות</button>
   </div>
-  <div id="group-note" style="display:none; margin-top:-10px; margin-bottom:18px; font-size:12.5px; font-weight:700; line-height:1.7;"></div>
+  <div id="group-note" style="display:none; margin-top:-10px; margin-bottom:6px; font-size:12.5px; font-weight:700; line-height:1.7;"></div>
+  <div id="roster-bar" style="display:none; margin-bottom:18px; background:#f0fdfa; border:2px dashed #99f6e4;
+       border-radius:12px; padding:11px 14px; font-size:12.5px; color:#0f766e; line-height:1.8;">
+    <input type="file" id="rc-file" accept=".csv" style="display:none;" onchange="rosterFile(this)">
+    <b>הקצאת הקבוצות נלקחת מקובץ ה-REDCap.</b>
+    <button type="button" onclick="document.getElementById('rc-file').click()"
+      style="margin-right:8px;background:#0d9488;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;">📤 טעינת קובץ CSV</button>
+    <button type="button" onclick="rosterClear()" id="roster-clear"
+      style="display:none;margin-right:6px;background:#f1f5f9;color:#475569;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">ניקוי</button>
+    <div id="roster-status" style="margin-top:5px;"></div>
+  </div>
 
   <div class="grid">
     <!-- Inputs -->
@@ -180,7 +190,7 @@
         <button type="button" class="phase-tab" id="gen-m" onclick="setGender('m')">זכר</button>
       </div>
       <label>מייל הנחקר/ת</label>
-      <input type="email" id="m-email" placeholder="name@example.com" oninput="render()" onblur="loadHistory()">
+      <input type="email" id="m-email" placeholder="name@example.com" oninput="render()" onblur="loadHistory(); resolveGroup();">
       <div id="email-warn" class="fld-warn"></div>
       <div id="hist-box"></div>
       <div class="two">
@@ -602,15 +612,129 @@ window.setGroup = (g, src)=>{
   loadTemplate(); render();
 };
 
-/** מזהה קבוצה מתוך טקסט של אירוע יומן. מחזיר '' כשאין אזכור ברור. */
-function groupFromText(txt){
-  const s = String(txt || '');
-  const interv  = /התערבות|אינטרוונציה|intervention/i.test(s);
-  const control = /ביקורת|קונטרול|control/i.test(s);
-  if (interv && !control) return 'intervention';
-  if (control && !interv) return 'control';
-  return '';   // אין אזכור, או ששניהם מופיעים ואי אפשר להכריע
+/* ===== הקצאת הקבוצות מקובץ ה-REDCap =====
+   ביומן אין קבוצה, ולכן המקור היחיד האמין הוא arm_allocation ב-REDCap
+   (1 = התערבות, 2 = ביקורת, אומת מול אמיר רובין). טוענים את הקובץ פעם אחת,
+   שומרים ממנו רק מה שדרוש להתאמה, וההתאמה עצמה היא לפי מייל, ואם אין, לפי שם מלא.
+   הרשימה נשמרת מקומית בדפדפן בלבד ואינה נשלחת לשום מקום. */
+const ROSTER_KEY = 'prime_mailer_roster';
+const RC_ARM = { '1': 'intervention', '2': 'control' };
+let ROSTER = { byEmail:{}, byName:{}, n:0, at:'' };
+
+const normEmail = (v) => String(v||'').trim().toLowerCase();
+const normName  = (v) => String(v||'').replace(/[\s'"\u05f3\u05f4]+/g, ' ').trim();
+
+function rcCSV(text){
+  if(text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const rows = []; let row = [], cur = '', q = false;
+  for(let i=0;i<text.length;i++){
+    const c = text[i];
+    if(q){
+      if(c === '"'){ if(text[i+1] === '"'){ cur+='"'; i++; } else q = false; }
+      else cur += c;
+    } else {
+      if(c === '"') q = true;
+      else if(c === ','){ row.push(cur); cur=''; }
+      else if(c === '\n'){ row.push(cur); rows.push(row); row=[]; cur=''; }
+      else if(c === '\r'){ /* skip */ }
+      else cur += c;
+    }
+  }
+  if(cur !== '' || row.length){ row.push(cur); rows.push(row); }
+  return rows;
 }
+
+window.rosterFile = (inp) => {
+  const f = inp.files && inp.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = e => { try { rosterParse(e.target.result); }
+                    catch(err){ rosterStatus('שגיאה בקריאת הקובץ: ' + err.message, true); } };
+  r.readAsText(f, 'utf-8');
+  inp.value = '';
+};
+
+function rosterParse(text){
+  const rows = rcCSV(text);
+  if(rows.length < 2) return rosterStatus('הקובץ ריק או לא תקין.', true);
+  const H = {}; rows[0].forEach((h,i)=> H[h.trim()] = i);
+  if(H['record_id'] == null || H['arm_allocation'] == null)
+    return rosterStatus('לא נמצאו העמודות record_id / arm_allocation. יש לייצא CSV raw data.', true);
+  const get = (row,name) => (name != null && H[name] != null) ? (row[H[name]]||'').trim() : '';
+  // איסוף לפי record_id: הפרטים והשיבוץ מפוזרים בין אירועים שונים של אותו נחקר
+  const per = {};
+  for(let i=1;i<rows.length;i++){
+    const row = rows[i]; const id = get(row,'record_id'); if(!id) continue;
+    const o = per[id] = per[id] || { arm:'', email:'', fname:'', lname:'', code:'' };
+    o.arm   = o.arm   || get(row,'arm_allocation');
+    o.email = o.email || get(row,'cand_email');
+    o.fname = o.fname || get(row,'cand_fname');
+    o.lname = o.lname || get(row,'cand_lname');
+    o.code  = o.code  || get(row,'code_participant');
+  }
+  const byEmail = {}, byName = {}, dupName = {};
+  let n = 0;
+  Object.keys(per).forEach(id => {
+    const o = per[id], group = RC_ARM[o.arm];
+    if(!group) return;                       // מי שלא שובץ אינו מעניין אותנו כאן
+    n++;
+    const rec = { group, code:o.code, name: normName(o.fname + ' ' + o.lname) };
+    if(o.email) byEmail[normEmail(o.email)] = rec;
+    if(rec.name){
+      if(byName[rec.name] && byName[rec.name].group !== group) dupName[rec.name] = true;
+      byName[rec.name] = rec;
+    }
+  });
+  // שם שמופיע פעמיים עם שיבוץ שונה אינו ראיה, ולכן יורד מההתאמה לפי שם
+  Object.keys(dupName).forEach(k => delete byName[k]);
+  ROSTER = { byEmail, byName, n, at: new Date().toLocaleDateString('he-IL') };
+  try { localStorage.setItem(ROSTER_KEY, JSON.stringify(ROSTER)); } catch(e){}
+  rosterStatus('');
+  resolveGroup();
+}
+
+function rosterStatus(err, isErr){
+  const el = document.getElementById('roster-status');
+  document.getElementById('roster-clear').style.display = ROSTER.n ? 'inline-block' : 'none';
+  if(err){ el.style.color = isErr ? '#dc2626' : '#0f766e'; el.textContent = err; return; }
+  el.style.color = ROSTER.n ? '#15803d' : '#b45309';
+  el.textContent = ROSTER.n
+    ? `✓ נטענו ${ROSTER.n} נחקרים משובצים · עודכן ${ROSTER.at}`
+    : 'עדיין לא נטען קובץ. בלי הקובץ יש לבחור את הקבוצה ידנית בכל שליחה.';
+}
+
+window.rosterClear = () => {
+  ROSTER = { byEmail:{}, byName:{}, n:0, at:'' };
+  try { localStorage.removeItem(ROSTER_KEY); } catch(e){}
+  rosterStatus('');
+};
+
+function rosterLoad(){
+  try {
+    const raw = localStorage.getItem(ROSTER_KEY);
+    if(raw){ const o = JSON.parse(raw); if(o && o.byEmail) ROSTER = o; }
+  } catch(e){}
+  rosterStatus('');
+}
+
+// נטען כבר עם הדף, כדי שהרשימה תהיה זמינה בלי תלות בסדר ההתחברות
+rosterLoad();
+
+/** מחפש את הנחקר/ת ברשימה: קודם לפי מייל, ואם אין, לפי שם מלא. */
+function rosterFind(){
+  const em = normEmail(document.getElementById('m-email').value);
+  if(em && ROSTER.byEmail[em]) return { rec: ROSTER.byEmail[em], by:'מייל' };
+  const nm = normName(document.getElementById('m-name').value);
+  if(nm && ROSTER.byName[nm]) return { rec: ROSTER.byName[nm], by:'שם' };
+  return null;
+}
+
+/** קובע את הקבוצה מה-REDCap כשאפשר. לא דורס בחירה ידנית. */
+window.resolveGroup = () => {
+  if(!groupNeeded() || GROUP_SRC === 'manual') return;
+  const hit = rosterFind();
+  if(hit) setGroup(hit.rec.group, 'redcap:' + hit.by);
+  else render();
+};
 
 /** האם השלב הנוכחי דורש קבוצה, והאם היא נבחרה */
 function groupNeeded(){ return PHASE !== 'start'; }
@@ -653,6 +777,7 @@ window.renderLock = function renderLock(){
 function initApp(){
   setGender('f');
   setGroup('');
+  rosterLoad();
   setSite('assuta');   // ברירת מחדל
   loadTemplate();
   render();
@@ -749,14 +874,21 @@ window.render = ()=>{
   const gnote = document.getElementById('group-note');
   if(!groupNeeded()){
     gnote.style.display = 'none';
+    document.getElementById('roster-bar').style.display = 'none';
   } else if(!GROUP){
     gnote.style.display = 'block';
     gnote.style.color = '#dc2626';
-    gnote.textContent = '⚠️ לא זוהתה הקבוצה של הנחקר/ת. יש לבחור התערבות או ביקורת — הנוסח והקבצים המצורפים תלויים בה.';
+    gnote.textContent = ROSTER.n
+      ? '⚠️ הנחקר/ת לא נמצא/ה בקובץ ה-REDCap לפי המייל או השם. יש לבחור קבוצה ידנית — הנוסח והקבצים המצורפים תלויים בה.'
+      : '⚠️ לא זוהתה הקבוצה. אפשר לטעון את קובץ ה-REDCap כדי שתישאב אוטומטית, או לבחור ידנית.';
+    document.getElementById('roster-bar').style.display = 'block';
   } else {
-    const SRC_HE = { calendar:'זוהתה מהאירוע ביומן', history:'נלקחה משליחה קודמת לנחקר/ת', manual:'נבחרה ידנית' };
+    const SRC_HE = { 'redcap:מייל':'מקובץ ה-REDCap, לפי המייל',
+                     'redcap:שם':'מקובץ ה-REDCap, לפי השם',
+                     history:'נלקחה משליחה קודמת לנחקר/ת', manual:'נבחרה ידנית' };
     gnote.style.display = 'block';
     gnote.style.color = GROUP_SRC === 'manual' ? '#64748b' : '#15803d';
+    document.getElementById('roster-bar').style.display = 'block';
     gnote.textContent = '✓ קבוצת ' + (GROUP==='control' ? 'ביקורת' : 'התערבות') + ' · ' + (SRC_HE[GROUP_SRC] || '');
   }
   const files = ATTACHMENTS[fileKey()] || [];
@@ -892,10 +1024,11 @@ function applyCalEvent(ev){
   if(t) document.getElementById('m-time').value = t;
   if(ev.site)  setSite(ev.site);
   if(ev.phase) setPhase(ev.phase);
-  /* הקבוצה נלקחת מטקסט האירוע ביומן אם הוא מציין אותה. אם לא, משאירים ריק
-     בכוונה: loadHistory תנסה להשלים מהיסטוריית השליחות, ואם גם שם אין,
-     החוקר/ת יבחרו ידנית. עדיף לשאול מאשר לנחש קבוצה. */
-  setGroup(groupFromText([ev.title, ev.location, ev.name].join(' ')), 'calendar');
+  /* ביומן אין קבוצה, ולכן היא נשאבת מקובץ ה-REDCap לפי המייל או השם.
+     אם אין קובץ או שאין התאמה, loadHistory תנסה להשלים משליחה קודמת,
+     ואם גם שם אין, החוקר/ת יבחרו ידנית. עדיף לשאול מאשר לנחש קבוצה. */
+  setGroup('');
+  resolveGroup();
   render();
   loadHistory();
   const miss = [];

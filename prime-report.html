@@ -275,6 +275,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
 .nsig{ display:inline-block; background:#f1f5f9; color:#64748b; border-radius:5px;
        padding:0 5px; font-size:9.5px; font-weight:600; }
 .grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+.grid.g2, .grid.g4{ grid-template-columns:repeat(2,1fr); }
 .grid2{ display:grid; grid-template-columns:repeat(2,1fr); gap:18px; }
 .pagebreak{ break-before:page; }
 .summary{ background:var(--teal-l); border-radius:12px; padding:15px 22px; font-size:14px; color:#0f5e57; line-height:1.6; margin-top:18px; }
@@ -1966,6 +1967,9 @@ window.generateReport = () => {
   const asmmPctE = (asmmE !== null && D.wtE > 0) ? asmmE / D.wtE * 100 : null;
   const asmmPctS = (asmmS !== null && D.wtS > 0) ? asmmS / D.wtS * 100 : null;
   const asmmMin  = sex === 'm' ? NORMS.asmmPct.okM : NORMS.asmmPct.okF;
+  /* גריד ההרכב מכיל 2 עד 4 כרטיסים, תלוי מה נמדד בפועל. שלושה יושבים יפה בשורה
+     אחת; שניים או ארבעה נראים מאוזנים יותר בשתי עמודות. */
+  const bodyCards = 2 + (asmmPctE !== null ? 1 : 0) + (hasFluidTotal ? 1 : 0);
   // פער בין ימין לשמאל — דף הפענוח של אסף מסמן פער מעל 5% כממצא שדורש התייחסות
   const gapPct = (r, l) => {
     const a = +r, b = +l;
@@ -2251,7 +2255,7 @@ ${dateBarEnd}
 <div class="section">
   <div class="sec-head"><div class="sec-num">3</div><h2>בדיקת הרכב גוף באמצעות מכשיר ה-InBody, או במילים אחרות: ממה המשקל שלך מורכב?</h2></div>
   <div class="lead">זרם חשמלי חלש עובר בגוף ומעריך את הרכבו: <b>מים</b>, <b>שומן</b>, <b>רקמה נטולת שומן</b> (שמתוכה מסה רזה ומסת שריר), <b>מינרלים</b> ו<b>עצם</b>. חשוב לדעת: המכשיר מודד מסה נטולת שומן, ומסת השריר היא אומדן הנגזר ממנה, ולא מדידה ישירה.</div>
-  <div class="grid">
+  <div class="grid g${bodyCards}">
     <div class="card">
       <div class="label">מסת שומן · Fat Mass&nbsp;<span class="nb">(FM)</span></div>
       <div class="val">${n(D.fmE,1)} <small>ק״ג · ${n(fatPctE,1)}% אחוז שומן</small></div>
@@ -2281,8 +2285,7 @@ ${dateBarEnd}
         <div class="scale"><span>נמוך · סיכון</span><span>גבולי</span><span>תקין</span></div>
       </div>
       <div class="note">SMI תקין: <b>גברים מעל 7.0</b> · <b>נשים מעל 5.5</b> ק״ג/מ² ${tSmi}
-        <div class="ref">Cruz-Jentoft AJ et al., EWGSOP2, Age Ageing 2019;48:16-31</div></div>`
-      : `<div class="note"><span class="tag warn">לא הוזן SMI</span></div>`}
+        <div class="ref">Cruz-Jentoft AJ et al., EWGSOP2, Age Ageing 2019;48:16-31</div></div>` : ''}
     </div>
     ${asmmPctE !== null ? `<div class="card">
       <div class="label">מסת שריר בגפיים&nbsp;<span class="nb">(ASMM)</span></div>
@@ -2311,11 +2314,7 @@ ${dateBarEnd}
       <div class="val">${n(D.tbwE,1)} <small>ליטר</small></div>
       ${since(D.tbwS, D.tbwE, " ל׳", 1)}
       <div class="desc"><b>סך</b> המים בגוף, כ-${Math.round(D.wtE > 0 ? D.tbwE / D.wtE * 100 : 0)}% ממשקל הגוף. רוב המים בגוף נמצאים בתוך השריר, ולכן שמירה על מסת השריר שומרת גם על מאגר הנוזלים.</div>
-      <div class="note">הפירוק לנוזל תוך-תאי וחוץ-תאי לא נמדד בבדיקה זו, ולכן יחס ECW/TBW אינו מוצג.</div>
-    </div>` : `<div class="card" style="opacity:.55;">
-      <div class="label">נוזלים · Total Body Water&nbsp;<span class="nb">(TBW)</span></div>
-      <div class="desc" style="margin-top:16px;">לא נמדד בבדיקה זו.</div>
-    </div>`}
+    </div>` : ''}
   </div>
   ${ONE ? `
   <div class="lossbox">
@@ -2721,7 +2720,7 @@ ${dateBarCmp}
   // מול הטווח התקין, יחד עם ההמלצות ופרטי הקשר שהיו בעמוד ההשוואה.
   // ================================================================
   const sRow = (label, val, ref, tag) =>
-    `<tr><td class="sl">${label}</td><td class="sv">${val}</td><td class="sr">${ref || '—'}</td><td class="sg">${tag || ''}</td></tr>`;
+    `<tr><td class="sl">${label}</td><td class="sv">${val}</td><td class="sr">${ref || ''}</td><td class="sg">${tag || ''}</td></tr>`;
 
   const sTable = (title, rows) => rows.length ? `<div class="stbl">
       <div class="stbl-h">${title}</div>

@@ -741,6 +741,28 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
             <input type="hidden" id="f-chburn-s"><input type="hidden" id="f-chburn-m"><input type="hidden" id="f-chburn-e">
           </div>
         </div>
+        <div class="form-row">
+          <div class="field-card">
+            <div class="field-label">צריכת חלבון מאיסוף שתן (גרם ליום) <span class="opt">רשות</span></div>
+            <div class="field-tab-row">
+              <button type="button" class="field-tab start active" data-side="s" onclick="switchTab(this,'f-prot','s')">התחלה</button>
+              <button type="button" class="field-tab mid" data-side="m" onclick="switchTab(this,'f-prot','m')">אמצע</button>
+              <button type="button" class="field-tab end" data-side="e" onclick="switchTab(this,'f-prot','e')">סוף</button>
+            </div>
+            <input type="number" class="field-active-input" data-field="f-prot" data-side="s" data-ph-s="לדוגמה: 78" data-ph-m="לדוגמה: 78" data-ph-e="לדוגמה: 78" placeholder="לדוגמה: 78" min="0" max="400" step="0.01" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-prot-s"><input type="hidden" id="f-prot-m"><input type="hidden" id="f-prot-e">
+          </div>
+          <div class="field-card">
+            <div class="field-label">מאזן חנקן (גרם ליום) <span class="opt">רשות</span></div>
+            <div class="field-tab-row">
+              <button type="button" class="field-tab start active" data-side="s" onclick="switchTab(this,'f-nbal','s')">התחלה</button>
+              <button type="button" class="field-tab mid" data-side="m" onclick="switchTab(this,'f-nbal','m')">אמצע</button>
+              <button type="button" class="field-tab end" data-side="e" onclick="switchTab(this,'f-nbal','e')">סוף</button>
+            </div>
+            <input type="number" class="field-active-input" data-field="f-nbal" data-side="s" data-ph-s="לדוגמה: -3.8" data-ph-m="לדוגמה: -3.8" data-ph-e="לדוגמה: -3.8" placeholder="לדוגמה: -3.8" min="-60" max="60" step="0.01" inputmode="decimal" oninput="storeVal(this)">
+            <input type="hidden" id="f-nbal-s"><input type="hidden" id="f-nbal-m"><input type="hidden" id="f-nbal-e">
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1555,6 +1577,14 @@ const RC_ARM = { '1': 'intervention', '2': 'control' };
       לקחת את הערך מהצד שנמדד בפועל ולא רק מימין.
    2. נוזלים — אינם מופיעים בכל ייצוא, ולעיתים תחת שם עמודה אחר.
    בשני המקרים עוברים על המועמדים לפי הסדר ולוקחים את הראשון שיש בו ערך. */
+/* איסוף שתן 24 שעות נעשה בכניסה ובסוף בלבד, ולכל אחד מהם עמודה בשם אחר
+   (הסיומת _t0 מול _t6). אין מדידה כזו באמצע המחקר, ולכן m ריק.
+   הערכים כבר מחושבים ב-REDCap ואנחנו רק קוראים אותם. */
+const RC_PER_SIDE = {
+  prot: { s:'protein_intake_t0', m:'', e:'protein_intake_t6' },
+  nbal: { s:'nitrogenb_t0',      m:'', e:'nitrogenb_t6' }
+};
+
 const RC_ALT = {
   calf: ['bc_avg_rcalf_anthro','bc_avg_lcalf_anthro','bc_rcalf_anthro','bc_lcalf_anthro'],
   tbw: ['bia_tbw','bia_tbw_l','bia_total_body_water','inbody_tbw','tbw'],
@@ -1682,6 +1712,10 @@ window.rcLoadParticipant = (id) => {
   for(const sd of ['s','m','e']){
     const row = rows[sd];
     for(const key in RC_MAP) rcSet('f-'+key+'-'+sd, row ? pick(row, key) : '');
+    for(const key in RC_PER_SIDE){
+      const col = RC_PER_SIDE[key][sd];
+      rcSet('f-'+key+'-'+sd, (row && col) ? cell(row, col) : '');
+    }
     // FM (ק״ג) = משקל × אחוז שומן / 100
     rcSet('f-fm-'+sd, row ? rcFM(cell(row,'bia_weight'), cell(row,'bia_pbf')) : '');
     rcSet('f-date-'+sd, row ? cell(row,'metabolism_date') : '');
@@ -1975,6 +2009,9 @@ window.generateReport = () => {
     sppbS: gS('sppb'), sppbE: gE('sppb'),
     stsS: gS('sts'), stsE: gE('sts'),
     walkS: gS('walk'), walkE: gE('walk'),
+    // איסוף שתן 24 שעות
+    protS: gS('prot'), protE: gE('prot'),
+    nbalS: gS('nbal'), nbalE: gE('nbal'),
   };
 
   // שמות נקודות הזמן שהדו״ח הזה מציג, לשימוש בכל הכותרות והמשפטים
@@ -1996,6 +2033,26 @@ window.generateReport = () => {
   /* נתוני הנוזלים אינם קיימים בכל ייצוא של REDCap ואינם שדה חובה.
      לכן מבדילים בין שלושה מצבים: פירוק מלא, סך נוזלים בלבד, ואין נתון כלל. */
   const ecwTbwE = D.ecwE / D.tbwE;
+  /* צריכת חלבון ומאזן חנקן מאיסוף שתן של 24 שעות.
+     האיסוף נעשה בכניסה למחקר ובסיומו בלבד, ולא באמצע. לכן בדו״ח שמשווה
+     התחלה מול אמצע הערך קיים רק בצד ההתחלה, ואם נציג רק את הנקודה המוצגת
+     הוא ייעלם בלי סיבה. במקרה כזה לוקחים אותו מנקודת ההשוואה ואומרים במפורש
+     מאיזו מדידה הוא. מאזן חנקן יכול להיות שלילי, ולכן נבדק "הוזן ערך" ולא "גדול מאפס". */
+  const urRaw  = (key, sd) => sd ? String(((document.getElementById('f-' + key + '-' + sd) || {}).value) || '').trim() : '';
+  const urNum  = (key, sd) => { const v = urRaw(key, sd); return v === '' ? null : (+v || 0); };
+  const urAny  = (sd) => sd && (urRaw('prot', sd) !== '' || urRaw('nbal', sd) !== '');
+  const urSide = urAny(TO) ? TO : (urAny(FROM) ? FROM : null);
+  const protV  = urSide ? urNum('prot', urSide) : null;
+  const nbalV  = urSide ? urNum('nbal', urSide) : null;
+  const hasProt = protV !== null && protV > 0;
+  const hasNbal = nbalV !== null;
+  const hasUrine = hasProt || hasNbal;
+  // משקל מאותה נקודת זמן שבה נאסף השתן, אחרת היחס לק״ג אינו נכון
+  const urWt = urSide ? (+((document.getElementById('f-wt-' + urSide) || {}).value) || 0) : 0;
+  const protPerKg = (hasProt && urWt > 0) ? protV / urWt : null;
+  // יש איסוף בשתי הנקודות? אז אפשר להראות גם את השינוי
+  const protPrev = (FROM && urSide === TO) ? urNum('prot', FROM) : null;
+  const urWhen   = urSide ? SIDE_LONG[urSide] : '';
   const hasFluidSplit = D.tbwE > 0 && D.icwE > 0 && D.ecwE > 0;
   const hasFluidTotal = D.tbwE > 0;
   const reeExpE = harrisB(age, sex, D.wtE, height);
@@ -2403,6 +2460,21 @@ ${dateBarEnd}
             : '<span class="tag warn">מעל 25%, כדאי לחזק אימוני כוח וחלבון</span>')}</div>
     </div>
   </div>` : ''}
+  ${hasUrine ? `
+  <div class="lossbox" style="margin-top:8px;">
+    ${hasProt ? `<div class="lb-item">
+      <div class="lb-l">צריכת חלבון מוערכת</div>
+      <div class="lb-v">${n(protV,0)} <small>גרם ליום</small></div>
+      <div class="lb-s">${protPerKg !== null ? `<b>${n(protPerKg,2)}</b> גרם לכל ק״ג משקל גוף` : ''}${
+        (protPrev !== null && protPrev > 0) ? ` · ב${sideB(FROM)}: ${n(protPrev,0)} גרם ליום` : ''}</div>
+    </div>` : ''}
+    ${hasNbal ? `<div class="lb-item">
+      <div class="lb-l">מאזן חנקן</div>
+      <div class="lb-v"><span dir="ltr">${nbalV > 0 ? '+' : ''}${n(nbalV,1)}</span> <small>גרם ליום</small></div>
+      <div class="lb-s">מאזן חיובי מעיד שהגוף בונה יותר חלבון ממה שהוא מפרק, ומאזן שלילי שההפך. בתקופה של ירידה במשקל מאזן שלילי קל הוא שכיח</div>
+    </div>` : ''}
+  </div>
+  <div class="ref" style="margin-top:4px;">* הערכים מוערכים מ<b>איסוף שתן של 24 שעות</b> שנאסף ב${sideB(urSide)}, ולכן הם תלויים בשלמות האיסוף: איסוף חלקי מוריד את שני הערכים. איסוף השתן נעשה בכניסה למחקר ובסיומו בלבד.</div>` : ''}
   <div class="ref" style="margin-top:4px;">* ${ONE ? 'הערכים מבוססים על' : 'החישוב מבוסס על'} FFM (מסה נטולת שומן) ממכשיר ה-InBody.</div>
 </div>
 <div class="foot"><span>קוד: ${D.code} · גיל ${age} · ${sex==='m'?'זכר':'נקבה'}</span><span>מחקר PRIME</span></div>
@@ -2806,6 +2878,12 @@ ${dateBarCmp}
     ...(hasFluidSplit ? [sRow('יחס נוזלים חוץ-תאיים (ECW/TBW)', n(ecwTbwE,3), '<span dir="ltr">0.360–0.390</span>', tagOk(ecwTbwE, 0.360, 0.390))] : [])
   ]);
 
+  const secUrine = sTable('צריכת חלבון ומאזן חנקן · איסוף שתן 24 שעות ב' + (urSide ? sideB(urSide) : ''), [
+    ...(hasProt ? [sRow('צריכת חלבון מוערכת', `${n(protV,0)} גרם ליום`,
+                        protPerKg !== null ? `${n(protPerKg,2)} גרם לק״ג משקל גוף` : '', '')] : []),
+    ...(hasNbal ? [sRow('מאזן חנקן', `<span dir="ltr">${nbalV > 0 ? '+' : ''}${n(nbalV,1)}</span> גרם ליום`, '', '')] : [])
+  ]);
+
   const secAnthro = sTable('מדידות גוף והיקפים', [
     sRow('היקף מותניים', `${n(D.waistE,1)} ס״מ`, `מתחת ל-${sex === 'm' ? 102 : 88} ס״מ`, tWaist),
     sRow('יחס מותן-גובה', n(whtrE,2), `מתחת ל-<span dir="ltr">${n(NORMS.whtr.ok,2)}</span>`, tWhtr),
@@ -2829,7 +2907,7 @@ ${dateBarCmp}
 ${dateBarEnd}
 <div class="lead">בטבלאות שלהלן מרוכזות כל התוצאות שלך מ<b>מדידת ${measureHe}</b>, לצד <b>הטווח התקין</b> לגילך ולמינך. הסימון <span class="tag ok">בטווח תקין</span> מציין מדד שנמצא בטווח המומלץ, והסימון <span class="tag warn">לשיפור</span> מציין מדד שכדאי לשים אליו לב.</div>
 <div class="cbody">
-  <div class="stbl-wrap">${secMetab}${secBody}${secAnthro}${secFunc}</div>
+  <div class="stbl-wrap">${secMetab}${secBody}${secUrine}${secAnthro}${secFunc}</div>
   <div class="contact">
     <div class="ct-h">נשמח לעמוד לרשותך בכל שאלה</div>
     <div class="ct-row">

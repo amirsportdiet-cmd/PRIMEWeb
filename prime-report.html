@@ -48,6 +48,7 @@ body { font-family:"Rubik","Assistant","Heebo",sans-serif; direction:rtl; margin
   background:#fefce8; border:1px solid #fde68a; border-radius:10px;
   margin:0 24px 16px; padding:12px 16px; font-size:13px; color:#92400e; font-weight:600; text-align:center;
 }
+.req { color:#dc2626; font-weight:900; font-size:15px; line-height:1; }
 .opt { display:inline-block; margin-right:6px; padding:1px 7px; border-radius:20px; background:#f1f5f9;
   border:1px solid #cbd5e1; color:#64748b; font-size:10.5px; font-weight:700; vertical-align:middle; }
 .mode-pick { margin:0 24px 16px; border:2px solid #e2e8f0; border-radius:14px; background:#fff; padding:14px 18px; }
@@ -639,15 +640,15 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
       <div class="form-section-body">
         <div class="form-row triple">
           <div class="simple-field">
-            <label>קוד נחקר/ת</label>
+            <label>קוד נחקר/ת <span class="req">*</span></label>
             <input type="text" id="f-code" placeholder="לדוגמה: 042" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
           </div>
           <div class="simple-field">
-            <label>גיל (שנים)</label>
+            <label>גיל (שנים) <span class="req">*</span></label>
             <input type="number" id="f-age" min="18" max="120" placeholder="לדוגמה: 62" inputmode="numeric">
           </div>
           <div class="simple-field">
-            <label>מין</label>
+            <label>מין <span class="req">*</span></label>
             <div class="sex-toggle">
               <button type="button" class="sex-btn" id="sex-m" onclick="setSex('m')">זכר</button>
               <button type="button" class="sex-btn" id="sex-f" onclick="setSex('f')">נקבה</button>
@@ -655,7 +656,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
             <input type="hidden" id="f-sex" value="">
           </div>
           <div class="simple-field">
-            <label>קבוצת מחקר</label>
+            <label>קבוצת מחקר <span class="req">*</span></label>
             <div class="sex-toggle">
               <button type="button" class="sex-btn" id="grp-control" onclick="setGroup('control')">ביקורת</button>
               <button type="button" class="sex-btn" id="grp-interv" onclick="setGroup('intervention')">התערבות</button>
@@ -665,7 +666,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
         </div>
         <div class="form-row" style="margin-top:14px;">
           <div class="field-card">
-            <div class="field-label">תאריך מדידה</div>
+            <div class="field-label">תאריך מדידה <span class="req">*</span></div>
             <div class="field-tab-row">
               <button type="button" class="field-tab start active" onclick="switchTab(this,'f-date','s')">התחלה</button>
               <button type="button" class="field-tab end" onclick="switchTab(this,'f-date','e')">סוף</button>
@@ -688,7 +689,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
       <div class="form-section-body">
         <div class="form-row">
           <div class="field-card">
-            <div class="field-label">REE — הוצאה אנרגטית במנוחה (קק״ל/יום)</div>
+            <div class="field-label">REE — הוצאה אנרגטית במנוחה (קק״ל/יום) <span class="req">*</span></div>
             <div class="field-tab-row">
               <button type="button" class="field-tab start active" onclick="switchTab(this,'f-ree','s')">התחלה</button>
               <button type="button" class="field-tab end" onclick="switchTab(this,'f-ree','e')">סוף</button>
@@ -697,7 +698,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
             <input type="hidden" id="f-ree-s"><input type="hidden" id="f-ree-e">
           </div>
           <div class="field-card">
-            <div class="field-label">RER — מנת הנשימה</div>
+            <div class="field-label">RER — מנת הנשימה <span class="req">*</span></div>
             <div class="field-tab-row">
               <button type="button" class="field-tab start active" onclick="switchTab(this,'f-rer','s')">התחלה</button>
               <button type="button" class="field-tab end" onclick="switchTab(this,'f-rer','e')">סוף</button>
@@ -708,7 +709,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
         </div>
         <div class="form-row">
           <div class="field-card">
-            <div class="field-label">% שריפת שומן</div>
+            <div class="field-label">% שריפת שומן <span class="req">*</span></div>
             <div class="field-tab-row">
               <button type="button" class="field-tab start active" onclick="switchTab(this,'f-fatburn','s')">התחלה</button>
               <button type="button" class="field-tab end" onclick="switchTab(this,'f-fatburn','e')">סוף</button>
@@ -717,7 +718,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
             <input type="hidden" id="f-fatburn-s"><input type="hidden" id="f-fatburn-e">
           </div>
           <div class="field-card">
-            <div class="field-label">% שריפת פחמימה</div>
+            <div class="field-label">% שריפת פחמימה <span class="opt">רשות</span></div>
             <div class="field-tab-row">
               <button type="button" class="field-tab start active" onclick="switchTab(this,'f-chburn','s')">התחלה</button>
               <button type="button" class="field-tab end" onclick="switchTab(this,'f-chburn','e')">סוף</button>
@@ -738,13 +739,13 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
       <div class="form-section-body">
         <div class="form-row single" style="max-width:260px;">
           <div class="simple-field">
-            <label>גובה (ס״מ)</label>
+            <label>גובה (ס״מ) <span class="req">*</span></label>
             <input type="number" id="f-height" placeholder="לדוגמה: 176" min="100" max="250" step="0.1" inputmode="decimal">
           </div>
         </div>
         <div class="form-row">
           <div class="field-card">
-            <div class="field-label">משקל (ק״ג)</div>
+            <div class="field-label">משקל (ק״ג) <span class="req">*</span></div>
             <div class="field-tab-row">
               <button type="button" class="field-tab start active" onclick="switchTab(this,'f-wt','s')">התחלה</button>
               <button type="button" class="field-tab end" onclick="switchTab(this,'f-wt','e')">סוף</button>
@@ -753,7 +754,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
             <input type="hidden" id="f-wt-s"><input type="hidden" id="f-wt-e">
           </div>
           <div class="field-card">
-            <div class="field-label">מסת שומן FM (ק״ג)</div>
+            <div class="field-label">מסת שומן FM (ק״ג) <span class="req">*</span></div>
             <div class="field-tab-row">
               <button type="button" class="field-tab start active" onclick="switchTab(this,'f-fm','s')">התחלה</button>
               <button type="button" class="field-tab end" onclick="switchTab(this,'f-fm','e')">סוף</button>
@@ -764,7 +765,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
         </div>
         <div class="form-row">
           <div class="field-card">
-            <div class="field-label">מסת שריר SMM (ק״ג)</div>
+            <div class="field-label">מסת שריר SMM (ק״ג) <span class="req">*</span></div>
             <div class="field-tab-row">
               <button type="button" class="field-tab start active" onclick="switchTab(this,'f-smm','s')">התחלה</button>
               <button type="button" class="field-tab end" onclick="switchTab(this,'f-smm','e')">סוף</button>
@@ -773,7 +774,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
             <input type="hidden" id="f-smm-s"><input type="hidden" id="f-smm-e">
           </div>
           <div class="field-card">
-            <div class="field-label">SMI — מדד מסת שריר (ק״ג/מ²)</div>
+            <div class="field-label">SMI — מדד מסת שריר (ק״ג/מ²) <span class="opt">רשות</span></div>
             <div class="field-tab-row">
               <button type="button" class="field-tab start active" onclick="switchTab(this,'f-smi','s')">התחלה</button>
               <button type="button" class="field-tab end" onclick="switchTab(this,'f-smi','e')">סוף</button>
@@ -782,7 +783,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
             <input type="hidden" id="f-smi-s"><input type="hidden" id="f-smi-e">
           </div>
           <div class="field-card">
-            <div class="field-label">מסה רזה, יד ימין (ק״ג)</div>
+            <div class="field-label">מסה רזה, יד ימין (ק״ג) <span class="opt">רשות</span></div>
             <div class="field-tab-row">
               <button type="button" class="field-tab start active" onclick="switchTab(this,'f-lmra','s')">התחלה</button>
               <button type="button" class="field-tab end" onclick="switchTab(this,'f-lmra','e')">סוף</button>
@@ -791,7 +792,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
             <input type="hidden" id="f-lmra-s"><input type="hidden" id="f-lmra-e">
           </div>
           <div class="field-card">
-            <div class="field-label">מסה רזה, יד שמאל (ק״ג)</div>
+            <div class="field-label">מסה רזה, יד שמאל (ק״ג) <span class="opt">רשות</span></div>
             <div class="field-tab-row">
               <button type="button" class="field-tab start active" onclick="switchTab(this,'f-lmla','s')">התחלה</button>
               <button type="button" class="field-tab end" onclick="switchTab(this,'f-lmla','e')">סוף</button>
@@ -800,7 +801,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
             <input type="hidden" id="f-lmla-s"><input type="hidden" id="f-lmla-e">
           </div>
           <div class="field-card">
-            <div class="field-label">מסה רזה, רגל ימין (ק״ג)</div>
+            <div class="field-label">מסה רזה, רגל ימין (ק״ג) <span class="opt">רשות</span></div>
             <div class="field-tab-row">
               <button type="button" class="field-tab start active" onclick="switchTab(this,'f-lmrl','s')">התחלה</button>
               <button type="button" class="field-tab end" onclick="switchTab(this,'f-lmrl','e')">סוף</button>
@@ -809,7 +810,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
             <input type="hidden" id="f-lmrl-s"><input type="hidden" id="f-lmrl-e">
           </div>
           <div class="field-card">
-            <div class="field-label">מסה רזה, רגל שמאל (ק״ג)</div>
+            <div class="field-label">מסה רזה, רגל שמאל (ק״ג) <span class="opt">רשות</span></div>
             <div class="field-tab-row">
               <button type="button" class="field-tab start active" onclick="switchTab(this,'f-lmll','s')">התחלה</button>
               <button type="button" class="field-tab end" onclick="switchTab(this,'f-lmll','e')">סוף</button>
@@ -859,7 +860,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
       <div class="form-section-body">
         <div class="form-row">
           <div class="field-card">
-            <div class="field-label">היקף מותניים (ס״מ)</div>
+            <div class="field-label">היקף מותניים (ס״מ) <span class="req">*</span></div>
             <div class="field-tab-row">
               <button type="button" class="field-tab start active" onclick="switchTab(this,'f-waist','s')">התחלה</button>
               <button type="button" class="field-tab end" onclick="switchTab(this,'f-waist','e')">סוף</button>
@@ -868,7 +869,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
             <input type="hidden" id="f-waist-s"><input type="hidden" id="f-waist-e">
           </div>
           <div class="field-card">
-            <div class="field-label">היקף שוק (ס״מ)</div>
+            <div class="field-label">היקף שוק (ס״מ) <span class="req">*</span></div>
             <div class="field-tab-row">
               <button type="button" class="field-tab start active" onclick="switchTab(this,'f-calf','s')">התחלה</button>
               <button type="button" class="field-tab end" onclick="switchTab(this,'f-calf','e')">סוף</button>
@@ -890,7 +891,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
         <p style="background:#fefce8; border:1px solid #fde68a; border-radius:10px; margin:0 0 12px; padding:10px 14px; font-size:12.5px; color:#92400e; font-weight:600;">כוח לפיתה (Handgrip): יש להזין את <b>הערך הגבוה ביותר</b> מבין הניסיונות, בנפרד ליד ימין וליד שמאל.</p>
         <div class="form-row">
           <div class="field-card">
-            <div class="field-label">כוח לפיתה — יד ימין (ק״ג)</div>
+            <div class="field-label">כוח לפיתה — יד ימין (ק״ג) <span class="req">*</span></div>
             <div class="field-tab-row">
               <button type="button" class="field-tab start active" onclick="switchTab(this,'f-hgr','s')">התחלה</button>
               <button type="button" class="field-tab end" onclick="switchTab(this,'f-hgr','e')">סוף</button>
@@ -899,7 +900,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
             <input type="hidden" id="f-hgr-s"><input type="hidden" id="f-hgr-e">
           </div>
           <div class="field-card">
-            <div class="field-label">כוח לפיתה — יד שמאל (ק״ג)</div>
+            <div class="field-label">כוח לפיתה — יד שמאל (ק״ג) <span class="req">*</span></div>
             <div class="field-tab-row">
               <button type="button" class="field-tab start active" onclick="switchTab(this,'f-hgl','s')">התחלה</button>
               <button type="button" class="field-tab end" onclick="switchTab(this,'f-hgl','e')">סוף</button>
@@ -910,7 +911,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
         </div>
         <div class="form-row">
           <div class="field-card">
-            <div class="field-label">SPPB (0–12)</div>
+            <div class="field-label">SPPB (0–12) <span class="req">*</span></div>
             <div class="field-tab-row">
               <button type="button" class="field-tab start active" onclick="switchTab(this,'f-sppb','s')">התחלה</button>
               <button type="button" class="field-tab end" onclick="switchTab(this,'f-sppb','e')">סוף</button>
@@ -921,7 +922,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
         </div>
         <div class="form-row">
           <div class="field-card">
-            <div class="field-label">קימה מכיסא 30 שנ׳ (חזרות)</div>
+            <div class="field-label">קימה מכיסא 30 שנ׳ (חזרות) <span class="req">*</span></div>
             <div class="field-tab-row">
               <button type="button" class="field-tab start active" onclick="switchTab(this,'f-sts','s')">התחלה</button>
               <button type="button" class="field-tab end" onclick="switchTab(this,'f-sts','e')">סוף</button>
@@ -930,7 +931,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
             <input type="hidden" id="f-sts-s"><input type="hidden" id="f-sts-e">
           </div>
           <div class="field-card">
-            <div class="field-label">הליכה 2 דקות (מטר)</div>
+            <div class="field-label">הליכה 2 דקות (מטר) <span class="req">*</span></div>
             <div class="field-tab-row">
               <button type="button" class="field-tab start active" onclick="switchTab(this,'f-walk','s')">התחלה</button>
               <button type="button" class="field-tab end" onclick="switchTab(this,'f-walk','e')">סוף</button>
@@ -1512,19 +1513,22 @@ const RC_MAP = {
    ✅ אומת מול אמיר רובין: 1 = התערבות, 2 = ביקורת. */
 const RC_ARM = { '1': 'intervention', '2': 'control' };
 
-/* נתוני הנוזלים אינם מופיעים בכל ייצוא, ולעיתים תחת שם עמודה אחר.
-   לכן מנסים כמה שמות מקובלים, ואם אף אחד אינו קיים משאירים את השדות ריקים
-   (הם אינם שדות חובה, והדו״ח מציג במקומם "לא נמדד בבדיקה זו"). */
+/* עמודות חלופיות. שני מקרים שונים:
+   1. היקף שוק — ב-REDCap יש עמודה לשוק ימין ועמודה לשוק שמאל, והמודד בוחר צד
+      (side_calf_anthro). מי שנמדד בשמאל משאיר את עמודת ימין ריקה, ולכן צריך
+      לקחת את הערך מהצד שנמדד בפועל ולא רק מימין.
+   2. נוזלים — אינם מופיעים בכל ייצוא, ולעיתים תחת שם עמודה אחר.
+   בשני המקרים עוברים על המועמדים לפי הסדר ולוקחים את הראשון שיש בו ערך. */
 const RC_ALT = {
+  calf: ['bc_avg_rcalf_anthro','bc_avg_lcalf_anthro','bc_rcalf_anthro','bc_lcalf_anthro'],
   tbw: ['bia_tbw','bia_tbw_l','bia_total_body_water','inbody_tbw','tbw'],
   icw: ['bia_icw','bia_icw_l','bia_intracellular_water','inbody_icw','icw'],
   ecw: ['bia_ecw','bia_ecw_l','bia_extracellular_water','inbody_ecw','ecw']
 };
-/** שם העמודה שבה נמצא המדד בקובץ הזה, או null אם אינה קיימת בכלל. */
-function rcResolve(H, key){
-  if (H[RC_MAP[key]] != null) return RC_MAP[key];
-  for (const alt of (RC_ALT[key] || [])) if (H[alt] != null) return alt;
-  return null;
+/** כל שמות העמודות האפשריים למדד, לפי סדר עדיפות, ורק אלה שקיימים בקובץ. */
+function rcCols(H, key){
+  const names = [RC_MAP[key]].concat(RC_ALT[key] || []);
+  return names.filter((nm, i) => nm && H[nm] != null && names.indexOf(nm) === i);
 }
 let RC_HEADER = null, RC_BY_ID = null;
 
@@ -1634,13 +1638,14 @@ window.rcLoadParticipant = (id) => {
   const t0  = rec['t0_arm_1'] || null;
   const st = rcStatus(rec, H);
   const endRow = st.endRow;
+  /** הערך של המדד בשורה, מהעמודה הראשונה שיש בה ערך. */
+  const pick = (row, key) => { for(const c of rcCols(H, key)){ const v = cell(row, c); if(v) return v; } return ''; };
   for(const key in RC_MAP){
-    const col = rcResolve(H, key);
-    rcSet('f-'+key+'-s', col ? cell(t0, col) : '');
-    rcSet('f-'+key+'-e', (col && endRow) ? cell(endRow, col) : '');
+    rcSet('f-'+key+'-s', pick(t0, key));
+    rcSet('f-'+key+'-e', endRow ? pick(endRow, key) : '');
   }
   // האם נמצאו בקובץ נתוני נוזלים, ומה בדיוק נטען — נכנס להודעת הסטטוס בהמשך
-  const fluidCols = ['tbw','icw','ecw'].filter(k => rcResolve(H, k));
+  const fluidCols = ['tbw','icw','ecw'].filter(k => rcCols(H, k).length);
   const fluidVals = ['tbw','icw','ecw'].filter(k => {
     const s = document.getElementById('f-'+k+'-s'), e = document.getElementById('f-'+k+'-e');
     return (s && s.value.trim()) || (e && e.value.trim());
@@ -1787,9 +1792,10 @@ function modeHint(){
   document.getElementById('mode-hint').textContent = one
     ? `הדו״ח יוצג לפי מדידת ${sideHe} בלבד, ללא עמוד השוואה. במקומו יופיע עמוד סיכום.`
     : 'הדו״ח יכלול עמוד השוואה בין תחילת המחקר לסופו, ולכן נדרשים ערכי התחלה וגם ערכי סוף.';
-  document.getElementById('req-note').innerHTML = one
-    ? `&#9432; יש להזין את כל השדות של מדידת <b>${sideHe}</b>. הצד השני אינו נדרש`
-    : '&#9432; יש להזין את כל השדות, כולל ערכי תחילת המחקר וסוף המחקר';
+  const legend = '<div style="margin-top:6px; font-weight:600; font-size:12px;">שדה עם <span class="req">*</span> הוא חובה. שדה המסומן <span class="opt">רשות</span> יתמלא לבד אם הנתון קיים בקובץ, ואפשר להשאיר אותו ריק.</div>';
+  document.getElementById('req-note').innerHTML = (one
+    ? `&#9432; יש להזין את כל שדות החובה של מדידת <b>${sideHe}</b>. הצד השני אינו נדרש`
+    : '&#9432; יש להזין את כל שדות החובה, כולל ערכי תחילת המחקר וסוף המחקר') + legend;
 }
 modeHint();
 

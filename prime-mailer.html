@@ -190,7 +190,7 @@
         <button type="button" class="phase-tab" id="gen-m" onclick="setGender('m')">זכר</button>
       </div>
       <label>מייל הנחקר/ת</label>
-      <input type="email" id="m-email" placeholder="name@example.com" oninput="render()" onblur="loadHistory(); resolveGroup();">
+      <input type="email" id="m-email" placeholder="name@example.com" oninput="render()" onblur="loadHistory(); resolveGroup(GROUP_SRC === 'calendar' ? GROUP : '');">
       <div id="email-warn" class="fld-warn"></div>
       <div id="hist-box"></div>
       <div class="two">
@@ -580,7 +580,8 @@ let PHASE = 'start';
    מצורפים. אין לה ברירת מחדל: כל עוד לא ידוע לאיזו קבוצה שייך/ת הנחקר/ת,
    הערך ריק, התבנית אינה נטענת והשליחה חסומה. */
 let GROUP = '';
-let GROUP_SRC = '';      // 'calendar' | 'history' | 'manual' — מאיפה נקבעה
+let GROUP_SRC = '';      // מאיפה נקבעה: היומן, ה-REDCap, שליחה קודמת או ידנית
+let GROUP_CONFLICT = null;   // {calendar, redcap} כששני המקורות אינם מסכימים
 let GENDER = 'f';        // f = נקבה, m = זכר
 let autoWhen = '';   // הערך האחרון שמולא אוטומטית לשדה התזמון
 window.setPhase = (p)=>{
@@ -624,6 +625,7 @@ function applyGender(text){
 window.setGroup = (g, src)=>{
   GROUP = g || '';
   GROUP_SRC = GROUP ? (src || 'manual') : '';
+  if(GROUP_SRC === 'manual') GROUP_CONFLICT = null;
   document.getElementById('grp-control').classList.toggle('active', GROUP==='control');
   document.getElementById('grp-interv').classList.toggle('active', GROUP==='intervention');
   loadTemplate(); render();
@@ -808,12 +810,24 @@ function rosterFind(){
   return null;
 }
 
-/** קובע את הקבוצה מה-REDCap כשאפשר. לא דורס בחירה ידנית. */
-window.resolveGroup = () => {
-  if(!groupNeeded() || GROUP_SRC === 'manual') return;
+/** קובע את הקבוצה משני המקורות שיש לנו, ומסמן התנגשות ביניהם.
+    בחירה ידנית מנצחת ולא נדרסת. */
+window.resolveGroup = (fromCalendar) => {
+  GROUP_CONFLICT = null;
+  if(!groupNeeded() || GROUP_SRC === 'manual') { render(); return; }
+  const cal = fromCalendar || '';
   const hit = rosterFind();
-  if(hit) setGroup(hit.rec.group, 'redcap:' + hit.by);
-  else render();
+  const rc  = hit ? hit.rec.group : '';
+  /* שני מקורות עצמאיים שאומרים דברים שונים. זו בדיוק הטעות שאי אפשר לתפוס
+     אחרת, ולכן לא בוחרים בשביל החוקר/ת אלא עוצרים ומבקשים הכרעה. */
+  if(cal && rc && cal !== rc){
+    GROUP_CONFLICT = { calendar: cal, redcap: rc };
+    setGroup('');
+    return;
+  }
+  if(cal)      setGroup(cal, 'calendar');
+  else if(rc)  setGroup(rc, 'redcap:' + hit.by);
+  else         render();
 };
 
 /** האם השלב הנוכחי דורש קבוצה, והאם היא נבחרה */
@@ -955,15 +969,24 @@ window.render = ()=>{
   if(!groupNeeded()){
     gnote.style.display = 'none';
     document.getElementById('roster-bar').style.display = 'none';
+  } else if(GROUP_CONFLICT){
+    const GH = { control:'ביקורת', intervention:'התערבות' };
+    gnote.style.display = 'block';
+    gnote.style.color = '#dc2626';
+    gnote.innerHTML = `🛑 <b>סתירה בין המקורות:</b> ביומן נרשם <b>${GH[GROUP_CONFLICT.calendar]}</b>, `
+      + `ובקובץ ה-REDCap הנחקר/ת משובץ/ת ל<b>${GH[GROUP_CONFLICT.redcap]}</b>. `
+      + `יש לברר מה נכון ולבחור ידנית לפני השליחה.`;
+    document.getElementById('roster-bar').style.display = 'block';
   } else if(!GROUP){
     gnote.style.display = 'block';
     gnote.style.color = '#dc2626';
     gnote.textContent = ROSTER.n
-      ? '⚠️ הנחקר/ת לא נמצא/ה בקובץ ה-REDCap לפי המייל או השם. יש לבחור קבוצה ידנית — הנוסח והקבצים המצורפים תלויים בה.'
+      ? '⚠️ אין תשובה לשאלת הקבוצה ביומן, והנחקר/ת לא נמצא/ה בקובץ ה-REDCap. יש לבחור קבוצה ידנית — הנוסח והקבצים המצורפים תלויים בה.'
       : '⚠️ לא זוהתה הקבוצה. אפשר לטעון את קובץ ה-REDCap כדי שתישאב אוטומטית, או לבחור ידנית.';
     document.getElementById('roster-bar').style.display = 'block';
   } else {
-    const SRC_HE = { 'redcap:מייל':'מקובץ ה-REDCap, לפי המייל',
+    const SRC_HE = { calendar:'מהשאלה בקלנדלי',
+                     'redcap:מייל':'מקובץ ה-REDCap, לפי המייל',
                      'redcap:שם':'מקובץ ה-REDCap, לפי השם',
                      history:'נלקחה משליחה קודמת לנחקר/ת', manual:'נבחרה ידנית' };
     gnote.style.display = 'block';
@@ -1104,11 +1127,11 @@ function applyCalEvent(ev){
   if(t) document.getElementById('m-time').value = t;
   if(ev.site)  setSite(ev.site);
   if(ev.phase) setPhase(ev.phase);
-  /* ביומן אין קבוצה, ולכן היא נשאבת מקובץ ה-REDCap לפי המייל או השם.
-     אם אין קובץ או שאין התאמה, loadHistory תנסה להשלים משליחה קודמת,
-     ואם גם שם אין, החוקר/ת יבחרו ידנית. עדיף לשאול מאשר לנחש קבוצה. */
+  /* הקבוצה מגיעה מהשאלה "קבוצת מחקר" שהצוות עונה עליה בקביעת הפגישה בקלנדלי.
+     resolveGroup מצליב אותה מול ההקצאה ב-REDCap, ואם אין תשובה ביומן היא
+     נופלת חזרה ל-REDCap, לשליחה קודמת, ולבסוף לבחירה ידנית. */
   setGroup('');
-  resolveGroup();
+  resolveGroup(ev.group || '');
   render();
   loadHistory();
   const miss = [];
@@ -1541,6 +1564,7 @@ window.sendJob = (mode)=>{
   const p = buildPayload(mode === 'both' ? 'schedule' : mode);
   if(!p.to.length){ status.style.color='#dc2626'; status.textContent='יש להזין מייל של הנחקר/ת.'; return; }
   if(!document.getElementById('m-date').value){ status.style.color='#dc2626'; status.textContent='יש להזין תאריך יום מחקר.'; return; }
+  if(GROUP_CONFLICT){ status.style.color='#dc2626'; status.textContent='היומן וה-REDCap אינם מסכימים על הקבוצה. יש לברר ולבחור ידנית לפני השליחה.'; return; }
   if(!groupReady()){ status.style.color='#dc2626'; status.textContent='יש לבחור קבוצה — התערבות או ביקורת. הנוסח והקבצים המצורפים תלויים בה.'; return; }
   if(!document.getElementById('m-body').value.trim()){ status.style.color='#dc2626'; status.textContent='גוף ההודעה ריק.'; return; }
   if((mode==='schedule'||mode==='both') && !p.sendAt){ status.style.color='#dc2626'; status.textContent='יש לבחור תאריך ושעה לתזמון.'; return; }

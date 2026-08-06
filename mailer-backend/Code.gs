@@ -6,7 +6,7 @@
  * היא יוצרת את תיקיית הקבצים, מתקינה את טריגר התזמון, ומדפיסה את הקישור לתיקייה.
  */
 
-const CODE_VERSION = 'v15-inbox';
+const CODE_VERSION = 'v16-group';
 const SECRET = 'lgGnSJZnAsfIs4W822y0k7F6';
 const SENDER_NAME = 'מחקר PRIME';
 const FOLDER_NAME = 'PRIME Mailer Files';
@@ -360,6 +360,18 @@ function emailFromEvent_(desc) {
   return m ? m[1] : '';
 }
 
+/** קבוצת המחקר של הנחקר/ת.
+    ביומן יש סוג פגישה אחד, "מחקר PRIME", ובטופס ההזמנה שלו יש שאלת חובה
+    בשם "קבוצת מחקר" שהצוות עונה עליה בזמן קביעת הפגישה. קלנדלי כותב את
+    התשובה בתיאור האירוע, ומכאן היא נקראת. "טרם שובץ" (T0) מחזיר ריק בכוונה. */
+function groupFromEvent_(desc) {
+  const m = String(desc || '').match(/קבוצת\s*מחקר\s*[:\uFF1A]\s*([^\r\n]+)/);
+  const ans = m ? m[1].trim() : '';
+  if (ans.indexOf('התערבות') >= 0) return 'intervention';
+  if (ans.indexOf('ביקורת') >= 0)  return 'control';
+  return '';
+}
+
 /** מזהה מוקד מתוך טקסט: אסותא / איכילוב */
 function siteFromText_(t) {
   const s = String(t || '');
@@ -408,7 +420,8 @@ function lookupCalendar_(name) {
       location: loc,
       email: email,
       phase: phaseFromText_(loc + ' ' + title + ' ' + desc),
-      site: siteFromText_(loc + ' ' + title + ' ' + desc)
+      site: siteFromText_(loc + ' ' + title + ' ' + desc),
+      group: groupFromEvent_(desc)
     });
   }
   return {

@@ -1928,6 +1928,8 @@ window.generateReport = () => {
      ובדו״ח של נקודה אחת לפי הצד שנבחר בפועל. */
   const measureHe = !ONE ? 'סוף המחקר'
                   : (SINGLE_SIDE === 's' ? 'הכניסה למחקר' : 'סוף המחקר');
+  // אותו דבר בלי ה״א הידיעה, לשימוש אחרי אות היחס ב׳ ("בכניסה למחקר", ולא "בהכניסה")
+  const measureB  = measureHe.replace(/^ה/, '');
 
   // Derived — END values
   const htM = height / 100;
@@ -2157,8 +2159,8 @@ ${dateBarEnd}
   <p>בדו״ח זה מרוכזות תוצאות הבדיקות שביצעת: <b>חילוף חומרים במנוחה</b> (QNRG), <b>הרכב גוף</b> (InBody),
      <b>מדידות גוף והיקפים</b> ו<b>בדיקות תפקודיות</b>.</p>
   ${ONE
-    ? `<p>הערכים המוצגים בדו״ח הם מהבדיקה שביצעת ב<b>${measureHe}</b>${D.dateE ? ` (${D.dateE})` : ''},
-       ולצד כל תוצאה מופיע הטווח התקין לגילך ולמינך. בעמוד האחרון מרוכזות כל התוצאות יחד עם המלצות להמשך.</p>`
+    ? `<p>הערכים המוצגים בדו״ח הם מהבדיקה שביצעת ב<b>${measureB}</b>${D.dateE ? ` (${D.dateE})` : ''},
+       ולצד כל תוצאה מופיע הטווח התקין לגילך ולמינך. בעמוד האחרון מרוכזות כל התוצאות במבט אחד.</p>`
     : `<p>הערכים המוצגים בעמודים <span dir="ltr">1–2</span> הם מהבדיקה <b>האחרונה</b> שביצעת${D.dateE ? ` (${D.dateE})` : ''},
        ובעמוד האחרון מוצגת <b>השוואה מלאה בין הבדיקה בכניסה למחקר${D.dateS ? ` (${D.dateS})` : ''} לבין הבדיקה האחרונה</b>,
        כדי לראות את המגמה והשינוי לאורך המחקר.</p>`}
@@ -2319,12 +2321,12 @@ ${dateBarEnd}
   ${ONE ? `
   <div class="lossbox">
     <div class="lb-item">
-      <div class="lb-l">מסת השומן</div>
+      <div class="lb-l">מסת שומן <span class="nb">(FM)</span></div>
       <div class="lb-v">${n(D.fmE,1)} <small>ק״ג</small></div>
       <div class="lb-s">${fmMaxKg !== null ? `הטווח המומלץ לגילך ולמינך: עד ${n(fmMaxKg,1)} ק״ג ` : ''}${tFatPct}</div>
     </div>
     <div class="lb-item">
-      <div class="lb-l">המסה נטולת השומן</div>
+      <div class="lb-l">מסה נטולת שומן <span class="nb">(FFM)</span></div>
       <div class="lb-v">${n(ffmE,1)} <small>ק״ג</small></div>
       <div class="lb-s">${D.wtE > 0 ? `${n(ffmE / D.wtE * 100,0)}% ממשקל הגוף. ` : ''}זהו החלק הפעיל של הגוף: שריר, עצם ונוזלים, והוא שקובע את הכוח והתפקוד</div>
     </div>
@@ -2717,7 +2719,8 @@ ${dateBarCmp}
   // ================================================================
   // PAGE 3 (חלופי) — עמוד סיכום לדו״ח של נקודת זמן אחת.
   // אין מה להשוות, ולכן במקום עמוד ההשוואה מרוכזות כאן כל התוצאות
-  // מול הטווח התקין, יחד עם ההמלצות ופרטי הקשר שהיו בעמוד ההשוואה.
+  // מול הטווח התקין, ופרטי הקשר. ההמלצות "להמשך הדרך" אינן מופיעות כאן:
+  // הן נגזרות מהשינוי לאורך המחקר, ולכן שייכות רק לדו״ח ההשוואה בסיום.
   // ================================================================
   const sRow = (label, val, ref, tag) =>
     `<tr><td class="sl">${label}</td><td class="sv">${val}</td><td class="sr">${ref || ''}</td><td class="sg">${tag || ''}</td></tr>`;
@@ -2764,18 +2767,13 @@ ${dateBarCmp}
 <div class="pagebreak compare">
 <div class="head">
   <div class="logo"><img src="images/prime/prime_logo.jpeg" alt="PRIME"></div>
-  <div class="head-txt"><h1>סיכום התוצאות והמלצות להמשך</h1><div class="sub">כל המדדים שנמדדו, מול הטווח התקין</div></div>
+  <div class="head-txt"><h1>סיכום התוצאות</h1><div class="sub">כל המדדים שנמדדו, מול הטווח התקין</div></div>
   <div class="head-badge">מחקר PRIME</div>
 </div>
 ${dateBarEnd}
 <div class="lead">בטבלאות שלהלן מרוכזות כל התוצאות שלך מ<b>מדידת ${measureHe}</b>, לצד <b>הטווח התקין</b> לגילך ולמינך. הסימון <span class="tag ok">בטווח תקין</span> מציין מדד שנמצא בטווח המומלץ, והסימון <span class="tag warn">לשיפור</span> מציין מדד שכדאי לשים אליו לב.</div>
 <div class="cbody">
   <div class="stbl-wrap">${secMetab}${secBody}${secAnthro}${secFunc}</div>
-  <div class="next">
-    <div class="next-h">להמשך הדרך</div>
-    ${nextSteps.map((s, i) => `<div class="next-i"><span class="next-n">${i + 1}</span><div><b>${s[0]}</b> ${s[1]}</div></div>`).join('')}
-    <div class="next-f">ההמלצות כאן כלליות ומבוססות על תוצאות הבדיקות במחקר. הן אינן מחליפות ייעוץ רפואי או תזונתי אישי.</div>
-  </div>
   <div class="contact">
     <div class="ct-h">נשמח לעמוד לרשותך בכל שאלה</div>
     <div class="ct-row">

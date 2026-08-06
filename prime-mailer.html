@@ -258,6 +258,23 @@
     </div>
 
     <!-- Upcoming from calendar -->
+    <details class="card" style="grid-column:1/-1; padding:0; overflow:hidden;" id="audit-card">
+      <summary style="cursor:pointer; list-style:none; padding:16px 20px; display:flex; align-items:center; gap:8px; user-select:none;">
+        <h2 style="margin:0;">🔍 בדיקת שליחות עבר מול ה-REDCap</h2>
+        <span style="margin-right:auto; font-size:12px; color:#94a3b8;">לחץ להרחבה ▼</span>
+      </summary>
+      <div style="padding:0 20px 16px;">
+        <p style="font-size:12px; color:#94a3b8; margin:0 0 10px; line-height:1.8;">
+          עובר על כל הנחקרים המשובצים בקובץ ה-REDCap, שולף לכל אחד את היסטוריית השליחות מהלוג,
+          ומשווה את הקבוצה שנרשמה בשליחה לקבוצה שהוקצתה לו במחקר. רלוונטי לשליחות T3 ו-T6 בלבד,
+          שרק בהן הקבוצה משנה. הבדיקה קוראת בלבד ואינה משנה דבר.
+          <button type="button" onclick="runAudit()" id="audit-btn"
+            style="margin-right:8px; background:#0d9488; color:#fff; border:none; border-radius:8px; padding:5px 14px; font-size:12px; font-weight:800; cursor:pointer; font-family:inherit;">▶ הרצת בדיקה</button>
+        </p>
+        <div id="audit-out" style="font-size:13px; color:#64748b;">יש לטעון קודם את קובץ ה-REDCap.</div>
+      </div>
+    </details>
+
     <details class="card" style="grid-column:1/-1; padding:0; overflow:hidden;" id="upcoming-card">
       <summary style="cursor:pointer; list-style:none; padding:16px 20px; display:flex; align-items:center; gap:8px; user-select:none;">
         <h2 style="margin:0;">📆 פגישות קרובות מהיומן <span id="upcoming-count" style="color:#64748b; font-weight:600;"></span></h2>
@@ -718,6 +735,69 @@ function rosterLoad(){
 
 // נטען כבר עם הדף, כדי שהרשימה תהיה זמינה בלי תלות בסדר ההתחברות
 rosterLoad();
+
+/* ===== בדיקת שליחות עבר =====
+   עד לתיקון, הקבוצה במיילר הייתה מוגדרת מראש כ"ביקורת" ואיש לא בחר אותה בפועל.
+   לכן ייתכן שיצאו מיילים של T3/T6 בקבוצה הלא נכונה. הבדיקה כאן עוברת נחקר-נחקר,
+   מצליבה את מה שנרשם בלוג מול ההקצאה ב-REDCap, ומראה רק את מה שלא תואם. */
+window.runAudit = async (fetchHistory) => {
+  // מקור ההיסטוריה ניתן להזרקה, כדי שאפשר יהיה לבדוק את הלוגיקה בלי לגעת בשרת
+  const getHistory = fetchHistory || (em => callApi({ mode:'history', email: em }));
+  const out = document.getElementById('audit-out');
+  const btn = document.getElementById('audit-btn');
+  const emails = Object.keys(ROSTER.byEmail);
+  if(!emails.length){ out.innerHTML = '<span style="color:#b45309;">יש לטעון קודם את קובץ ה-REDCap.</span>'; return; }
+  btn.disabled = true;
+  const bad = [], noSend = [], errs = [];
+  let checked = 0, rows = 0;
+  for(const em of emails){
+    const rec = ROSTER.byEmail[em];
+    out.textContent = `בודק ${++checked} מתוך ${emails.length}…`;
+    let res;
+    try { res = await getHistory(em); }
+    catch(e){ errs.push(em); continue; }
+    const items = (res && res.ok && res.items) ? res.items : [];
+    // רק שליחות שהקבוצה משנה בהן, ושנרשמה בהן קבוצה כלשהי
+    const rel = items.filter(h => (h.phase === 'middle' || h.phase === 'end') &&
+                                  (h.group === 'control' || h.group === 'intervention'));
+    rows += rel.length;
+    if(!rel.length){ noSend.push(rec); continue; }
+    rel.forEach(h => {
+      if(h.group !== rec.group)
+        bad.push({ name: rec.name, code: rec.code, email: em, when: h.when,
+                   phase: h.phase, sent: h.group, actual: rec.group, kind: h.kind });
+    });
+  }
+  const GH = { control:'ביקורת', intervention:'התערבות' };
+  const PH = { middle:'אמצע · T3', end:'סוף · T6' };
+  let html = `<div style="margin-bottom:10px;">נבדקו <b>${emails.length}</b> נחקרים משובצים · נמצאו <b>${rows}</b> שליחות T3/T6 בלוג.</div>`;
+  /* אם כמעט הכל נכשל, אין לנו בסיס לומר שהכול תקין */
+  if(errs.length >= emails.length){
+    out.innerHTML = `<div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:12px 14px;color:#b91c1c;font-weight:700;">
+      ✖ הבדיקה לא הצליחה לקרוא את הלוג (${errs.length} מתוך ${emails.length} הקריאות נכשלו). יש לוודא חיבור לשרת ולנסות שוב.</div>`;
+    btn.disabled = false; return;
+  }
+  if(bad.length){
+    html += `<div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:12px 14px;color:#b91c1c;">
+      <b>⚠️ ${bad.length} שליחות יצאו בקבוצה שאינה תואמת את ההקצאה ב-REDCap:</b>
+      <table style="width:100%;margin-top:8px;border-collapse:collapse;font-size:12.5px;color:#7f1d1d;">
+        <tr style="text-align:right;"><th>נחקר/ת</th><th>קוד</th><th>שלב</th><th>נשלח בתאריך</th><th>נשלח כ</th><th>באמת</th></tr>` +
+      bad.map(b=>`<tr><td>${b.name||'—'}</td><td>${b.code||'—'}</td><td>${PH[b.phase]||b.phase}</td><td>${b.when}</td>
+        <td><b>${GH[b.sent]}</b></td><td><b>${GH[b.actual]}</b></td></tr>`).join('') + `</table></div>`;
+  } else {
+    html += `<div style="background:#ecfdf5;border:1px solid #6ee7b7;border-radius:10px;padding:12px 14px;color:#047857;font-weight:700;">
+      ✓ כל שליחות ה-T3/T6 שנמצאו בלוג תואמות את ההקצאה ב-REDCap.</div>`;
+  }
+  if(noSend.length)
+    html += `<details style="margin-top:10px;"><summary style="cursor:pointer;font-size:12px;">${noSend.length} נחקרים משובצים שעדיין לא נשלח אליהם מייל T3/T6</summary>
+      <div style="font-size:12px;color:#94a3b8;margin-top:6px;line-height:1.9;">${noSend.map(r=>(r.name||'—')+' (קוד '+(r.code||'—')+')').join(' · ')}</div></details>`;
+  if(errs.length)
+    html += `<div style="margin-top:10px;color:#b45309;font-size:12px;">⚠️ ${errs.length} בדיקות נכשלו בגלל תקלת רשת, כדאי להריץ שוב.</div>`;
+  html += `<div style="margin-top:10px;font-size:11.5px;color:#94a3b8;line-height:1.7;">
+    הבדיקה מכסה נחקרים שהמייל שלהם מופיע בקובץ ה-REDCap. שליחה שיצאה לכתובת שאינה בקובץ, למשל בגלל שגיאת הקלדה, לא תיבדק כאן.</div>`;
+  out.innerHTML = html;
+  btn.disabled = false;
+};
 
 /** מחפש את הנחקר/ת ברשימה: קודם לפי מייל, ואם אין, לפי שם מלא. */
 function rosterFind(){

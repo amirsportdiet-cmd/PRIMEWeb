@@ -48,6 +48,19 @@ body { font-family:"Rubik","Assistant","Heebo",sans-serif; direction:rtl; margin
   background:#fefce8; border:1px solid #fde68a; border-radius:10px;
   margin:0 24px 16px; padding:12px 16px; font-size:13px; color:#92400e; font-weight:600; text-align:center;
 }
+.opt { display:inline-block; margin-right:6px; padding:1px 7px; border-radius:20px; background:#f1f5f9;
+  border:1px solid #cbd5e1; color:#64748b; font-size:10.5px; font-weight:700; vertical-align:middle; }
+.mode-pick { margin:0 24px 16px; border:2px solid #e2e8f0; border-radius:14px; background:#fff; padding:14px 18px; }
+.mode-head { font-size:14px; font-weight:800; color:#0f172a; margin-bottom:10px; text-align:center; }
+.mode-row { display:flex; gap:8px; }
+.mode-row + .mode-row { margin-top:8px; }
+.mode-btn { flex:1; padding:10px 0; border:2px solid #cbd5e1; border-radius:9px; background:#f8fafc; color:#64748b; font-size:13.5px; font-weight:700; cursor:pointer; font-family:inherit; transition:.15s; }
+.mode-btn:hover { border-color:#0d9488; color:#0d9488; }
+.mode-btn.active { background:#0d9488; border-color:#0d9488; color:#fff; }
+.mode-btn.sm { font-size:12.5px; padding:8px 0; }
+.mode-hint { margin-top:9px; font-size:12px; color:#64748b; text-align:center; line-height:1.6; }
+/* במצב נקודת זמן אחת, הצד שאינו בשימוש מעומעם כדי שלא ימלאו אותו לחינם */
+body.one-s .field-tab.end, body.one-e .field-tab.start { opacity:.38; }
 .rc-import { margin:0 24px 18px; border:2px dashed #99f6e4; border-radius:14px; background:#f0fdfa; padding:16px 18px; text-align:center; }
 .rc-import-head { font-size:15px; font-weight:800; color:#0f766e; margin-bottom:12px; }
 .rc-import-body { display:flex; flex-direction:column; align-items:center; gap:10px; }
@@ -355,6 +368,17 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
 .chip.down{ background:#fee2e2; color:#b91c1c; }
 .chip.flat{ background:#f1f5f9; color:#64748b; }
 .cinterp{ font-size:9px; color:#475569; margin-top:5px; padding-top:4px; border-top:1px dashed var(--line); line-height:1.2; }
+/* עמוד הסיכום של דו״ח נקודת זמן אחת — טבלאות התוצאות מול הטווח התקין */
+.stbl-wrap{ display:flex; flex-direction:column; gap:7px; }
+.stbl{ border:1px solid #e2e8f0; border-radius:10px; overflow:hidden; }
+.stbl-h{ background:var(--teal-l); color:var(--teal); font-size:11.5px; font-weight:800; padding:4px 12px; }
+.stbl table{ width:100%; border-collapse:collapse; }
+.stbl td{ padding:3.5px 12px; font-size:11px; border-top:1px solid #f1f5f9; vertical-align:middle; }
+.stbl tr:first-child td{ border-top:none; }
+.stbl .sl{ color:#334155; font-weight:600; width:36%; }
+.stbl .sv{ color:var(--navy); font-weight:800; width:24%; white-space:nowrap; }
+.stbl .sr{ color:var(--muted); font-size:10px; width:28%; }
+.stbl .sg{ width:12%; text-align:left; white-space:nowrap; }
 .clegend{ display:flex; gap:16px; font-size:10.5px; color:#475569; margin:0 0 4px; }
 .compare{ min-height:1012px; display:flex; flex-direction:column; }
 .compare .cbody{ flex:1; display:flex; flex-direction:column; justify-content:space-between; gap:8px; }
@@ -562,12 +586,25 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
       </div>
     </div>
 
-    <div class="form-researcher-note no-print">
-      &#9432; יש להזין את כל השדות, כולל ערכי תחילת המחקר וסוף המחקר
+    <div class="form-researcher-note no-print" >
+      <span id="req-note">&#9432; יש להזין את כל השדות, כולל ערכי תחילת המחקר וסוף המחקר</span>
       <button type="button" onclick="loadSample()"
         style="margin-right:10px; background:#0d9488; color:#fff; border:none; border-radius:9px; padding:7px 16px; font-size:13px; font-weight:800; cursor:pointer; font-family:inherit;">
         👁 תצוגה מקדימה — דוח לדוגמה
       </button>
+    </div>
+
+    <div class="mode-pick no-print">
+      <div class="mode-head">מבנה הדו״ח</div>
+      <div class="mode-row">
+        <button type="button" class="mode-btn active" id="mode-compare" onclick="setMode('compare')">השוואה · התחלה מול סוף</button>
+        <button type="button" class="mode-btn" id="mode-single" onclick="setMode('single')">נקודת זמן אחת</button>
+      </div>
+      <div class="mode-row" id="mode-side-row" style="display:none;">
+        <button type="button" class="mode-btn sm" id="side-s" onclick="setSide('s')">לפי מדידת הכניסה למחקר</button>
+        <button type="button" class="mode-btn sm active" id="side-e" onclick="setSide('e')">לפי מדידת סוף המחקר</button>
+      </div>
+      <div class="mode-hint" id="mode-hint"></div>
     </div>
 
     <details class="rc-video no-print">
@@ -781,7 +818,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
             <input type="hidden" id="f-lmll-s"><input type="hidden" id="f-lmll-e">
           </div>
           <div class="field-card">
-            <div class="field-label">TBW — סך נוזלים (ליטר)</div>
+            <div class="field-label">TBW — סך נוזלים (ליטר) <span class="opt">רשות</span></div>
             <div class="field-tab-row">
               <button type="button" class="field-tab start active" onclick="switchTab(this,'f-tbw','s')">התחלה</button>
               <button type="button" class="field-tab end" onclick="switchTab(this,'f-tbw','e')">סוף</button>
@@ -792,7 +829,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
         </div>
         <div class="form-row">
           <div class="field-card">
-            <div class="field-label">ICW — תוך-תאיים (ליטר)</div>
+            <div class="field-label">ICW — תוך-תאיים (ליטר) <span class="opt">רשות</span></div>
             <div class="field-tab-row">
               <button type="button" class="field-tab start active" onclick="switchTab(this,'f-icw','s')">התחלה</button>
               <button type="button" class="field-tab end" onclick="switchTab(this,'f-icw','e')">סוף</button>
@@ -801,7 +838,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
             <input type="hidden" id="f-icw-s"><input type="hidden" id="f-icw-e">
           </div>
           <div class="field-card">
-            <div class="field-label">ECW — חוץ-תאיים (ליטר)</div>
+            <div class="field-label">ECW — חוץ-תאיים (ליטר) <span class="opt">רשות</span></div>
             <div class="field-tab-row">
               <button type="button" class="field-tab start active" onclick="switchTab(this,'f-ecw','s')">התחלה</button>
               <button type="button" class="field-tab end" onclick="switchTab(this,'f-ecw','e')">סוף</button>
@@ -1474,6 +1511,21 @@ const RC_MAP = {
    הייצוא הגולמי מחזיר 1 או 2 בלבד ובלי תווית, ולכן הפענוח מוגדר כאן.
    ✅ אומת מול אמיר רובין: 1 = התערבות, 2 = ביקורת. */
 const RC_ARM = { '1': 'intervention', '2': 'control' };
+
+/* נתוני הנוזלים אינם מופיעים בכל ייצוא, ולעיתים תחת שם עמודה אחר.
+   לכן מנסים כמה שמות מקובלים, ואם אף אחד אינו קיים משאירים את השדות ריקים
+   (הם אינם שדות חובה, והדו״ח מציג במקומם "לא נמדד בבדיקה זו"). */
+const RC_ALT = {
+  tbw: ['bia_tbw','bia_tbw_l','bia_total_body_water','inbody_tbw','tbw'],
+  icw: ['bia_icw','bia_icw_l','bia_intracellular_water','inbody_icw','icw'],
+  ecw: ['bia_ecw','bia_ecw_l','bia_extracellular_water','inbody_ecw','ecw']
+};
+/** שם העמודה שבה נמצא המדד בקובץ הזה, או null אם אינה קיימת בכלל. */
+function rcResolve(H, key){
+  if (H[RC_MAP[key]] != null) return RC_MAP[key];
+  for (const alt of (RC_ALT[key] || [])) if (H[alt] != null) return alt;
+  return null;
+}
 let RC_HEADER = null, RC_BY_ID = null;
 
 function rcCSV(text){
@@ -1583,10 +1635,16 @@ window.rcLoadParticipant = (id) => {
   const st = rcStatus(rec, H);
   const endRow = st.endRow;
   for(const key in RC_MAP){
-    const col = RC_MAP[key];
-    rcSet('f-'+key+'-s', cell(t0, col));
-    rcSet('f-'+key+'-e', endRow ? cell(endRow, col) : '');
+    const col = rcResolve(H, key);
+    rcSet('f-'+key+'-s', col ? cell(t0, col) : '');
+    rcSet('f-'+key+'-e', (col && endRow) ? cell(endRow, col) : '');
   }
+  // האם נמצאו בקובץ נתוני נוזלים, ומה בדיוק נטען — נכנס להודעת הסטטוס בהמשך
+  const fluidCols = ['tbw','icw','ecw'].filter(k => rcResolve(H, k));
+  const fluidVals = ['tbw','icw','ecw'].filter(k => {
+    const s = document.getElementById('f-'+k+'-s'), e = document.getElementById('f-'+k+'-e');
+    return (s && s.value.trim()) || (e && e.value.trim());
+  });
   // FM (ק״ג) = משקל × אחוז שומן / 100
   rcSet('f-fm-s', rcFM(cell(t0,'bia_weight'), cell(t0,'bia_pbf')));
   rcSet('f-fm-e', endRow ? rcFM(cell(endRow,'bia_weight'), cell(endRow,'bia_pbf')) : '');
@@ -1611,10 +1669,17 @@ window.rcLoadParticipant = (id) => {
   const code = document.getElementById('f-code').value;
   const grpTxt = grp ? ' · קבוצה: ' + (grp === 'control' ? 'ביקורת' : 'התערבות')
                      : ' · ⚠️ אין הקצאת קבוצה בקובץ, יש לבחור ידנית';
+  /* נוזלים אינם שדה חובה, ולכן זו הודעת מידע בלבד ולא אזהרה. */
+  const fluidTxt = fluidVals.length ? ' · נוזלים: ' + fluidVals.map(k => k.toUpperCase()).join('/') + ' נטענו'
+                 : fluidCols.length ? ' · נוזלים: העמודות קיימות בקובץ אך ריקות לנחקר/ת זה, אפשר להשלים ידנית או להשאיר ריק'
+                                    : ' · נוזלים: אין עמודות TBW בקובץ, השדות אינם חובה';
   document.getElementById('rc-status').textContent =
     (st.level === 'green'  ? '🟢 נטען קוד ' + code + ' (מלא)' :
      st.level === 'yellow' ? '🟡 נטען קוד ' + code + ' — אין T6, הסוף נלקח מ-T3' :
-                             '🔴 נטען קוד ' + code + ' — התחלה בלבד, אין נתוני סוף') + grpTxt + '.';
+                             '🔴 נטען קוד ' + code + ' — התחלה בלבד, אין נתוני סוף') + grpTxt + fluidTxt + '.';
+  /* אין מדידת סוף? אין מה להשוות. עוברים אוטומטית לדו״ח של נקודת זמן אחת
+     לפי מדידת הכניסה. אם יש מדידת סוף לא נוגעים בבחירה של החוקר/ת. */
+  if(!endRow){ setMode('single'); setSide('s'); }
   // גלילה חזרה לראש הטופס כדי לראות את השדות שהתמלאו
   document.querySelector('.form-body')?.scrollIntoView({ behavior:'smooth', block:'start' });
 };
@@ -1693,45 +1758,67 @@ window.loadSample = () => {
   generateReport();
 };
 
+/* =====================================================================
+   מבנה הדו״ח: השוואה בין שתי מדידות, או דו״ח של נקודת זמן אחת.
+   במצב נקודת זמן אחת נדרש רק הצד שנבחר, וכל מה שמשווה בין התחלה לסוף
+   (עמוד ההשוואה, "השינוי מאז הכניסה", פירוק הירידה במשקל) פשוט לא מוצג.
+   ===================================================================== */
+let REPORT_MODE = 'compare';   // 'compare' | 'single'
+let SINGLE_SIDE = 'e';         // 's' = מדידת הכניסה · 'e' = מדידת הסוף
+
+window.setMode = (m) => {
+  REPORT_MODE = m;
+  document.getElementById('mode-compare').classList.toggle('active', m === 'compare');
+  document.getElementById('mode-single').classList.toggle('active', m === 'single');
+  document.getElementById('mode-side-row').style.display = m === 'single' ? 'flex' : 'none';
+  modeHint();
+};
+window.setSide = (s) => {
+  SINGLE_SIDE = s;
+  document.getElementById('side-s').classList.toggle('active', s === 's');
+  document.getElementById('side-e').classList.toggle('active', s === 'e');
+  modeHint();
+};
+function modeHint(){
+  const one = REPORT_MODE === 'single';
+  const sideHe = SINGLE_SIDE === 's' ? 'הכניסה למחקר' : 'סוף המחקר';
+  document.body.classList.toggle('one-s', one && SINGLE_SIDE === 's');
+  document.body.classList.toggle('one-e', one && SINGLE_SIDE === 'e');
+  document.getElementById('mode-hint').textContent = one
+    ? `הדו״ח יוצג לפי מדידת ${sideHe} בלבד, ללא עמוד השוואה. במקומו יופיע עמוד סיכום.`
+    : 'הדו״ח יכלול עמוד השוואה בין תחילת המחקר לסופו, ולכן נדרשים ערכי התחלה וגם ערכי סוף.';
+  document.getElementById('req-note').innerHTML = one
+    ? `&#9432; יש להזין את כל השדות של מדידת <b>${sideHe}</b>. הצד השני אינו נדרש`
+    : '&#9432; יש להזין את כל השדות, כולל ערכי תחילת המחקר וסוף המחקר';
+}
+modeHint();
+
+/* מדדים שנמדדים פעמיים, בהתחלה ובסוף. משמשים גם לבניית רשימת שדות החובה
+   וגם למיפוי הערכים כשמפיקים דו״ח של נקודת זמן אחת. */
+const PAIRED_FIELDS = [
+  ['f-date','תאריך מדידה'], ['f-ree','REE'], ['f-rer','RER'], ['f-fatburn','% שריפת שומן'],
+  ['f-wt','משקל'], ['f-fm','מסת שומן FM'], ['f-smm','מסת שריר SMM'],
+  ['f-waist','היקף מותניים'], ['f-calf','היקף שוק'],
+  ['f-hgr','כוח לפיתה יד ימין'], ['f-hgl','כוח לפיתה יד שמאל'],
+  ['f-sppb','SPPB'], ['f-sts','קימה מכיסא'], ['f-walk','הליכה 2 דקות']
+];
+const SIDE_HE = { s:'התחלה', e:'סוף' };
+
 window.generateReport = () => {
   flushActiveInputs();
 
+  const sides = REPORT_MODE === 'single' ? [SINGLE_SIDE] : ['s','e'];
   const REQUIRED = [
     { id:'f-code',     label:'קוד נחקר/ת' },
     { id:'f-age',      label:'גיל' },
     { id:'f-sex',      label:'מין' },
     { id:'f-group',    label:'קבוצת מחקר' },
-    { id:'f-height',   label:'גובה' },
-    { id:'f-date-s',   label:'תאריך מדידה — התחלה' },
-    { id:'f-date-e',   label:'תאריך מדידה — סוף' },
-    { id:'f-ree-s',    label:'REE — התחלה' },
-    { id:'f-ree-e',    label:'REE — סוף' },
-    { id:'f-rer-s',    label:'RER — התחלה' },
-    { id:'f-rer-e',    label:'RER — סוף' },
-    { id:'f-fatburn-s',label:'% שריפת שומן — התחלה' },
-    { id:'f-fatburn-e',label:'% שריפת שומן — סוף' },
-    { id:'f-wt-s',     label:'משקל — התחלה' },
-    { id:'f-wt-e',     label:'משקל — סוף' },
-    { id:'f-fm-s',     label:'מסת שומן FM — התחלה' },
-    { id:'f-fm-e',     label:'מסת שומן FM — סוף' },
-    { id:'f-smm-s',    label:'מסת שריר SMM — התחלה' },
-    { id:'f-smm-e',    label:'מסת שריר SMM — סוף' },
-    // TBW / ICW / ECW אינם חובה (חסרים לרוב ב-REDCap)
-    { id:'f-waist-s',  label:'היקף מותניים — התחלה' },
-    { id:'f-waist-e',  label:'היקף מותניים — סוף' },
-    { id:'f-calf-s',   label:'היקף שוק — התחלה' },
-    { id:'f-calf-e',   label:'היקף שוק — סוף' },
-    { id:'f-hgr-s',    label:'כוח לפיתה יד ימין — התחלה' },
-    { id:'f-hgr-e',    label:'כוח לפיתה יד ימין — סוף' },
-    { id:'f-hgl-s',    label:'כוח לפיתה יד שמאל — התחלה' },
-    { id:'f-hgl-e',    label:'כוח לפיתה יד שמאל — סוף' },
-    { id:'f-sppb-s',   label:'SPPB — התחלה' },
-    { id:'f-sppb-e',   label:'SPPB — סוף' },
-    { id:'f-sts-s',    label:'קימה מכיסא — התחלה' },
-    { id:'f-sts-e',    label:'קימה מכיסא — סוף' },
-    { id:'f-walk-s',   label:'הליכה 2 דקות — התחלה' },
-    { id:'f-walk-e',   label:'הליכה 2 דקות — סוף' },
-  ];
+    { id:'f-height',   label:'גובה' }
+  ].concat(
+    // TBW / ICW / ECW אינם ברשימה: הם אינם חובה (חסרים לרוב ב-REDCap)
+    PAIRED_FIELDS.flatMap(([id, label]) =>
+      sides.map(sd => ({ id: id + '-' + sd, label: label + ' — ' + SIDE_HE[sd] })))
+  );
 
   const missing = REQUIRED.filter(f => {
     const el = document.getElementById(f.id);
@@ -1815,13 +1902,37 @@ window.generateReport = () => {
     walkS: g('f-walk-s'), walkE: g('f-walk-e'),
   };
 
+  /* דו״ח של נקודת זמן אחת.
+     כל הדו״ח בנוי סביב ערכי הסוף (הסיומת E), ולכן די למפות אליהם את הצד שנבחר
+     ולנקות את ערכי ההתחלה. מכאן והלאה שאר הקוד לא צריך לדעת באיזה מצב הוא נמצא:
+     since() ו-delta() מחזירים מחרוזת ריקה כשאין ערך התחלה, וקופסת פירוק
+     הירידה במשקל ממילא מוצגת רק כשיש ירידה. */
+  const ONE = REPORT_MODE === 'single';
+  if (ONE) {
+    Object.keys(D).forEach(k => {
+      if (!k.endsWith('S')) return;
+      const ek = k.slice(0, -1) + 'E';
+      if (!(ek in D)) return;
+      if (SINGLE_SIDE === 's') D[ek] = D[k];
+      D[k] = (typeof D[k] === 'string') ? '' : 0;
+    });
+  }
+  /* איך לקרוא למדידה שמוצגת בדו״ח: בדו״ח השוואה תמיד "סוף המחקר",
+     ובדו״ח של נקודה אחת לפי הצד שנבחר בפועל. */
+  const measureHe = !ONE ? 'סוף המחקר'
+                  : (SINGLE_SIDE === 's' ? 'הכניסה למחקר' : 'סוף המחקר');
+
   // Derived — END values
   const htM = height / 100;
   const bmiE = D.wtE / (htM * htM);
   const fatPctE = D.fmE / D.wtE * 100;
   const ffmE = D.wtE - D.fmE;
   const whtrE = D.waistE / height;
+  /* נתוני הנוזלים אינם קיימים בכל ייצוא של REDCap ואינם שדה חובה.
+     לכן מבדילים בין שלושה מצבים: פירוק מלא, סך נוזלים בלבד, ואין נתון כלל. */
   const ecwTbwE = D.ecwE / D.tbwE;
+  const hasFluidSplit = D.tbwE > 0 && D.icwE > 0 && D.ecwE > 0;
+  const hasFluidTotal = D.tbwE > 0;
   const reeExpE = harrisB(age, sex, D.wtE, height);
   const reePctE = D.reeE / reeExpE * 100;
 
@@ -1865,7 +1976,7 @@ window.generateReport = () => {
 
   // הערה 39 — פס תאריכים בראש כל עמוד, כדי שתאריך המדידה תמיד מול העיניים
   const dateBarEnd = (D.dateE || D.dateS)
-    ? `<div class="datebar">התוצאות בעמוד זה הן ממדידת <b>סוף המחקר</b>${D.dateE ? `, ${D.dateE}` : ''}${D.dateS ? ` · מדידת הכניסה למחקר: ${D.dateS}` : ''}</div>` : '';
+    ? `<div class="datebar">התוצאות בעמוד זה הן ממדידת <b>${measureHe}</b>${D.dateE ? `, ${D.dateE}` : ''}${D.dateS ? ` · מדידת הכניסה למחקר: ${D.dateS}` : ''}</div>` : '';
   const dateBarCmp = (D.dateE || D.dateS)
     ? `<div class="datebar">כניסה למחקר: <b>${D.dateS || '—'}</b> ← סוף המחקר: <b>${D.dateE || '—'}</b></div>` : '';
   const walkExp = walkExpected(age, sex);
@@ -2033,19 +2144,24 @@ ${dateBarEnd}
 
 <div class="intro">
   <p>תודה רבה על השתתפותך במחקר <b>PRIME</b> ועל שיתוף הפעולה לאורך הדרך.</p>
-  <p>בדוח זה מרוכזות תוצאות הבדיקות שביצעת: <b>חילוף חומרים במנוחה</b> (QNRG), <b>הרכב גוף</b> (InBody),
+  <p>בדו״ח זה מרוכזות תוצאות הבדיקות שביצעת: <b>חילוף חומרים במנוחה</b> (QNRG), <b>הרכב גוף</b> (InBody),
      <b>מדידות גוף והיקפים</b> ו<b>בדיקות תפקודיות</b>.</p>
-  <p>הערכים המוצגים בעמודים <span dir="ltr">1–2</span> הם מהבדיקה <b>האחרונה</b> שביצעת${D.dateE ? ` (${D.dateE})` : ''},
-     ובעמוד האחרון מוצגת <b>השוואה מלאה בין הבדיקה בכניסה למחקר${D.dateS ? ` (${D.dateS})` : ''} לבין הבדיקה האחרונה</b>,
-     כדי לראות את המגמה והשינוי לאורך המחקר.</p>
+  ${ONE
+    ? `<p>הערכים המוצגים בדו״ח הם מהבדיקה שביצעת ב<b>${measureHe}</b>${D.dateE ? ` (${D.dateE})` : ''},
+       ולצד כל תוצאה מופיע הטווח התקין לגילך ולמינך. בעמוד האחרון מרוכזות כל התוצאות יחד עם המלצות להמשך.</p>`
+    : `<p>הערכים המוצגים בעמודים <span dir="ltr">1–2</span> הם מהבדיקה <b>האחרונה</b> שביצעת${D.dateE ? ` (${D.dateE})` : ''},
+       ובעמוד האחרון מוצגת <b>השוואה מלאה בין הבדיקה בכניסה למחקר${D.dateS ? ` (${D.dateS})` : ''} לבין הבדיקה האחרונה</b>,
+       כדי לראות את המגמה והשינוי לאורך המחקר.</p>`}
 </div>
 
 <div class="ptbar">
   <div class="pt"><span class="ptl">גיל</span><span class="ptv">${age}</span></div>
   <div class="pt"><span class="ptl">מין</span><span class="ptv">${sex === 'm' ? 'זכר' : 'נקבה'}</span></div>
   <div class="pt"><span class="ptl">קבוצה במחקר</span><span class="ptv">${groupHe}</span></div>
-  <div class="pt"><span class="ptl">כניסה למחקר</span><span class="ptv">${D.dateS || '—'}</span></div>
-  <div class="pt"><span class="ptl">בדיקה אחרונה</span><span class="ptv">${D.dateE || '—'}</span></div>
+  ${ONE
+    ? `<div class="pt"><span class="ptl">תאריך הבדיקה</span><span class="ptv">${D.dateE || '—'}</span></div>`
+    : `<div class="pt"><span class="ptl">כניסה למחקר</span><span class="ptv">${D.dateS || '—'}</span></div>
+       <div class="pt"><span class="ptl">בדיקה אחרונה</span><span class="ptv">${D.dateE || '—'}</span></div>`}
 </div>
 
 <div class="qbanner">
@@ -2175,20 +2291,39 @@ ${dateBarEnd}
         ${(armGap !== null || legGap !== null) ? `<div style="margin-top:2px;">איזון בין ימין לשמאל: ידיים ${armGap === null ? '—' : n(armGap,1) + '%'} · רגליים ${legGap === null ? '—' : n(legGap,1) + '%'} ${(Math.max(armGap || 0, legGap || 0) > NORMS.limbGapPct) ? '<span class="tag warn">פער מעל 5%</span>' : '<span class="tag ok">מאוזן</span>'}</div>` : ''}
         <div class="ref">ASMM/משקל: Obes Facts 2022;15:321-335 · במקור J Am Geriatr Soc 2013;61:974-80 · פער בין הצדדים: דף פענוח InBody 770, ד"ר אסף בוך</div></div>
     </div>` : ''}
-    ${(D.tbwE > 0 && D.icwE > 0 && D.ecwE > 0) ? `<div class="card">
+    ${hasFluidSplit ? `<div class="card">
       <div class="label">נוזלים · Total Body Water&nbsp;<span class="nb">(TBW)</span></div>
       <div class="val">${n(D.tbwE,1)} <small>ליטר</small></div>
+      ${since(D.tbwS, D.tbwE, " ל׳", 1)}
       <div class="split" style="height:26px; font-size:11.5px;">
         <div class="a" style="width:${Math.round(D.icwE/D.tbwE*100)}%; background:#0ea5e9;">ICW · ${n(D.icwE,1)}</div>
         <div class="b" style="width:${Math.round(D.ecwE/D.tbwE*100)}%; background:#7dd3fc; color:#0c4a6e;">ECW · ${n(D.ecwE,1)}</div>
       </div>
       <div class="desc"><b>סך</b> המים בגוף. יחס ECW/TBW: <b>${n(ecwTbwE,3)}</b>, תקין <span dir="ltr">0.360–0.390</span>. ${tagOk(ecwTbwE, 0.360, 0.390)}</div>
+    </div>` : hasFluidTotal ? `<div class="card">
+      <div class="label">נוזלים · Total Body Water&nbsp;<span class="nb">(TBW)</span></div>
+      <div class="val">${n(D.tbwE,1)} <small>ליטר</small></div>
+      ${since(D.tbwS, D.tbwE, " ל׳", 1)}
+      <div class="desc"><b>סך</b> המים בגוף, כ-${Math.round(D.wtE > 0 ? D.tbwE / D.wtE * 100 : 0)}% ממשקל הגוף. רוב המים בגוף נמצאים בתוך השריר, ולכן שמירה על מסת השריר שומרת גם על מאגר הנוזלים.</div>
+      <div class="note">הפירוק לנוזל תוך-תאי וחוץ-תאי לא נמדד בבדיקה זו, ולכן יחס ECW/TBW אינו מוצג.</div>
     </div>` : `<div class="card" style="opacity:.55;">
       <div class="label">נוזלים · Total Body Water&nbsp;<span class="nb">(TBW)</span></div>
       <div class="desc" style="margin-top:16px;">לא נמדד בבדיקה זו.</div>
     </div>`}
   </div>
-  ${wtLoss > 0 ? `
+  ${ONE ? `
+  <div class="lossbox">
+    <div class="lb-item">
+      <div class="lb-l">מסת השומן</div>
+      <div class="lb-v">${n(D.fmE,1)} <small>ק״ג</small></div>
+      <div class="lb-s">${fmMaxKg !== null ? `הטווח המומלץ לגילך ולמינך: עד ${n(fmMaxKg,1)} ק״ג ` : ''}${tFatPct}</div>
+    </div>
+    <div class="lb-item">
+      <div class="lb-l">המסה נטולת השומן</div>
+      <div class="lb-v">${n(ffmE,1)} <small>ק״ג</small></div>
+      <div class="lb-s">${D.wtE > 0 ? `${n(ffmE / D.wtE * 100,0)}% ממשקל הגוף. ` : ''}זהו החלק הפעיל של הגוף: שריר, עצם ונוזלים, והוא שקובע את הכוח והתפקוד</div>
+    </div>
+  </div>` : wtLoss > 0 ? `
   <div class="lossbox">
     <div class="lb-item">
       <div class="lb-l">ירידה במשקל</div>
@@ -2205,7 +2340,7 @@ ${dateBarEnd}
             : '<span class="tag warn">מעל 25%, כדאי לחזק אימוני כוח וחלבון</span>')}</div>
     </div>
   </div>` : ''}
-  <div class="ref" style="margin-top:4px;">* החישוב מבוסס על FFM (מסה נטולת שומן) ממכשיר ה-InBody.</div>
+  <div class="ref" style="margin-top:4px;">* ${ONE ? 'הערכים מבוססים על' : 'החישוב מבוסס על'} FFM (מסה נטולת שומן) ממכשיר ה-InBody.</div>
 </div>
 <div class="foot"><span>קוד: ${D.code} · גיל ${age} · ${sex==='m'?'זכר':'נקבה'}</span><span>מחקר PRIME</span></div>
 </div>`;
@@ -2360,7 +2495,7 @@ ${dateBarEnd}
       </div>
     </div>`;
 
-  const page3 = `
+  const pageCompare = `
 <div class="pagebreak compare">
 <div class="head">
   <div class="logo"><img src="images/prime/prime_logo.jpeg" alt="PRIME"></div>
@@ -2574,12 +2709,100 @@ ${dateBarCmp}
 <div class="foot"><span>קוד: ${D.code}</span><span>מחקר PRIME</span></div>
 </div>`;
 
+  // ================================================================
+  // PAGE 3 (חלופי) — עמוד סיכום לדו״ח של נקודת זמן אחת.
+  // אין מה להשוות, ולכן במקום עמוד ההשוואה מרוכזות כאן כל התוצאות
+  // מול הטווח התקין, יחד עם ההמלצות ופרטי הקשר שהיו בעמוד ההשוואה.
+  // ================================================================
+  const sRow = (label, val, ref, tag) =>
+    `<tr><td class="sl">${label}</td><td class="sv">${val}</td><td class="sr">${ref || '—'}</td><td class="sg">${tag || ''}</td></tr>`;
+
+  const sTable = (title, rows) => rows.length ? `<div class="stbl">
+      <div class="stbl-h">${title}</div>
+      <table><tbody>${rows.join('')}</tbody></table>
+    </div>` : '';
+
+  const secMetab = sTable('מטבוליזם · QNRG', [
+    sRow('הוצאה אנרגטית במנוחה (REE)', `${Math.round(D.reeE).toLocaleString('he')} קק״ל`,
+         `<span dir="ltr">${n(NORMS.ree_pct.ok[0],0)}–${n(NORMS.ree_pct.ok[1],0)}%</span> מהצפוי (${Math.round(reeExpE).toLocaleString('he')} קק״ל)`, tRee),
+    sRow('מנת הנשימה (RER)', n(D.rerE,2), `<span dir="ltr">&lt;${n(NORMS.rer.fastingMax,2)}</span> בצום`, tRer),
+    sRow('תמהיל הדלק במנוחה', `${Math.round(D.fatburnE)}% שומן · ${Math.round(100 - D.fatburnE)}% פחמימה`, '', '')
+  ]);
+
+  const secBody = sTable('הרכב גוף · InBody', [
+    sRow('משקל', `${n(D.wtE,1)} ק״ג`, '', ''),
+    sRow('מדד מסת גוף (BMI)', n(bmiE,1), `<span dir="ltr">${n(NORMS.bmi.ok[0],1)}–${n(NORMS.bmi.ok[1],1)}</span>`, tBmi),
+    sRow('אחוז שומן', `${n(fatPctE,1)}%`, `עד ${n(fatPctMax,1)}%`, tFatPct),
+    sRow('מסת שומן', `${n(D.fmE,1)} ק״ג`, fmMaxKg ? `עד ${n(fmMaxKg,1)} ק״ג` : '', ''),
+    sRow('מסת שריר (SMM)', `${n(D.smmE,1)} ק״ג`, '', ''),
+    sRow('מסה נטולת שומן (FFM)', `${n(ffmE,1)} ק״ג`, '', ''),
+    ...(D.smiE > 0 ? [sRow('מדד מסת שריר (SMI)', `${n(D.smiE,1)} ק״ג/מ²`, `מעל ${n(smiMin,1)}`, tSmi)] : []),
+    ...(asmmPctE !== null ? [sRow('מסה רזה בגפיים (ASMM)', `${n(asmmPctE,1)}% ממשקל הגוף`, `מעל ${n(asmmMin,1)}%`, tagGte(asmmPctE, asmmMin))] : []),
+    ...(D.tbwE > 0 ? [sRow('סך נוזלי הגוף (TBW)', `${n(D.tbwE,1)} ליטר`, '', '')] : []),
+    ...(hasFluidSplit ? [sRow('יחס נוזלים חוץ-תאיים (ECW/TBW)', n(ecwTbwE,3), '<span dir="ltr">0.360–0.390</span>', tagOk(ecwTbwE, 0.360, 0.390))] : [])
+  ]);
+
+  const secAnthro = sTable('מדידות גוף והיקפים', [
+    sRow('היקף מותניים', `${n(D.waistE,1)} ס״מ`, `מתחת ל-${sex === 'm' ? 102 : 88} ס״מ`, tWaist),
+    sRow('יחס מותן-גובה', n(whtrE,2), `מתחת ל-<span dir="ltr">${n(NORMS.whtr.ok,2)}</span>`, tWhtr),
+    sRow('היקף שוק', `${n(D.calfE,1)} ס״מ`, `מעל ${sex === 'm' ? 34 : 33} ס״מ`, tCalf)
+  ]);
+
+  const secFunc = sTable('בדיקות תפקודיות', [
+    sRow('כוח לפיתה (היד החזקה)', `${n(hgMaxE,1)} ק״ג`, `<span dir="ltr">&#8805;${sex === 'm' ? 27 : 16}</span> ק״ג`, tHg),
+    sRow('תפקוד גופני (SPPB)', `${D.sppbE} מתוך 12`, `<span dir="ltr">&#8805;${NORMS.sppb.ok}</span> · ממוצע לגיל ${sppbNorm.age}: ${n(sppbNorm.mean,1)}`, tSppb),
+    sRow('קימה מכיסא (30 שניות)', `${D.stsE} חזרות`, `${stsCrit.min} ומעלה (גיל <span dir="ltr">${stsCrit.band}</span>)`, tSts),
+    sRow('מבחן הליכה 2 דקות', `${D.walkE} מטר`, `<span dir="ltr">${n(walkExp.lo,0)}–${n(walkExp.hi,0)}</span> מ׳${walkPred !== null ? ` · צפי אישי: ~${n(walkPred,0)} מ׳` : ''}`, tWalk)
+  ]);
+
+  const pageSummary = `
+<div class="pagebreak compare">
+<div class="head">
+  <div class="logo"><img src="images/prime/prime_logo.jpeg" alt="PRIME"></div>
+  <div class="head-txt"><h1>סיכום התוצאות והמלצות להמשך</h1><div class="sub">כל המדדים שנמדדו, מול הטווח התקין</div></div>
+  <div class="head-badge">מחקר PRIME</div>
+</div>
+${dateBarEnd}
+<div class="lead">בטבלאות שלהלן מרוכזות כל התוצאות שלך מ<b>מדידת ${measureHe}</b>, לצד <b>הטווח התקין</b> לגילך ולמינך. הסימון <span class="tag ok">בטווח תקין</span> מציין מדד שנמצא בטווח המומלץ, והסימון <span class="tag warn">לשיפור</span> מציין מדד שכדאי לשים אליו לב.</div>
+<div class="cbody">
+  <div class="stbl-wrap">${secMetab}${secBody}${secAnthro}${secFunc}</div>
+  <div class="next">
+    <div class="next-h">להמשך הדרך</div>
+    ${nextSteps.map((s, i) => `<div class="next-i"><span class="next-n">${i + 1}</span><div><b>${s[0]}</b> ${s[1]}</div></div>`).join('')}
+    <div class="next-f">ההמלצות כאן כלליות ומבוססות על תוצאות הבדיקות במחקר. הן אינן מחליפות ייעוץ רפואי או תזונתי אישי.</div>
+  </div>
+  <div class="contact">
+    <div class="ct-h">נשמח לעמוד לרשותך בכל שאלה</div>
+    <div class="ct-row">
+      <div class="ct-p">
+        <div class="ct-n">אמיר רובין</div>
+        <div class="ct-r">דוקטורנט ודיאטן קליני</div>
+        <div class="ct-t" dir="ltr">052-4844497</div>
+      </div>
+      <div class="ct-p">
+        <div class="ct-n">שירן בנדלר</div>
+        <div class="ct-r">דוקטורנטית ודיאטנית קלינית</div>
+        <div class="ct-t" dir="ltr">054-6694839</div>
+      </div>
+      <div class="ct-p">
+        <div class="ct-n">דואר אלקטרוני</div>
+        <div class="ct-r">צוות מחקר PRIME</div>
+        <div class="ct-t" dir="ltr">primerct2026@gmail.com</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="foot"><span>קוד: ${D.code}</span><span>מחקר PRIME</span></div>
+</div>`;
+
+  const page3 = ONE ? pageSummary : pageCompare;
+
   document.getElementById('report-content').innerHTML = page1 + page2 + page3;
   document.getElementById('report-code-title').textContent = `קוד נחקר/ת: ${D.code}`;
   document.getElementById('form-screen').style.display = 'none';
   document.getElementById('report-screen').style.display = 'block';
   // נתונים שחלון השליחה צריך: קוד לשם הקובץ, ומין לניסוח הפנייה
-  window.__report = { code: D.code, sex: sex };
+  window.__report = { code: D.code, sex: sex, one: ONE, when: measureHe };
   window.scrollTo(0, 0);
 };
 
@@ -2595,13 +2818,22 @@ const SEND_SECRET = "lgGnSJZnAsfIs4W822y0k7F6";
 
 /** נוסח ההודעה המצורפת לדו״ח. משתנה רק במילה אחת, לפי מין הנחקר/ת. */
 function mailBody(sex) {
+  /* בדו״ח של נקודת זמן אחת אין השוואה, ולכן ההודעה לא מבטיחה כזו */
+  const one  = !!(window.__report && window.__report.one);
+  const when = (window.__report && window.__report.when) || 'סוף המחקר';
+  const scope = one
+    ? `, מבדיקת ${when}.`
+    : ', בהשוואה בין תחילת המחקר לסופו.';
+  const purpose = one
+    ? 'הדו״ח נועד לתת לך תמונה ברורה על הגוף שלך ועל מיקום התוצאות שלך מול הטווחים המומלצים לגילך ולמינך.'
+    : 'הדו״ח נועד לתת לך תמונה ברורה על הגוף שלך ועל השינויים שעברת במהלך המחקר.';
   return `שלום,
 
 תודה רבה על ההשתתפות שלך במחקר PRIME ועל שיתוף הפעולה לאורך הדרך.
 
-מצורף דו״ח אישי המרכז את תוצאות הבדיקות שביצעת: חילוף חומרים במנוחה, הרכב גוף, מדידות היקפים ובדיקות תפקודיות, בהשוואה בין תחילת המחקר לסופו.
+מצורף דו״ח אישי המרכז את תוצאות הבדיקות שביצעת: חילוף חומרים במנוחה, הרכב גוף, מדידות היקפים ובדיקות תפקודיות${scope}
 
-הדו״ח נועד לתת לך תמונה ברורה על הגוף שלך ועל השינויים שעברת במהלך המחקר. הוא אינו מהווה אבחנה רפואית ואינו מחליף ייעוץ רפואי או תזונתי אישי.
+${purpose} הוא אינו מהווה אבחנה רפואית ואינו מחליף ייעוץ רפואי או תזונתי אישי.
 
 ${sex === 'f' ? 'מוזמנת' : 'מוזמן'} לפנות אלינו בכל שאלה.
 

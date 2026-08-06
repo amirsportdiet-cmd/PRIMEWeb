@@ -156,9 +156,10 @@
     <button class="phase-tab" id="site-ichilov" data-site="ichilov" onclick="setSite('ichilov')">🏥 איכילוב</button>
   </div>
   <div class="phase-tabs" id="group-select" style="margin-top:-8px; display:none;">
-    <button type="button" class="phase-tab" id="grp-control" onclick="setGroup('control')">👥 קבוצת ביקורת</button>
-    <button type="button" class="phase-tab" id="grp-interv" onclick="setGroup('intervention')">💪 קבוצת התערבות</button>
+    <button type="button" class="phase-tab" id="grp-control" onclick="setGroup('control','manual')">👥 קבוצת ביקורת</button>
+    <button type="button" class="phase-tab" id="grp-interv" onclick="setGroup('intervention','manual')">💪 קבוצת התערבות</button>
   </div>
+  <div id="group-note" style="display:none; margin-top:-10px; margin-bottom:18px; font-size:12.5px; font-weight:700; line-height:1.7;"></div>
 
   <div class="grid">
     <!-- Inputs -->
@@ -548,7 +549,11 @@ const ATTACHMENTS = {
 };
 
 let PHASE = 'start';
-let GROUP = 'control';   // רלוונטי רק לאמצע/סוף
+/* הקבוצה רלוונטית רק לאמצע ולסוף, והיא קובעת גם את נוסח המייל וגם אילו קבצים
+   מצורפים. אין לה ברירת מחדל: כל עוד לא ידוע לאיזו קבוצה שייך/ת הנחקר/ת,
+   הערך ריק, התבנית אינה נטענת והשליחה חסומה. */
+let GROUP = '';
+let GROUP_SRC = '';      // 'calendar' | 'history' | 'manual' — מאיפה נקבעה
 let GENDER = 'f';        // f = נקבה, m = זכר
 let autoWhen = '';   // הערך האחרון שמולא אוטומטית לשדה התזמון
 window.setPhase = (p)=>{
@@ -589,13 +594,35 @@ window.setGender = (g)=>{
 function applyGender(text){
   return (text||'').replace(/\[([^\[\]|]*)\|([^\[\]|]*)\]/g, (m,a,b)=> GENDER==='m' ? a : b);
 }
-window.setGroup = (g)=>{
-  GROUP = g;
-  document.getElementById('grp-control').classList.toggle('active', g==='control');
-  document.getElementById('grp-interv').classList.toggle('active', g==='intervention');
+window.setGroup = (g, src)=>{
+  GROUP = g || '';
+  GROUP_SRC = GROUP ? (src || 'manual') : '';
+  document.getElementById('grp-control').classList.toggle('active', GROUP==='control');
+  document.getElementById('grp-interv').classList.toggle('active', GROUP==='intervention');
   loadTemplate(); render();
 };
+
+/** מזהה קבוצה מתוך טקסט של אירוע יומן. מחזיר '' כשאין אזכור ברור. */
+function groupFromText(txt){
+  const s = String(txt || '');
+  const interv  = /התערבות|אינטרוונציה|intervention/i.test(s);
+  const control = /ביקורת|קונטרול|control/i.test(s);
+  if (interv && !control) return 'intervention';
+  if (control && !interv) return 'control';
+  return '';   // אין אזכור, או ששניהם מופיעים ואי אפשר להכריע
+}
+
+/** האם השלב הנוכחי דורש קבוצה, והאם היא נבחרה */
+function groupNeeded(){ return PHASE !== 'start'; }
+function groupReady(){ return !groupNeeded() || !!GROUP; }
+
 function loadTemplate(){
+  // בלי קבוצה אין תבנית נכונה לאמצע/סוף, ועדיף שדה ריק מאשר הנוסח של הקבוצה השנייה
+  if(!groupReady()){
+    document.getElementById('m-subject').value = '';
+    document.getElementById('m-body').value = '';
+    return;
+  }
   const t = TEMPLATES[attachKey()] || TEMPLATES['start'];
   document.getElementById('m-subject').value = t.subject;
   document.getElementById('m-body').value = t.body;
@@ -625,7 +652,7 @@ window.renderLock = function renderLock(){
 
 function initApp(){
   setGender('f');
-  setGroup('control');
+  setGroup('');
   setSite('assuta');   // ברירת מחדל
   loadTemplate();
   render();
@@ -718,7 +745,20 @@ window.render = ()=>{
     dbox.innerHTML = '<div style="color:#94a3b8;">הזן תאריך יום מחקר כדי לחשב את שאר התאריכים…</div>';
   }
   // attachments + group visibility
-  document.getElementById('group-select').style.display = (PHASE==='start') ? 'none' : 'block';
+  document.getElementById('group-select').style.display = groupNeeded() ? 'block' : 'none';
+  const gnote = document.getElementById('group-note');
+  if(!groupNeeded()){
+    gnote.style.display = 'none';
+  } else if(!GROUP){
+    gnote.style.display = 'block';
+    gnote.style.color = '#dc2626';
+    gnote.textContent = '⚠️ לא זוהתה הקבוצה של הנחקר/ת. יש לבחור התערבות או ביקורת — הנוסח והקבצים המצורפים תלויים בה.';
+  } else {
+    const SRC_HE = { calendar:'זוהתה מהאירוע ביומן', history:'נלקחה משליחה קודמת לנחקר/ת', manual:'נבחרה ידנית' };
+    gnote.style.display = 'block';
+    gnote.style.color = GROUP_SRC === 'manual' ? '#64748b' : '#15803d';
+    gnote.textContent = '✓ קבוצת ' + (GROUP==='control' ? 'ביקורת' : 'התערבות') + ' · ' + (SRC_HE[GROUP_SRC] || '');
+  }
   const files = ATTACHMENTS[fileKey()] || [];
   document.getElementById('attach-list').innerHTML = files.length
     ? files.map(f=>`📄 ${f}`).join('<br>')
@@ -852,12 +892,17 @@ function applyCalEvent(ev){
   if(t) document.getElementById('m-time').value = t;
   if(ev.site)  setSite(ev.site);
   if(ev.phase) setPhase(ev.phase);
+  /* הקבוצה נלקחת מטקסט האירוע ביומן אם הוא מציין אותה. אם לא, משאירים ריק
+     בכוונה: loadHistory תנסה להשלים מהיסטוריית השליחות, ואם גם שם אין,
+     החוקר/ת יבחרו ידנית. עדיף לשאול מאשר לנחש קבוצה. */
+  setGroup(groupFromText([ev.title, ev.location, ev.name].join(' ')), 'calendar');
   render();
   loadHistory();
   const miss = [];
   if(!ev.email) miss.push('מייל');
   if(!ev.phase) miss.push('שלב');
   if(!ev.site)  miss.push('מוקד');
+  if(groupNeeded() && !GROUP) miss.push('קבוצה');
   document.getElementById('cal-result').innerHTML =
     `<div class="hist" style="background:#f0fdf4;border-color:#bbf7d0;">
        <div class="ht" style="color:#15803d;">✅ נטען מהיומן: ${ev.title||ev.name}</div>
@@ -874,6 +919,12 @@ window.loadHistory = () => {
   if(!em || !checkEmail(em).ok){ box.innerHTML=''; return; }
   callApi({ mode:'history', email: em }).then(res=>{
     if(!res || !res.ok || !res.items || !res.items.length){ box.innerHTML=''; return; }
+    /* אם עוד לא ידועה הקבוצה, לוקחים אותה משליחה קודמת לאותו נחקר/ת.
+       זה מקור אמין: הוא נרשם בגיליון הלוג בשעת השליחה הקודמת. */
+    if(groupNeeded() && !GROUP){
+      const prev = res.items.find(h => h.group === 'control' || h.group === 'intervention');
+      if(prev) setGroup(prev.group, 'history');
+    }
     const who = (res.items.find(h=>h.name && h.name.trim()) || {}).name || '';
     box.innerHTML = `<div class="hist"><div class="ht">📜 היסטוריה${who ? ' · ' + who : ''} (${res.items.length})</div>` +
       res.items.slice(0,6).map(h=>{
@@ -1277,6 +1328,8 @@ window.sendJob = (mode)=>{
   const p = buildPayload(mode === 'both' ? 'schedule' : mode);
   if(!p.to.length){ status.style.color='#dc2626'; status.textContent='יש להזין מייל של הנחקר/ת.'; return; }
   if(!document.getElementById('m-date').value){ status.style.color='#dc2626'; status.textContent='יש להזין תאריך יום מחקר.'; return; }
+  if(!groupReady()){ status.style.color='#dc2626'; status.textContent='יש לבחור קבוצה — התערבות או ביקורת. הנוסח והקבצים המצורפים תלויים בה.'; return; }
+  if(!document.getElementById('m-body').value.trim()){ status.style.color='#dc2626'; status.textContent='גוף ההודעה ריק.'; return; }
   if((mode==='schedule'||mode==='both') && !p.sendAt){ status.style.color='#dc2626'; status.textContent='יש לבחור תאריך ושעה לתזמון.'; return; }
 
   if(!BACKEND_URL){

@@ -2906,23 +2906,34 @@ ${sex === 'f' ? 'מוזמנת' : 'מוזמן'} לפנות אלינו בכל שא
 const MAIL_SUBJECT = 'תוצאות הבדיקות שלך במחקר PRIME';
 
 /** שולף את המייל של הנחקר/ת מקובץ ה-REDCap שנטען, אם נטען */
+/* חיפוש כתובת המייל של הנחקר/ת.
+   ⚠️ ההתאמה היא לפי code_participant בלבד, לעולם לא לפי record_id.
+   השניים אינם זהים: קוד נחקר 19 יושב ב-record_id 47, ואילו record_id 19 שייך
+   לקוד 2. התאמה לפי record_id החזירה בעבר את כתובת המייל של נחקר/ת אחר/ת. */
 function participantEmail() {
   if (!RC_BY_ID || !RC_HEADER || RC_HEADER['cand_email'] == null) return null;
   const emailCol = RC_HEADER['cand_email'];
   const codeCol  = RC_HEADER['code_participant'];
+  if (codeCol == null) return null;
   const code = (document.getElementById('f-code').value || '').trim();
   if (!code) return null;
-  for (const id in RC_BY_ID) {
-    const evs = RC_BY_ID[id];
-    const isMine = id === code || (codeCol != null &&
-      Object.keys(evs).some(ev => ((evs[ev][codeCol] || '')).trim() === code));
-    if (!isMine) continue;
-    for (const ev in evs) {
-      const v = ((evs[ev][emailCol] || '')).trim();
-      if (v) return v;
-    }
-  }
-  return null;
+
+  const cellOf = (evs, col) => {
+    for (const ev in evs) { const v = ((evs[ev][col] || '')).trim(); if (v) return v; }
+    return '';
+  };
+  // כל הרשומות שקוד הנחקר/ת שלהן זהה למה שמופיע בטופס
+  const hits = Object.keys(RC_BY_ID)
+    .filter(id => Object.keys(RC_BY_ID[id]).some(ev => ((RC_BY_ID[id][ev][codeCol] || '')).trim() === code));
+  // יותר מרשומה אחת עם אותו קוד — לא מנחשים, שיבחרו ידנית
+  if (hits.length !== 1) return null;
+
+  const evs = RC_BY_ID[hits[0]];
+  const email = cellOf(evs, emailCol);
+  if (!email) return null;
+  const fn = RC_HEADER['cand_fname'] != null ? cellOf(evs, RC_HEADER['cand_fname']) : '';
+  const ln = RC_HEADER['cand_lname'] != null ? cellOf(evs, RC_HEADER['cand_lname']) : '';
+  return { email, code, name: (fn + ' ' + ln).trim(), recordId: hits[0] };
 }
 
 let pickedPdf = null;   // הקובץ שהחוקר בחר אחרי ההורדה
@@ -2932,10 +2943,17 @@ window.openSend = () => {
   document.getElementById('sm-preview').textContent = mailBody(sex);
   const found = participantEmail();
   const inp = document.getElementById('sm-email');
-  inp.value = found || '';
-  document.getElementById('sm-src').textContent = found
-    ? 'הכתובת נטענה מקובץ ה-REDCap. אפשר לערוך.'
-    : 'לא נמצאה כתובת בקובץ, יש להזין ידנית.';
+  inp.value = found ? found.email : '';
+  /* מציגים למי שייכת הכתובת, כדי שאי-התאמה תתגלה לפני השליחה ולא אחריה */
+  const src = document.getElementById('sm-src');
+  if (found) {
+    src.style.color = '#0f766e';
+    src.textContent = 'הכתובת של ' + (found.name ? found.name + ', ' : '') +
+                      'קוד נחקר/ת ' + found.code + ', מתוך קובץ ה-REDCap. אפשר לערוך.';
+  } else {
+    src.style.color = '#b45309';
+    src.textContent = 'לא נמצאה כתובת לקוד הזה בקובץ, יש להזין ידנית.';
+  }
   pickedPdf = null;
   document.getElementById('sm-file').value = '';
   document.getElementById('sm-file-name').textContent = 'עדיין לא נבחר קובץ';

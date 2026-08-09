@@ -323,6 +323,14 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
 .bar.bar-hi-good{ background:linear-gradient(90deg,#34d399 0%,#a7f3d0 35%,#fde68a 65%,#fca5a5 100%); }
 .bar.bar-lo-good{ background:linear-gradient(90deg,#fca5a5 0%,#fde68a 35%,#a7f3d0 65%,#34d399 100%); }
 .ref{ font-size:8.5px; color:#94a3b8; margin-top:2px; line-height:1.3; }
+/* מראה מקור באנגלית בלבד: יושר לשמאל, ככתיבה באנגלית */
+.ref.ltr{ direction:ltr; text-align:left; }
+/* ציטוט באנגלית בתוך משפט עברי. הבידוד שומר עליו כיחידה אחת, אחרת
+   הדו-כיווניות מפרקת אותו ומפזרת את החלקים בסדר לא נכון. */
+.cit{ unicode-bidi:isolate; direction:ltr; }
+/* כשיש כמה מקורות בשורה אחת הם נשברים זה לתוך זה, ולכן כל מקור בשורה משלו */
+.ref .src{ display:block; }
+.ref .src + .src{ margin-top:1px; }
 .lossbox{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:8px 0 6px; }
 .lossbox .lb-item{ background:#fff; border:1px solid var(--line); border-right:4px solid var(--teal); border-radius:11px; padding:8px 13px; }
 .lossbox .lb-l{ font-size:10.5px; color:#64748b; font-weight:700; }
@@ -2381,7 +2389,7 @@ ${dateBarEnd}
         <div class="scale"><span>נמוך</span><span>תקין</span><span>גבוה</span></div>
       </div>
       <div class="note">ערך תקין ${sex === 'm' ? 'לגברים' : 'לנשים'} ${age < 65 ? 'עד גיל 65' : 'מגיל 65 ומעלה'}: עד <b>${fatPctMax}%</b>${fmMaxKg !== null ? `, שהם <b>${n(fmMaxKg,1)} ק״ג</b> במשקל הנוכחי` : ''} · מעל <b>${obesityCut}%</b>${fmObesKg !== null ? ` (<b>${n(fmObesKg,1)} ק״ג</b>)` : ''} מוגדר השמנה ${tFatPct}
-        <div class="ref">Heo M et al., Am J Clin Nutr 2012;95:594-602 (NHANES 1999-2004)</div></div>
+        <div class="ref ltr">Heo M et al., Am J Clin Nutr 2012;95:594-602 (NHANES 1999-2004)</div></div>
     </div>
     <div class="card">
       <div class="label">מסה נטולת שומן ומסת שריר</div>
@@ -2400,7 +2408,7 @@ ${dateBarEnd}
         <div class="scale"><span>נמוך · סיכון</span><span>גבולי</span><span>תקין</span></div>
       </div>
       <div class="note">SMI תקין: <b>גברים מעל 7.0</b> · <b>נשים מעל 5.5</b> ק״ג/מ² ${tSmi}
-        <div class="ref">Cruz-Jentoft AJ et al., EWGSOP2, Age Ageing 2019;48:16-31</div></div>` : ''}
+        <div class="ref ltr">Cruz-Jentoft AJ et al., EWGSOP2, Age Ageing 2019;48:16-31</div></div>` : ''}
     </div>
     ${asmmPctE !== null ? `<div class="card">
       <div class="label">מסת שריר בגפיים&nbsp;<span class="nb">(ASMM)</span></div>
@@ -2413,7 +2421,11 @@ ${dateBarEnd}
       </div>
       <div class="note">תקין: <b>גברים מעל ${n(NORMS.asmmPct.okM,1)}%</b> · <b>נשים מעל ${n(NORMS.asmmPct.okF,1)}%</b> ${tagGte(asmmPctE, asmmMin)}
         ${(armGap !== null || legGap !== null) ? `<div style="margin-top:2px;">איזון בין ימין לשמאל: ידיים ${armGap === null ? '—' : n(armGap,1) + '%'} · רגליים ${legGap === null ? '—' : n(legGap,1) + '%'} ${(Math.max(armGap || 0, legGap || 0) > NORMS.limbGapPct) ? '<span class="tag warn">פער מעל 5%</span>' : '<span class="tag ok">מאוזן</span>'}</div>` : ''}
-        <div class="ref">ASMM/משקל: Obes Facts 2022;15:321-335 · במקור J Am Geriatr Soc 2013;61:974-80 · פער בין הצדדים: דף פענוח InBody 770, ד"ר אסף בוך</div></div>
+        <div class="ref">
+        <span class="src">ASMM ביחס למשקל: <span class="cit">Obes Facts 2022;15:321-335</span></span>
+        <span class="src">במקור: <span class="cit">J Am Geriatr Soc 2013;61:974-80</span></span>
+        <span class="src">פער בין הצדדים: דף פענוח <span class="cit">InBody 770</span>, ד"ר אסף בוך</span>
+      </div></div>
     </div>` : ''}
     ${hasFluidSplit ? `<div class="card">
       <div class="label">נוזלים · Total Body Water&nbsp;<span class="nb">(TBW)</span></div>
@@ -2512,7 +2524,10 @@ ${dateBarEnd}
         <div class="scale"><span>חולשה</span><span>טווח תקין</span><span>כוח גבוה</span></div>
       </div>
       <div class="note">${hgNote} ${tHg}
-        <div class="ref">ספי חולשה: Cruz-Jentoft AJ et al., EWGSOP2, Age Ageing 2019;48:16-31 · סף שינוי משמעותי: Bohannon RW, J Phys Ther Sci 2019;31:75-78</div></div>
+        <div class="ref">
+        <span class="src">ספי חולשה: <span class="cit">Cruz-Jentoft AJ et al., EWGSOP2, Age Ageing 2019;48:16-31</span></span>
+        <span class="src">סף שינוי משמעותי: <span class="cit">Bohannon RW, J Phys Ther Sci 2019;31:75-78</span></span>
+      </div></div>
     </div>
     <div class="card">
       <div class="label">סוללת מבחנים קצרה להערכת התפקוד הגופני&nbsp;<span class="nb">(SPPB)</span></div>
@@ -2525,7 +2540,11 @@ ${dateBarEnd}
         <div class="scale"><span>0 · מוגבל</span><span>סיכון</span><span>12 · מצוין</span></div>
       </div>
       <div class="note">ציון <span dir="ltr">&#8805;10</span> = תפקוד טוב; <span dir="ltr">&#8804;8</span> = סיכון לירידה תפקודית · ממוצע לגיל ${sppbNorm.age} (${sex==='m'?'גברים':'נשים'}): ${n(sppbNorm.mean,1)} מתוך 12 ${tSppb}
-        <div class="ref">ספי פרשנות: Guralnik JM et al., J Gerontol 1994;49:M85-94 · ערכי ייחוס לפי גיל: Bergland A &amp; Strand BH, BMC Geriatr 2019;19:216 (Tromsø) · סף שינוי משמעותי: Perera S et al., J Am Geriatr Soc 2006;54:743-9</div></div>
+        <div class="ref">
+        <span class="src">ספי פרשנות: <span class="cit">Guralnik JM et al., J Gerontol 1994;49:M85-94</span></span>
+        <span class="src">ערכי ייחוס לפי גיל: <span class="cit">Bergland A &amp; Strand BH, BMC Geriatr 2019;19:216 (Tromsø)</span></span>
+        <span class="src">סף שינוי משמעותי: <span class="cit">Perera S et al., J Am Geriatr Soc 2006;54:743-9</span></span>
+      </div></div>
     </div>
     <div class="card">
       <div class="label">קימה מכיסא ב-30 שניות&nbsp;<span class="nb" dir="ltr">(30s STS)</span></div>
@@ -2538,7 +2557,7 @@ ${dateBarEnd}
         <div class="scale"><span>נמוך</span><span>טווח תקין</span><span>גבוה</span></div>
       </div>
       <div class="note">${stsNote} ${tSts}
-        <div class="ref">Rikli RE &amp; Jones CJ, Gerontologist 2013;53:255-6 (ערכי סף לשמירה על עצמאות תפקודית)</div></div>
+        <div class="ref ltr">Rikli RE &amp; Jones CJ, Gerontologist 2013;53:255-6 <span dir="rtl">(ערכי סף לשמירה על עצמאות תפקודית)</span></div></div>
     </div>
     <div class="card">
       <div class="label">מבחן הליכה 2 דקות&nbsp;<span class="nb" dir="ltr">(2-min walk)</span></div>
@@ -2551,14 +2570,14 @@ ${dateBarEnd}
         <div class="scale"><span>נמוך</span><span>טווח תקין</span><span>גבוה</span></div>
       </div>
       <div class="note">תקין (גיל <span dir="ltr">${walkExp.band}</span>): ${sex==='m'?'גברים':'נשים'} <span dir="ltr">${n(walkExp.lo,0)}–${n(walkExp.hi,0)}</span> מ׳${walkPred !== null ? ` · צפי אישי לפי גיל ו-BMI: ~${n(walkPred,0)} מ׳` : ''} ${tWalk}
-        <div class="ref">Bohannon RW, Wang YC &amp; Gershon RC, Arch Phys Med Rehabil 2015;96:472-7 (NIH Toolbox)</div></div>
+        <div class="ref ltr">Bohannon RW, Wang YC &amp; Gershon RC, Arch Phys Med Rehabil 2015;96:472-7 (NIH Toolbox)</div></div>
     </div>
   </div>
   ${phen ? `<div class="phen ${phen.cls}">
     <div class="ph-h">תמונת המצב המשולבת, הרכב גוף וכוח</div>
     <div class="ph-t">${phen.title}</div>
     <div class="ph-b">${phen.body}</div>
-    <div class="ph-f">הסיווג מבוסס על הקונצנזוס להשמנה סרקופנית (ESPEN/EASO, Obes Facts 2022): כוח ירוד נקבע לפי כוח לפיתה מתחת ל-${sex==='m'?'27':'16'} ק״ג או קימה מכיסא מתחת ל-${stsCrit.min} חזרות; מסת שריר נמוכה לפי ${asmmPctE !== null ? `מסה רזה בגפיים מתחת ל-${n(asmmMin,1)}% ממשקל הגוף` : `מדד SMI מתחת ל-${n(smiMin,1)} ק״ג/מ²`}; ואחוז שומן גבוה מעל ${obesityCutSO}% לגיל ולמין. אינו מהווה אבחנה רפואית.</div>
+    <div class="ph-f">הסיווג מבוסס על הקונצנזוס להשמנה סרקופנית (<span class="cit">ESPEN/EASO, Obes Facts 2022</span>): כוח ירוד נקבע לפי כוח לפיתה מתחת ל-${sex==='m'?'27':'16'} ק״ג או קימה מכיסא מתחת ל-${stsCrit.min} חזרות; מסת שריר נמוכה לפי ${asmmPctE !== null ? `מסה רזה בגפיים מתחת ל-${n(asmmMin,1)}% ממשקל הגוף` : `מדד SMI מתחת ל-${n(smiMin,1)} ק״ג/מ²`}; ואחוז שומן גבוה מעל ${obesityCutSO}% לגיל ולמין. אינו מהווה אבחנה רפואית.</div>
   </div>` : ''}
   <div class="summary">המטרה אינה רק לרדת במשקל, אלא גם לשמור על ה<b>כוח, העצמאות והניידות</b>. שמירה או שיפור של הערכים האלה לאורך המחקר הם סימן מצוין לכך שירידת המשקל מגיעה מהמקום הנכון.</div>
 </div>

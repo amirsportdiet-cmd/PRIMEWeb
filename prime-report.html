@@ -274,8 +274,6 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
          padding-top:5px; margin-top:3px; }
 .sig{ display:inline-block; background:#dcfce7; color:#15803d; border-radius:5px;
       padding:0 5px; font-size:9.5px; font-weight:700; }
-.nsig{ display:inline-block; background:#f1f5f9; color:#64748b; border-radius:5px;
-       padding:0 5px; font-size:9.5px; font-weight:600; }
 .grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
 .grid.g2, .grid.g4{ grid-template-columns:repeat(2,1fr); }
 .grid2{ display:grid; grid-template-columns:repeat(2,1fr); gap:18px; }
@@ -483,7 +481,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
   .summary { padding:10px 16px; font-size:11.5px; margin-top:12px; }
   .datebar { padding:3px 10px; margin-bottom:6px; font-size:10px; }
   .since { font-size:10px; padding:3px 8px; margin:3px 0 2px; }
-  .sig, .nsig { font-size:9.5px; }
+  .sig { font-size:9.5px; }
   /* Page 3 */
   .next { padding:8px 13px 6px; margin-top:7px; }
   .next-h { font-size:12px; margin-bottom:4px; }
@@ -1543,14 +1541,14 @@ function since(startVal, endVal, unit, dec, mdc) {
 }
 
 /**
- * הערה 34 — האם השינוי משמעותי קלינית, או בתחום שונות המדידה?
+ * הערה 34 — סימון שינוי שעבר את סף השינוי האמיתי של אותו מבחן.
  * mdc = הסף המזערי לשינוי אמיתי שפורסם עבור אותו מבחן (ראו NORMS.mdc).
+ * שינוי שלא עבר את הסף אינו מסומן כלל: מוצגת רק המגמה עצמה, בלי הערה
+ * שמסבירה שהיא קטנה. הדגשה יש רק כשיש מה להדגיש.
  */
 function sigTag(diff, mdc, flat) {
   if (!mdc || flat) return '';
-  return Math.abs(diff) >= mdc
-    ? ' <span class="sig">שינוי משמעותי</span>'
-    : ' <span class="nsig">בתחום שונות המדידה</span>';
+  return Math.abs(diff) >= mdc ? ' <span class="sig">שינוי משמעותי</span>' : '';
 }
 
 // =====================================================================

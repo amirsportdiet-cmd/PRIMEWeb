@@ -2419,10 +2419,10 @@ ${dateBarEnd}
       </div>
       <div class="note">תקין: <b>גברים מעל ${n(NORMS.asmmPct.okM,1)}%</b> · <b>נשים מעל ${n(NORMS.asmmPct.okF,1)}%</b> ${tagGte(asmmPctE, asmmMin)}
         ${(armGap !== null || legGap !== null) ? `<div style="margin-top:2px;">איזון בין ימין לשמאל: ידיים ${armGap === null ? '—' : n(armGap,1) + '%'} · רגליים ${legGap === null ? '—' : n(legGap,1) + '%'} ${(Math.max(armGap || 0, legGap || 0) > NORMS.limbGapPct) ? '<span class="tag warn">פער מעל 5%</span>' : '<span class="tag ok">מאוזן</span>'}</div>` : ''}
-        <div class="ref">
-        <span class="src">ASMM ביחס למשקל: <span class="cit">Obes Facts 2022;15:321-335</span></span>
-        <span class="src">במקור: <span class="cit">J Am Geriatr Soc 2013;61:974-80</span></span>
-        <span class="src">פער בין הצדדים: דף פענוח <span class="cit">InBody 770</span>, ד"ר אסף בוך</span>
+        <div class="ref ltr">
+        <span class="src">Obes Facts 2022;15:321-335</span>
+        <span class="src">J Am Geriatr Soc 2013;61:974-80</span>
+        <span class="src" dir="rtl">דף פענוח <span class="cit">InBody 770</span>, ד"ר אסף בוך</span>
       </div></div>
     </div>` : ''}
     ${hasFluidSplit ? `<div class="card">
@@ -2522,9 +2522,9 @@ ${dateBarEnd}
         <div class="scale"><span>חולשה</span><span>טווח תקין</span><span>כוח גבוה</span></div>
       </div>
       <div class="note">${hgNote} ${tHg}
-        <div class="ref">
-        <span class="src">ספי חולשה: <span class="cit">Cruz-Jentoft AJ et al., EWGSOP2, Age Ageing 2019;48:16-31</span></span>
-        <span class="src">סף שינוי משמעותי: <span class="cit">Bohannon RW, J Phys Ther Sci 2019;31:75-78</span></span>
+        <div class="ref ltr">
+        <span class="src">Cruz-Jentoft AJ et al., EWGSOP2, Age Ageing 2019;48:16-31</span>
+        <span class="src">Bohannon RW, J Phys Ther Sci 2019;31:75-78</span>
       </div></div>
     </div>
     <div class="card">
@@ -2538,10 +2538,10 @@ ${dateBarEnd}
         <div class="scale"><span>0 · מוגבל</span><span>סיכון</span><span>12 · מצוין</span></div>
       </div>
       <div class="note">ציון <span dir="ltr">&#8805;10</span> = תפקוד טוב; <span dir="ltr">&#8804;8</span> = סיכון לירידה תפקודית · ממוצע לגיל ${sppbNorm.age} (${sex==='m'?'גברים':'נשים'}): ${n(sppbNorm.mean,1)} מתוך 12 ${tSppb}
-        <div class="ref">
-        <span class="src">ספי פרשנות: <span class="cit">Guralnik JM et al., J Gerontol 1994;49:M85-94</span></span>
-        <span class="src">ערכי ייחוס לפי גיל: <span class="cit">Bergland A &amp; Strand BH, BMC Geriatr 2019;19:216 (Tromsø)</span></span>
-        <span class="src">סף שינוי משמעותי: <span class="cit">Perera S et al., J Am Geriatr Soc 2006;54:743-9</span></span>
+        <div class="ref ltr">
+        <span class="src">Guralnik JM et al., J Gerontol 1994;49:M85-94</span>
+        <span class="src">Bergland A &amp; Strand BH, BMC Geriatr 2019;19:216 (Tromsø)</span>
+        <span class="src">Perera S et al., J Am Geriatr Soc 2006;54:743-9</span>
       </div></div>
     </div>
     <div class="card">
@@ -2555,7 +2555,7 @@ ${dateBarEnd}
         <div class="scale"><span>נמוך</span><span>טווח תקין</span><span>גבוה</span></div>
       </div>
       <div class="note">${stsNote} ${tSts}
-        <div class="ref ltr">Rikli RE &amp; Jones CJ, Gerontologist 2013;53:255-6 <span dir="rtl">(ערכי סף לשמירה על עצמאות תפקודית)</span></div></div>
+        <div class="ref ltr">Rikli RE &amp; Jones CJ, Gerontologist 2013;53:255-6</div></div>
     </div>
     <div class="card">
       <div class="label">מבחן הליכה 2 דקות&nbsp;<span class="nb" dir="ltr">(2-min walk)</span></div>

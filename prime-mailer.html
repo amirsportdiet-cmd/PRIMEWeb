@@ -21,6 +21,12 @@
   .btn-google:hover { border-color:#0d9488; box-shadow:0 4px 14px rgba(13,148,136,.15); }
   .btn-google svg { width:20px; height:20px; }
   .btn-signout { background:#fff; border:2px solid #e2e8f0; border-radius:10px; padding:10px 20px; font-size:14px; font-weight:700; color:#64748b; cursor:pointer; font-family:inherit; }
+  #pin-box input { width:190px; padding:12px; border:1.5px solid #cbd5e1; border-radius:10px;
+                   font-size:20px; text-align:center; letter-spacing:5px; font-family:inherit; }
+  #pin-box input:focus { outline:none; border-color:#0d9488; }
+  .pin-err { min-height:18px; font-size:12.5px; color:#b91c1c; font-weight:600; margin-top:8px; }
+  .btn-pin { background:#0d9488; color:#fff; border:none; border-radius:10px; padding:11px 26px;
+             font-size:15px; font-weight:700; cursor:pointer; font-family:inherit; margin-top:12px; }
 
   /* ---- App ---- */
   #app-screen { display:none; max-width:1100px; margin:0 auto; padding:20px; }
@@ -119,6 +125,16 @@
       <span id="btn-signin-text">התחברות עם Google</span>
     </button>
     <div id="auth-loading" style="color:#64748b; font-size:13px; margin-top:16px;">מאמת...</div>
+  </div>
+  <div id="pin-box" class="auth-box" style="display:none;">
+    <div style="font-size:40px; margin-bottom:10px;">🔒</div>
+    <h2>קוד כניסה</h2>
+    <p>החשבון אומת. יש להזין את קוד הכניסה למערכת.</p>
+    <input type="password" id="pin-input" inputmode="numeric" autocomplete="off" maxlength="12"
+           placeholder="••••••" onkeydown="if(event.key==='Enter') checkPin()">
+    <div class="pin-err" id="pin-err"></div>
+    <button class="btn-pin" onclick="checkPin()">כניסה</button>
+    <div style="margin-top:14px"><button class="btn-signout" onclick="signOut()">יציאה</button></div>
   </div>
   <div id="no-access-box" class="no-access" style="display:none;">
     <div style="font-size:42px; margin-bottom:12px;">🔒</div>
@@ -341,18 +357,55 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
+/* קוד הכניסה נשמר כטביעת אצבע (SHA-256) ולא כטקסט גלוי.
+   הוא שכבה שנייה מעל ההתחברות: מונע גישה ממי שיושב מול דפדפן שכבר מחובר.
+   ההגנה האמיתית על השליחה היא ברשימת המיילים המורשים ובסוד של השרת. */
+const PIN_HASH = '4c2b97fc536d01263c29be9bf5c2d8527855e3e48f17a460005f44251169665f';
+const PIN_KEY  = 'prime_mailer_pin_ok';
+
+async function sha256(s){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function showPin(){
+  document.getElementById('app-screen').style.display='none';
+  document.getElementById('auth-screen').style.display='flex';
+  document.getElementById('auth-box').style.display='none';
+  document.getElementById('no-access-box').style.display='none';
+  document.getElementById('pin-box').style.display='block';
+  setTimeout(()=>document.getElementById('pin-input').focus(), 80);
+}
+
+function enterApp(){
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('pin-box').style.display='none';
+  document.getElementById('app-screen').style.display='block';
+  initApp();
+}
+
+window.checkPin = async () => {
+  const inp = document.getElementById('pin-input');
+  const err = document.getElementById('pin-err');
+  const h = await sha256(inp.value.trim());
+  if(h !== PIN_HASH){ err.textContent = 'קוד שגוי'; inp.value=''; inp.focus(); return; }
+  err.textContent = '';
+  sessionStorage.setItem(PIN_KEY, '1');
+  enterApp();
+};
+
 function handleUser(user){
   document.getElementById('auth-loading').style.display='none';
   if(!user){ showAuth(); return; }
   const email=(user.email||'').toLowerCase();
   if(ALLOWED_EMAILS.map(e=>e.toLowerCase()).includes(email)){
     document.getElementById('user-email-display').textContent=user.email;
-    document.getElementById('auth-screen').style.display='none';
-    document.getElementById('app-screen').style.display='block';
-    initApp();
+    if(sessionStorage.getItem(PIN_KEY) === '1') enterApp();
+    else showPin();
   } else {
     document.getElementById('no-access-msg').textContent=`החשבון ${user.email} אינו מורשה לגשת לכלי זה.`;
     document.getElementById('auth-box').style.display='none';
+    document.getElementById('pin-box').style.display='none';
     document.getElementById('no-access-box').style.display='block';
   }
 }
@@ -360,10 +413,11 @@ function showAuth(){
   document.getElementById('app-screen').style.display='none';
   document.getElementById('auth-screen').style.display='flex';
   document.getElementById('auth-box').style.display='block';
+  document.getElementById('pin-box').style.display='none';
   document.getElementById('no-access-box').style.display='none';
 }
 window.signInWithGoogle=()=>{ document.getElementById('auth-loading').style.display='block'; signInWithPopup(auth,provider).catch(()=>{document.getElementById('auth-loading').style.display='none';}); };
-window.signOut=()=>fbSignOut(auth);
+window.signOut=()=>{ sessionStorage.removeItem(PIN_KEY); return fbSignOut(auth); };
 onAuthStateChanged(auth, handleUser);
 
 // ---------- Date helpers ----------

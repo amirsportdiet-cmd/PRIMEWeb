@@ -326,7 +326,8 @@ function parseCSV(text) {
   return rows.filter(r => r.length > 1);
 }
 
-const RC_ARM = { '1': 'intervention', '2': 'control' };
+// אומת מול גיליון התשובות על 27 נחקרים מזוהים (17.8.2026): קוד 1 = ביקורת, קוד 2 = התערבות
+const RC_ARM = { '1': 'control', '2': 'intervention' };
 
 window.onCsv = (ev) => {
   const file = ev.target.files[0];
@@ -410,6 +411,13 @@ function gaps() {
  * מציג במקום בולט את מי שחסר לו טלפון, עם שדה להשלמה.
  * ההשלמה נשמרת בנפרד, ולכן העלאת קובץ REDCap חדש אינה מוחקת אותה.
  */
+/* מספרים שפוענחו ב-17.8.2026 בהצלבת "תאריך כניסה למחקר" שבגיליון התשובות מול
+   תאריך ה-baseline ב-REDCap: ארבעה טלפונים שענו לשאלון ואינם שייכים לאף נחקר
+   רשום, וכל אחד מהם נכנס למחקר בדיוק בתאריך ה-baseline של אחד מחסרי-הטלפון,
+   כולל התאמת קבוצה (4/4, ללא כפילויות). מוצגים כהצעה בשדה, ונשמרים רק
+   אחרי לחיצה על שמירה. */
+const SUGGESTED = { '42': '0544683146', '44': '0525455286', '46': '0542303555', '53': '0523251016' };
+
 function renderGaps() {
   const box = document.getElementById('gaps');
   const list = gaps();
@@ -419,18 +427,32 @@ function renderGaps() {
       ? `<div class="gap-ok">✅ לכל הנחקרים המשובצים יש טלפון. ${filledCount} הושלמו ידנית.</div>` : '';
     return;
   }
+  const nSug = list.filter(r => SUGGESTED[r.id]).length;
   box.innerHTML = `<div class="gap-box">
     <div class="gap-h">⚠️ ${list.length} נחקרים משובצים ללא טלפון ב-REDCap</div>
-    <div class="gap-t">בלי טלפון אי אפשר לזהות אותם כשמגיעה פנייה. אפשר להשלים כאן, או להזין ב-REDCap ולהעלות קובץ מעודכן.</div>
+    <div class="gap-t">בלי טלפון אי אפשר לזהות אותם כשמגיעה פנייה. אפשר להשלים כאן, או להזין ב-REDCap ולהעלות קובץ מעודכן.${
+      nSug ? '<br>מספרים בכתום הם הצעה שפוענחה מהצלבת תאריכי הכניסה למחקר — לחיצה על שמירה מאשרת אותם.' : ''}</div>
     ${list.map(r => `<div class="gap-row">
       <div class="gap-n">${esc(r.name)} ${esc(r.last || '')} ${groupTag(r.group)}</div>
-      <input type="tel" dir="ltr" id="gap-${r.id}" placeholder="0521234567"
+      <input type="tel" dir="ltr" id="gap-${r.id}" placeholder="0521234567" value="${SUGGESTED[r.id] || ''}"
+             ${SUGGESTED[r.id] ? 'style="background:#fff7ed;font-weight:600"' : ''}
              onkeydown="if(event.key==='Enter') fillPhone('${r.id}')">
       <button class="btn sm" onclick="fillPhone('${r.id}')">שמירה</button>
       <span class="gap-e" id="gape-${r.id}"></span>
     </div>`).join('')}
+    ${nSug > 1 ? `<div style="margin-top:4px"><button class="btn sm" onclick="fillSuggested()">✔ אישור ${nSug} ההצעות בבת אחת</button></div>` : ''}
   </div>`;
 }
+
+/** מאשר את כל ההצעות המפוענחות בלחיצה אחת */
+window.fillSuggested = () => {
+  Object.keys(SUGGESTED).forEach(id => {
+    const inp = document.getElementById('gap-' + id);
+    if (!inp) return;
+    if (!inp.value) inp.value = SUGGESTED[id];
+    fillPhone(id);
+  });
+};
 
 window.fillPhone = (id) => {
   const inp = document.getElementById('gap-' + id);
@@ -502,7 +524,14 @@ function findPerson(phone, alert) {
   if (alert && alert.demo) return alert.demoPerson;
   const p = normPhone(phone);
   if (!p) return null;
-  return roster.find(r => r.phone === p) || manual.find(m => m.phone === p) || null;
+  const exact = roster.find(r => r.phone === p) || manual.find(m => m.phone === p);
+  if (exact) return exact;
+  // ב-REDCap יש מספרים שאיבדו את הספרה האחרונה (למשל 050635253 במקום
+  // 0506352535). התאמת-קידומת של 9 ספרות ומעלה מזהה אותם בכל זאת.
+  if (p.length < 9) return null;
+  return roster.find(r => r.phone && r.phone.length >= 9 && (p.startsWith(r.phone) || r.phone.startsWith(p)))
+      || manual.find(m => m.phone && m.phone.length >= 9 && (p.startsWith(m.phone) || m.phone.startsWith(p)))
+      || null;
 }
 
 // =====================================================================

@@ -196,6 +196,15 @@ textarea:focus{ outline:none; border-color:#0d9488; }
     <div id="alerts"></div>
   </div>
 
+  <!-- נחקרים ששקטים שבועיים+ ברצף. הרשימה נכתבת אוטומטית פעם בשבוע (יום שני)
+       על ידי בדיקה מול גיליון התשובות, ומוצגת כאן חיה. -->
+  <div class="card" id="silence-card" style="display:none; border:2px solid #fca5a5;">
+    <h2>🚨 לא עונים שבועיים ברצף — אולי לא מקבלים את ההודעות</h2>
+    <div class="sub">נבדק אוטומטית פעם בשבוע מול גיליון התשובות. מי שמופיע כאן לא ענה לשאלון השבועי
+      פעמיים ברצף או יותר — ייתכן שההודעות כלל לא מגיעות אליו. "טופל" מסיר את המקרה עד שמשהו ישתנה.</div>
+    <div id="silence-list"></div>
+  </div>
+
   <!-- הוספה ידנית -->
   <div class="card">
     <h2>הוספה ידנית</h2>
@@ -289,7 +298,7 @@ window.applyCloud = (d) => {
     alerts = d.alerts.sort((a, b) => (a.at < b.at ? 1 : -1));
     save(LS_ALERTS, alerts);
   }
-  renderManual(); renderRoster(); renderAlerts();
+  renderManual(); renderRoster(); renderAlerts(); renderSilence();
   if (roster.length) document.getElementById('csv-status').textContent =
     `הרשימה נטענה מהגיבוי: ${roster.length} נחקרים משובצים. אפשר להעלות קובץ מעודכן.`;
 };
@@ -798,6 +807,54 @@ function alertRow(a) {
 /* פנייה שהיממה שלה חלפה עוברת לארכיון גם בלי לרענן את הדף */
 setInterval(() => { if (alerts.some(a => a.sent)) renderAlerts(); }, 10 * 60 * 1000);
 
+// =====================================================================
+// שקטים שבועיים+ — נכתב אוטומטית לענן פעם בשבוע מבדיקה מול גיליון התשובות
+// =====================================================================
+let silences = [];
+
+/** נקרא מהמאזין החי בענן */
+window.applySilence = (items) => {
+  silences = (items || []).filter(s => s.status === 'open')
+    .sort((a, b) => (b.daysSilent || 0) - (a.daysSilent || 0));
+  renderSilence();
+};
+
+function renderSilence() {
+  const card = document.getElementById('silence-card');
+  const box = document.getElementById('silence-list');
+  if (!card) return;
+  if (!silences.length) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  box.innerHTML = `<table><thead><tr>
+      <th>שם</th><th>טלפון</th><th>קבוצה</th><th>דיווח אחרון</th><th>שקט</th><th>הודעה</th><th></th>
+    </tr></thead><tbody>` +
+    silences.map(s => {
+      const p = findPerson(s.phone);
+      const weeks = Math.floor((s.daysSilent || 0) / 7);
+      // אותו נוסח של פניית "לא מילא שאלון" — מותאם מין אם הנחקר מזוהה
+      const canWa = p && p.sex;
+      const wa = canWa
+        ? 'https://wa.me/' + normPhone(s.phone).replace(/^0/, '972') + '?text=' +
+          encodeURIComponent(waMessage('noAnswer', p, p.sex))
+        : '#';
+      return `<tr>
+        <td>${p ? '<b>' + esc(p.name) + ' ' + esc(p.last || '') + '</b>' : (s.name ? '<b>' + esc(s.name) + '</b>' : '<span class="tag warn">לא מזוהה</span>')}</td>
+        <td><span class="ltr">${prettyPhone(s.phone)}</span></td>
+        <td>${/התערבות/.test(s.group || '') ? '<span class="tag int">התערבות</span>'
+             : /ביקורת/.test(s.group || '') ? '<span class="tag ctl">ביקורת</span>' : '—'}</td>
+        <td class="when">${esc(s.lastReport || '—')}</td>
+        <td><span class="tag warn">${weeks} שבועות</span></td>
+        <td><a class="btn-wa ${canWa ? '' : 'off'}" target="_blank" rel="noopener" href="${wa}">פתיחה בוואטסאפ</a></td>
+        <td><button class="btn sec sm" onclick="dismissSilence('${esc(s.id)}')">טופל</button></td>
+      </tr>`;
+    }).join('') + '</tbody></table>';
+}
+
+window.dismissSilence = async (id) => {
+  try { await window.cloudDismissSilence(id); }
+  catch (e) { alert('הסימון נכשל: ' + (e.message || e)); }
+};
+
 /* ===== תמונות מצב שבועיות =====
    נשמרות באותו אוסף, בשם snap_<תאריך>, ולכן מכוסות באותם כללי אבטחה.
    המאזין החי מתעלם מהן, כי הוא קורא רק מסמכים שמתחילים ב-item_. */
@@ -1041,9 +1098,28 @@ function listen() {
   });
 }
 
+/* ===== מקרי "לא עונה שבועיים+" =====
+   נכתבים על ידי פונקציית הענן primeSilenceWatch (ימי שני 12:00) לאוסף
+   dashboard_prime_silence, ומוצגים כאן חיים. "טופל" מסמן dismissed —
+   המקרה נעלם גם מכאן וגם מהדשבורד, ולא יחזור כל עוד לא השתנה כלום. */
+let unsubSilence = null;
+function silenceListen() {
+  if (unsubSilence) unsubSilence();
+  unsubSilence = onSnapshot(collection(db, 'dashboard_prime_silence'), (snap) => {
+    const items = [];
+    snap.forEach(d => items.push({ id: d.id, ...d.data() }));
+    window.applySilence(items);
+  }, () => { /* אין הרשאה או אין רשת — הקובייה פשוט לא תוצג */ });
+}
+
+window.cloudDismissSilence = (id) =>
+  setDoc(doc(db, 'dashboard_prime_silence', id),
+    { status: 'dismissed', dismissedBy: window.currentUser() }, { merge: true });
+
 async function enterApp() {
   screens('main');
   listen();
+  silenceListen();
   // אחרי שהרשימה מהענן הגיעה: משיכה אוטומטית מהמייל, ואז תמונת המצב השבועית
   setTimeout(() => { if (window.pullInbox) window.pullInbox(true); }, 1200);
   setTimeout(() => { if (window.renderSnapshots) window.renderSnapshots(); }, 2600);

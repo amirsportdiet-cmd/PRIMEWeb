@@ -616,6 +616,13 @@ function checkScheduled() {
       out.skippedStale++;
       continue;
     }
+    /* שורות היסטוריות של עודד חיימוב נכשלו 17 פעמים ב-TypeError כי המטען נשמר בלי
+       'to' — מעכשיו שורה פגומה מסומנת בבירור במקום להתפוצץ שוב ושוב. */
+    if (!d || !Array.isArray(d.to) || !d.to.length) {
+      sh.getRange(i + 1, 3).setValue('error: המטען חסר נמען (to) — לתזמן מחדש מהעמוד');
+      out.errors++;
+      continue;
+    }
     try {
       sendMail_(d || JSON.parse(rows[i][3]));
       sh.getRange(i + 1, 3).setValue('sent ' + new Date().toISOString());

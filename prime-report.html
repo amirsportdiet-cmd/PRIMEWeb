@@ -1716,6 +1716,7 @@ function rcParse(text){
 window.rcLoadParticipant = (id) => {
   if(!id || !RC_BY_ID) return;
   WAIVED.clear();   // ההשמטות הן פר-נחקר — נחקר חדש מתחיל נקי
+  for (const k in DECIDED) delete DECIDED[k];
   const H = RC_HEADER, rec = RC_BY_ID[id];
   const cell = (row, name) => (row && H[name] != null) ? (row[H[name]]||'').trim() : '';
   const scr = rec['screening_arm_1'] || null;
@@ -1940,6 +1941,16 @@ const METRIC_LABEL = Object.assign(
   Object.fromEntries(Object.entries(WAIVE_DEF).map(([k,v]) => [k, v.label]))
 );
 const WAIVED = new Set();
+/* אמיר (20.8.2026): כשחסר נתון — לשאול לפני ההפקה, מדד-מדד: להשתמש בערך
+   מנקודת זמן אחרת (אם קיים) או להשמיט. ההחלטות פר-נחקר ומתאפסות במעבר נחקר. */
+const DECIDED = {};   // key → 'fallback' | 'waive'
+window.decideMetric = (key, choice) => {
+  DECIDED[key] = choice;
+  if (choice === 'waive') WAIVED.add(key); else WAIVED.delete(key);
+  generateReport();
+};
+window.decideAllMetrics = (keys, choice) => { keys.forEach(k => window.decideMetric0(k, choice)); generateReport(); };
+window.decideMetric0 = (key, choice) => { DECIDED[key] = choice; if (choice === 'waive') WAIVED.add(key); else WAIVED.delete(key); };
 window.waiveMissing = (keys) => {
   const labels = keys.map(k => WAIVE_DEF[k] ? WAIVE_DEF[k].label : k);
   const code = (document.getElementById('f-code')||{}).value || '';
@@ -1966,13 +1977,16 @@ window.generateReport = () => {
   /* אמיר (20.8.2026): מדד שחסר בסוף אבל נמדד באמצע — לא משמיטים ולא חוסמים:
      משווים התחלה מול האמצע עבור המדד הזה בלבד, עם הערה קטנה ליד בדוח. */
   const FALLBACK = {};
+  const UNDECIDED = [];   // מדדים שחסרים בסוף אבל קיימים באמצע — מחכים להחלטת החוקר/ת
   if (REPORT_MODE === 'compare' && CMP_TO === 'e') {
-    for (const [fid] of PAIRED_FIELDS) {
+    for (const [fid, flabel] of PAIRED_FIELDS) {
       const key = fid.slice(2);
       if (key === 'date' || WAIVED.has(key)) continue;
       const endEl = document.getElementById(fid + '-e');
       const midEl = document.getElementById(fid + '-m');
-      if (endEl && midEl && !endEl.value.trim() && midEl.value.trim()) FALLBACK[key] = 'm';
+      if (!(endEl && midEl && !endEl.value.trim() && midEl.value.trim())) continue;
+      if (DECIDED[key] === 'fallback') FALLBACK[key] = 'm';
+      else if (DECIDED[key] !== 'waive') UNDECIDED.push({ key, label: flabel, mid: midEl.value.trim() });
     }
   }
   const REQUIRED = [
@@ -1998,6 +2012,28 @@ window.generateReport = () => {
     el.classList.remove('field-card--missing', 'simple-field--missing'));
 
   const errEl = document.getElementById('form-error');
+  /* לפני הכל: מדדים שחסרים בסוף אך נמדדו באמצע — שואלים, לא מחליטים לבד */
+  if (UNDECIDED.length) {
+    const allKeys = JSON.stringify(UNDECIDED.map(u => u.key));
+    errEl.innerHTML = '<strong>למדדים הבאים אין מדידת סוף, אבל יש מדידת אמצע (T3) — מה לעשות?</strong>'
+      + '<div style="margin-top:10px;display:flex;flex-direction:column;gap:8px;">'
+      + UNDECIDED.map(u =>
+        `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:8px 12px;">
+           <b style="min-width:150px;">${u.label}</b>
+           <span style="font-size:12px;color:#64748b;">ערך האמצע: ${u.mid}</span>
+           <button type="button" onclick='decideMetric(${JSON.stringify(u.key)}, "fallback")' style="background:#0d9488;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;">להשוות מול האמצע (T3)</button>
+           <button type="button" onclick='decideMetric(${JSON.stringify(u.key)}, "waive")' style="background:#b45309;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;">להשמיט מהדו״ח</button>
+         </div>`).join('')
+      + '</div>'
+      + (UNDECIDED.length > 1 ? `<div style="margin-top:10px;display:flex;gap:8px;">
+           <button type="button" onclick='decideAllMetrics(${allKeys}, "fallback")' style="background:#0f766e;color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;">מול האמצע — לכולם</button>
+           <button type="button" onclick='decideAllMetrics(${allKeys}, "waive")' style="background:#92400e;color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;">להשמיט את כולם</button>
+         </div>` : '')
+      + '<div style="margin-top:8px;font-size:12px;color:#64748b;">ההחלטות תקפות לנחקר/ת הנוכחי/ת בלבד; הדו״ח יופק מיד אחרי הבחירה.</div>';
+    errEl.style.display = 'block';
+    errEl.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    return;
+  }
   if (missing.length > 0) {
     // highlight each missing field
     missing.forEach(f => {

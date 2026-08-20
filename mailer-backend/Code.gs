@@ -634,8 +634,94 @@ function checkScheduled() {
       out.errors++;
     }
   }
-  reportQueue_(rows);
+  try { autoReminders_(); } catch (e) { /* אוטומט התזכורות לא מפיל את שליחת התור */ }
+  reportQueue_(sh.getDataRange().getValues());
   return out;
+}
+
+/* ===== תזכורת אוטומטית — אמיר (20.8.2026): "אני רוצה שזה כן יישלח אוטומטית,
+   בלי אישור. ואם הוא בתוך השבוע הקרוב — שיקבל גם אם זה כבר לא שבוע לפני".
+   כל ריצת טריגר: אירועי יומן PRIME ב-8 הימים הקרובים. נחקר שיום המחקר שלו
+   בעוד ≤7 ימים ואין לו תזכורת בתור (ידנית או אוטומטית) — נשלחת לו עכשיו
+   תזכורת (הנוסח המאושר: יומן אכילה, שתן חוץ מ-T3, צום 12ש, הגעה), והכל
+   נרשם בתור וביומן השליחות. כישלון נרשם כ-error ומדווח לאמיר בטלגרם. */
+function autoReminders_() {
+  const cal = primeCalendar_(); if (!cal) return;
+  const now = new Date();
+  const evs = cal.getEvents(now, new Date(now.getTime() + 8 * 24 * 3600 * 1000));
+  if (!evs.length) return;
+  const sh = queueSheet_();
+  const rows = sh.getDataRange().getValues();
+  const normN = function (s) { return String(s || '').replace(/["'׳״\-]/g, ' ').replace(/\s+/g, ' ').trim(); };
+  const have = {};
+  for (var i = 1; i < rows.length; i++) {
+    var d = {}; try { d = JSON.parse(rows[i][3]) || {}; } catch (e) {}
+    if (d.autoKey) have[d.autoKey] = true;
+    var st = String(rows[i][2] || '');
+    // תזמון ידני (ממתין או שנשלח) לאותו נחקר+שלב גובר על האוטומט
+    if ((st === 'pending' || st.indexOf('sent') === 0) && d.name) {
+      have['np_' + normN(d.name) + '|' + (d.phase || '')] = true;
+    }
+  }
+  for (var j = 0; j < evs.length; j++) {
+    var ev = evs[j];
+    var start = ev.getStartTime();
+    if (start <= now) continue;                                    // יום המחקר כבר עבר/רץ
+    var sendAt = new Date(start.getTime() - 7 * 24 * 3600 * 1000);
+    if (sendAt > now) continue;                                    // עוד לא נכנסנו לחלון השבוע
+    var desc = ev.getDescription() || '', title = ev.getTitle() || '', loc = ev.getLocation() || '';
+    var name = nameFromEvent_(title, desc);
+    if (!name || name.length < 2) continue;
+    var phase = phaseFromText_(loc + ' ' + title + ' ' + desc);
+    var key = 'auto_' + ev.getId();
+    if (have[key]) continue;
+    if (have['np_' + normN(name) + '|' + phase]) continue;
+    var email = emailFromEvent_(desc);
+    if (!email) {
+      try {
+        email = ev.getGuestList().map(function (g) { return g.getEmail(); })
+          .filter(function (g) { return ALLOWED_EMAILS.indexOf(String(g).toLowerCase()) < 0; })[0] || '';
+      } catch (e) {}
+    }
+    var site = siteFromText_(loc + ' ' + title + ' ' + desc);
+    var payload = { to: email ? [email] : [], name: name, phase: phase, site: site, group: '',
+      sendAt: normSendAt_(sendAt),
+      researchAt: Utilities.formatDate(start, Session.getScriptTimeZone(), "yyyy-MM-dd'T'HH:mm"),
+      subject: 'תזכורת ליום המחקר - מחקר PRIME', autoKey: key, auto: true };
+    if (!email) {
+      sh.appendRow([new Date(), payload.sendAt, 'error: אין כתובת מייל באירוע היומן — לשלוח ידנית', JSON.stringify(payload)]);
+      have[key] = true;
+      continue;
+    }
+    payload.body = autoReminderBody_(name, phase, site, start);
+    try {
+      sendMail_(payload);
+      sh.appendRow([new Date(), payload.sendAt, 'sent ' + new Date().toISOString() + ' (auto)', JSON.stringify(payload)]);
+      try { logSend_(Object.assign({}, payload, { sentBy: 'מערכת (אוטומטי)' }), 'נשלח (תזכורת אוטומטית)'); } catch (e2) {}
+    } catch (err) {
+      sh.appendRow([new Date(), payload.sendAt, 'error: ' + err, JSON.stringify(payload)]);
+    }
+    have[key] = true;
+  }
+}
+
+/** נוסח התזכורת — זהה להודעת הוואטסאפ המאושרת (ב-T3 אין איסוף שתן). */
+function autoReminderBody_(name, phase, site, start) {
+  var first = String(name).trim().split(/\s+/)[0] || '';
+  var WDH = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+  var p2 = function (n) { return ('0' + n).slice(-2); };
+  var hhmm = p2(start.getHours()) + ':' + p2(start.getMinutes());
+  var fast = new Date(start.getTime() - 12 * 3600 * 1000);
+  var withUrine = phase !== 'middle';
+  var siteShort = site === 'ichilov' ? 'איכילוב, מגדל אריסון קומה 13' : 'המרכז הרפואי אסותא רמת החייל';
+  return 'היי ' + first + '\n\n'
+    + 'תזכורת לקראת יום המחקר שמתקיים ביום ' + WDH[start.getDay()] + ' (' + p2(start.getDate()) + '.' + p2(start.getMonth() + 1) + ' בשעה ' + hhmm + ')\n\n'
+    + 'לקראת ההגעה, חשוב לוודא:\n\n'
+    + '🥗 יומן אכילה\n* לוודא שיומן האכילה מולא לפי ההנחיות ונשלח\n'
+    + (withUrine ? '\n🧪 איסוף שתן\n* לוודא שאיסוף השתן (24 שעות) בוצע לפי ההנחיות\n* להביא את המיכל ביום המחקר\n' : '')
+    + '\n⏳ צום\n* להתחיל צום בערב שלפני יום המחקר (' + p2(fast.getHours()) + ':' + p2(fast.getMinutes()) + ')\n* לאחר מכן – מים בלבד\n\n'
+    + '📍 הגעה\n* להגיע מעט לפני השעה שנקבעה (' + siteShort + ', בשעה ' + hhmm + ')\n* נא לבוא בבגדי ונעלי ספורט\n\n'
+    + 'אנחנו כאן לכל שאלה או התייעצות 😊\nנתראה ביום ' + WDH[start.getDay()] + '🤍';
 }
 
 /* תמונת-מצב מצומצמת של התור אל הדשבורד (שם, מועד, סטטוס — בלי כתובות ותוכן),

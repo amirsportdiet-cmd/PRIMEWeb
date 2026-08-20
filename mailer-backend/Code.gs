@@ -616,6 +616,15 @@ function checkScheduled() {
       out.skippedStale++;
       continue;
     }
+    /* הפגישה הוזזה מאז התזמון הידני? לא שולחים תאריך שגוי — מבטלים, והאוטומט
+       שולח את המעודכן (הוא סורק את היומן כל רבע שעה) */
+    if (d && d.name && d.researchAt && !d.auto) {
+      var cur = eventStartForName_(d.name);
+      if (cur && Math.abs(cur.getTime() - new Date(d.researchAt).getTime()) > 36 * 3600 * 1000) {
+        sh.getRange(i + 1, 3).setValue('בוטל אוטומטית ' + new Date().toISOString() + ' (הפגישה הוזזה - תישלח תזכורת מעודכנת)');
+        continue;
+      }
+    }
     /* שורות היסטוריות של עודד חיימוב נכשלו 17 פעמים ב-TypeError כי המטען נשמר בלי
        'to' — מעכשיו שורה פגומה מסומנת בבירור במקום להתפוצץ שוב ושוב. */
     if (!d || !Array.isArray(d.to) || !d.to.length) {
@@ -637,6 +646,25 @@ function checkScheduled() {
   try { autoReminders_(); } catch (e) { /* אוטומט התזכורות לא מפיל את שליחת התור */ }
   reportQueue_(sh.getDataRange().getValues());
   return out;
+}
+
+/** מועד האירוע העתידי הקרוב של נחקר/ת ביומן PRIME (לפי שם), או null. */
+function eventStartForName_(name) {
+  try {
+    var cal = primeCalendar_(); if (!cal) return null;
+    var now = new Date();
+    var evs = cal.getEvents(now, new Date(now.getTime() + 120 * 24 * 3600 * 1000));
+    var norm = function (x) { return String(x || '').replace(/["'׳״׳״-]/g, ' ').replace(/\s+/g, ' ').trim(); };
+    var q = norm(name).split(' ').filter(String);
+    if (!q.length) return null;
+    for (var i = 0; i < evs.length; i++) {
+      var person = norm(nameFromEvent_(evs[i].getTitle() || '', evs[i].getDescription() || ''));
+      var w = person.split(' ').filter(String);
+      var pair = q.length <= w.length ? [q, w] : [w, q];
+      if (pair[0].length && pair[0].every(function (x) { return pair[1].indexOf(x) >= 0; })) return evs[i].getStartTime();
+    }
+  } catch (e) {}
+  return null;
 }
 
 /* ===== תזכורת אוטומטית — אמיר (20.8.2026): "שישלח אוטומטית בלי אישור; מי
@@ -936,7 +964,12 @@ function autoReminders_() {
     var start = ev.getStartTime();
     if (start <= now) continue;
     var sendAt = new Date(start.getTime() - 7 * 24 * 3600 * 1000);
-    if (sendAt > now) continue;
+    /* אירוע שהוזז אחרי שכבר יצאה לו תזכורת: לא מחכים לחלון החדש — שולחים מיד
+       תיקון עם התאריך הנכון, אחרת הנחקר נשאר עם תאריך שגוי ביד */
+    var evPrefix = 'auto_' + ev.getId() + '_';
+    var sentOtherDate = false;
+    for (var hk in have) { if (hk.indexOf(evPrefix) === 0) { sentOtherDate = true; break; } }
+    if (sendAt > now && !sentOtherDate) continue;
     var desc = ev.getDescription() || '', title = ev.getTitle() || '', loc = ev.getLocation() || '';
     var name = nameFromEvent_(title, desc);
     if (!name || name.length < 2) continue;

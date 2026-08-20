@@ -1715,6 +1715,7 @@ function rcParse(text){
 
 window.rcLoadParticipant = (id) => {
   if(!id || !RC_BY_ID) return;
+  WAIVED.clear();   // ההשמטות הן פר-נחקר — נחקר חדש מתחיל נקי
   const H = RC_HEADER, rec = RC_BY_ID[id];
   const cell = (row, name) => (row && H[name] != null) ? (row[H[name]]||'').trim() : '';
   const scr = rec['screening_arm_1'] || null;
@@ -1912,6 +1913,38 @@ modeHint();
 
 /* מדדים שנמדדים פעמיים, בהתחלה ובסוף. משמשים גם לבניית רשימת שדות החובה
    וגם למיפוי הערכים כשמפיקים דו״ח של נקודת זמן אחת. */
+/* אמיר (20.8.2026): לפעמים מדד בודד חסר בנקודת זמן (לא נמדד היקף, אין SPPB...).
+   במקום לחסום את כל הדו״ח — אפשר, באישור מפורש, להשמיט את המדד החסר מהדו״ח של
+   הנחקר הזה בלבד. מדדי ליבה (REE, משקל, תאריך) אינם ניתנים להשמטה — בלעדיהם
+   הדו״ח חסר משמעות. ההשמטה מסירה את הכרטיסים/שורות הרלוונטיים אחרי הבנייה. */
+const WAIVE_DEF = {
+  rer:     { label:'RER',                 match:[/RER/] },
+  fatburn: { label:'% שריפת שומן',        match:[/שריפת שומן/] },
+  fm:      { label:'מסת שומן FM',         match:[/מסת שומן|Fat Mass|מסה נטולת שומן|אחוז שומן/] },
+  smm:     { label:'מסת שריר SMM',        match:[/מסה נטולת שומן|מסת שריר|SMI/] },
+  waist:   { label:'היקף מותניים',        match:[/מותניים/] },
+  calf:    { label:'היקף שוק',            match:[/שוק/] },
+  hgr:     { label:'כוח לפיתה יד ימין',   match:[/לפיתה|Grip/i] },
+  hgl:     { label:'כוח לפיתה יד שמאל',   match:[/לפיתה|Grip/i] },
+  sppb:    { label:'SPPB',                match:[/SPPB/] },
+  sts:     { label:'קימה מכיסא',          match:[/קימה מכיסא/] },
+  walk:    { label:'הליכה 2 דקות',        match:[/הליכה/] }
+};
+const WAIVED = new Set();
+window.waiveMissing = (keys) => {
+  const labels = keys.map(k => WAIVE_DEF[k] ? WAIVE_DEF[k].label : k);
+  const code = (document.getElementById('f-code')||{}).value || '';
+  if(!confirm('להשמיט מהדו״ח את המדדים החסרים הבאים?
+
+• ' + [...new Set(labels)].join('
+• ')
+    + '
+
+ההשמטה תקפה לנחקר/ת ' + (code ? 'קוד ' + code : 'הנוכחי/ת') + ' בלבד, והדו״ח יופק בלעדיהם.')) return;
+  keys.forEach(k => WAIVED.add(k));
+  generateReport();
+};
+
 const PAIRED_FIELDS = [
   ['f-date','תאריך מדידה'], ['f-ree','REE'], ['f-rer','RER'], ['f-fatburn','% שריפת שומן'],
   ['f-wt','משקל'], ['f-fm','מסת שומן FM'], ['f-smm','מסת שריר SMM'],
@@ -1933,8 +1966,8 @@ window.generateReport = () => {
   ].concat(
     // TBW / ICW / ECW אינם ברשימה: הם אינם חובה (חסרים לרוב ב-REDCap)
     PAIRED_FIELDS.flatMap(([id, label]) =>
-      sides.map(sd => ({ id: id + '-' + sd, label: label + ' — ' + SIDE_SHORT[sd] })))
-  );
+      sides.map(sd => ({ id: id + '-' + sd, label: label + ' — ' + SIDE_SHORT[sd], waiveKey: WAIVE_DEF[id.slice(2)] ? id.slice(2) : null })))
+  ).filter(f => !(f.waiveKey && WAIVED.has(f.waiveKey)));
 
   const missing = REQUIRED.filter(f => {
     const el = document.getElementById(f.id);
@@ -1962,9 +1995,14 @@ window.generateReport = () => {
         if (checkId) setFieldCheck(checkId, 'err');
       }
     });
+    const waivable = [...new Set(missing.filter(f => f.waiveKey).map(f => f.waiveKey))];
+    const allWaivable = waivable.length && missing.every(f => f.waiveKey);
     errEl.innerHTML = '<strong>שדות חסרים — יש להשלים לפני הפקת הדו״ח:</strong>' +
       '<ul style="margin:8px 0 0;padding-right:18px;line-height:2;">' +
-      missing.map(f => `<li>${f.label}</li>`).join('') + '</ul>';
+      missing.map(f => `<li>${f.label}</li>`).join('') + '</ul>' +
+      (allWaivable
+        ? `<div style="margin-top:10px;">המדדים האלה לא נמדדו? <button type="button" onclick='waiveMissing(${JSON.stringify(waivable)})' style="background:#b45309;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit;">⏭ להשמיט אותם מהדו״ח של נחקר/ת זה בלבד</button></div>`
+        : (waivable.length ? `<div style="margin-top:8px;font-size:12.5px;color:#92400e;">חלק מהחסרים הם מדדי ליבה (משקל / REE / תאריך / פרטי נחקר) — אותם חייבים להשלים; את השאר אפשר יהיה להשמיט אחרי שתשלים אותם.</div>` : ''));
     errEl.style.display = 'block';
     errEl.scrollIntoView({ behavior:'smooth', block:'nearest' });
     return;
@@ -2957,6 +2995,20 @@ ${dateBarEnd}
   const page3 = ONE ? pageSummary : pageCompare;
 
   document.getElementById('report-content').innerHTML = page1 + page2 + page3;
+  /* השמטת מדדים שאושרו כחסרים: כל כרטיס או שורת-סיכום שמזכירים אותם יורדים,
+     והדו״ח מצהיר בתחתית מה הושמט — שקיפות מול הנחקר/ת. */
+  if (WAIVED.size) {
+    const pats = [...WAIVED].flatMap(k => (WAIVE_DEF[k] || {}).match || []);
+    document.querySelectorAll('#report-content .card, #report-content tr').forEach(el => {
+      const t = el.textContent || '';
+      if (pats.some(rx => rx.test(t))) el.remove();
+    });
+    const labels = [...new Set([...WAIVED].map(k => WAIVE_DEF[k].label))];
+    const note = document.createElement('div');
+    note.style.cssText = 'font-size:11px;color:#64748b;padding:6px 24px 14px;text-align:right;';
+    note.textContent = 'מדדים שלא נמדדו בנקודות הזמן של דו״ח זה ולכן אינם מוצגים: ' + labels.join(', ');
+    document.getElementById('report-content').appendChild(note);
+  }
   document.getElementById('report-code-title').textContent = `קוד נחקר/ת: ${D.code}`;
   document.getElementById('form-screen').style.display = 'none';
   document.getElementById('report-screen').style.display = 'block';

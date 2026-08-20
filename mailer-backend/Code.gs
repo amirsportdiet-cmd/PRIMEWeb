@@ -754,6 +754,46 @@ function fullReminder_(name, phase, group, site, gender, research) {
   return { subject: sub(subject), body: sub(body), attachments: FILES_BY_KEY[fkey] || [] };
 }
 
+/* קבוצות מחקר מ-REDCap (ייצוא 17.8.2026) — גיבוי כשהתשובה חסרה באירוע היומן.
+   1=ביקורת, 2=התערבות. שמות היומן לעיתים בכתיב שונה (גרשטיין/גרינשטיין) —
+   ההתאמה: שם פרטי זהה + שם משפחה זהה/מוכל/דומה. מתעדכן עם כל ייצוא חדש. */
+var GROUP_FALLBACK = {
+  'אביב ברשף': 'intervention', 'אורן גונן': 'control', 'אלה נגרו יוסף': 'intervention',
+  'אלי שוורצר': 'control', 'אלישבע גרינשטיין': 'control', 'אלמוג קובריגרו': 'intervention',
+  'אמנון אגסי': 'intervention', 'אתי כובש': 'control', 'ברטה ניסימוב': 'control',
+  'גיל בן צבי': 'intervention', 'גלית ריכטר': 'control', 'דביר שרעבי': 'control',
+  'דוד בכר': 'intervention', 'דן בוקאי': 'control', 'ורדית עופר': 'intervention',
+  'חיים זאב שהם': 'control', 'חנה הכרמי': 'control', 'טטיאנה חבין': 'control',
+  'טלי כהנא': 'control', 'יעל ברגשטיין': 'control', 'יפית כרפסי': 'control',
+  'כרמלה גוטל': 'control', 'ליטל ניר': 'intervention', 'מיכל לב ארי': 'intervention',
+  'מיכל פרידמן רם': 'intervention', 'מירי רפאלי': 'intervention', 'נחמה שפירא': 'intervention',
+  'סוניה ביטרמן גפנר': 'intervention', 'סמדר דוד': 'control', 'עדנה ברזוזה': 'intervention',
+  'עודד חיימוב': 'control', 'עמית גיא': 'control', 'עמליה דגן': 'intervention',
+  'פליקס שופמן': 'intervention', 'רביב שוורץ': 'intervention', 'רואי ליטרט': 'intervention',
+  'רחל בן יצחק': 'control', 'רינת שלום': 'control', 'שחר ברטל': 'control', 'שירלי אלף': 'intervention'
+};
+function groupFromRoster_(name) {
+  var norm = function (x) { return String(x || '').replace(/["'׳״\-]/g, ' ').replace(/\s+/g, ' ').trim(); };
+  var q = norm(name).split(' ').filter(String);
+  if (!q.length) return '';
+  var simLast = function (a, b) {
+    if (a === b || a.indexOf(b) >= 0 || b.indexOf(a) >= 0) return true;
+    var pre = 0; while (pre < Math.min(a.length, b.length) && a[pre] === b[pre]) pre++;
+    var suf = 0; while (suf < Math.min(a.length, b.length) - pre && a[a.length - 1 - suf] === b[b.length - 1 - suf]) suf++;
+    return pre >= 2 && suf >= 4;
+  };
+  for (var key in GROUP_FALLBACK) {
+    var w = norm(key).split(' ').filter(String);
+    if (w[0] !== q[0]) continue;
+    if (q.length === 1 || w.length === 1) continue;
+    var ql = q[q.length - 1], wl = w[w.length - 1];
+    // כל מילות היומן מוכלות ברשומה, או שם משפחה דומה
+    var contained = q.slice(1).every(function (x) { return w.indexOf(x) >= 0; });
+    if (contained || simLast(ql, wl)) return GROUP_FALLBACK[key];
+  }
+  return '';
+}
+
 /** מין מהתיאור של האירוע (אם הטופס שואל), ברירת מחדל נקבה — כמו בעמוד. */
 function genderFromEvent_(desc) {
   var m = String(desc || '').match(/(?:מין|מגדר)\s*[:：]\s*([^\r\n]+)/);
@@ -772,10 +812,13 @@ function autoReminders_() {
   const normN = function (s) { return String(s || '').replace(/["'׳״\-]/g, ' ').replace(/\s+/g, ' ').trim(); };
   const have = {};
   const manualCover = [];   // {key, researchMs} — תזמון ידני מכסה רק אם מועדו תואם ליומן
+  const errKeys = {};
   for (var i = 1; i < rows.length; i++) {
     var d = {}; try { d = JSON.parse(rows[i][3]) || {}; } catch (e) {}
-    if (d.autoKey) have[d.autoKey] = true;
     var st = String(rows[i][2] || '');
+    /* רק שליחה מוצלחת חוסמת לתמיד; שורת שגיאה רק מונעת כפילות של אותה שגיאה,
+       וברגע שהבעיה נפתרת (קבוצה הושלמה, מייל נוסף) — המייל יוצא בריצה הבאה */
+    if (d.autoKey) { if (st.indexOf('sent') === 0) have[d.autoKey] = true; else if (st.indexOf('error') === 0) errKeys[d.autoKey] = true; }
     if ((st === 'pending' || st.indexOf('sent') === 0) && d.name && !d.auto && !d.autoKey) {
       var rMs = d.researchAt ? new Date(d.researchAt).getTime() : 0;
       manualCover.push({ key: 'np_' + normN(d.name) + '|' + (d.phase || ''), researchMs: rMs });
@@ -809,7 +852,7 @@ function autoReminders_() {
       } catch (e) {}
     }
     var site = siteFromText_(loc + ' ' + title + ' ' + desc);
-    var group = groupFromEvent_(desc);
+    var group = groupFromEvent_(desc) || groupFromRoster_(name);
     var payload = { to: email ? [email] : [], name: name, phase: phase, site: site, group: group,
       sendAt: normSendAt_(sendAt),
       researchAt: Utilities.formatDate(start, Session.getScriptTimeZone(), "yyyy-MM-dd'T'HH:mm"),
@@ -819,9 +862,10 @@ function autoReminders_() {
       : (phase !== 'start' && !group) ? 'אין קבוצת מחקר באירוע היומן'
       : '';
     if (problem) {
-      payload.subject = 'תזכורת ' + name;
-      sh.appendRow([new Date(), payload.sendAt, 'error: ' + problem + ' — לשלוח ידנית מהעמוד', JSON.stringify(payload)]);
-      have[key] = true;
+      if (!errKeys[key]) {
+        payload.subject = 'תזכורת ' + name;
+        sh.appendRow([new Date(), payload.sendAt, 'error: ' + problem + ' — לשלוח ידנית מהעמוד', JSON.stringify(payload)]);
+      }
       continue;
     }
     var mail = fullReminder_(name, phase, group, site, genderFromEvent_(desc), start);

@@ -273,6 +273,14 @@
       <div id="pending-list" style="font-size:13px; color:#64748b;">לחץ "רענון" לטעינת הרשימה…</div>
     </div>
 
+    <!-- Sent log — אמיר: "איך אני יודע שהם יצאו?" — יומן פשוט של מה שנשלח בפועל -->
+    <div class="card" style="grid-column:1/-1;">
+      <h2>📬 יומן שליחות — מה יצא בפועל
+        <button type="button" onclick="loadSentLog()" style="margin-right:auto; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:8px; padding:5px 12px; font-size:12px; font-weight:700; color:#475569; cursor:pointer; font-family:inherit;">🔄 רענון</button>
+      </h2>
+      <div id="sentlog-list" style="font-size:13px; color:#64748b;">טוען…</div>
+    </div>
+
     <!-- Upcoming from calendar -->
     <details class="card" style="grid-column:1/-1; padding:0; overflow:hidden;" id="audit-card">
       <summary style="cursor:pointer; list-style:none; padding:16px 20px; display:flex; align-items:center; gap:8px; user-select:none;">
@@ -932,6 +940,7 @@ function initApp(){
   renderLock();
   setCalView('month');   // ברירת מחדל — פחות עומס
   loadPending();
+  loadSentLog();
   loadUpcoming();
   checkServer();
 }
@@ -1466,6 +1475,41 @@ window.loadPending = () => {
     if(!res || !res.ok){ box.textContent = 'שגיאה: ' + ((res&&res.error)||'לא ידועה'); return; }
     PENDING = (res.items || []).filter(it=>it.sendAt);
     renderPending();
+  }).catch(e=>{ box.textContent = 'שגיאה: ' + e.message; });
+};
+
+// ===== יומן שליחות =====
+window.loadSentLog = () => {
+  const box = document.getElementById('sentlog-list');
+  box.textContent = 'טוען…';
+  callApi({ mode:'sentlog', limit: 30 }).then(res=>{
+    if(!res || !res.ok){
+      box.textContent = (res && /mode לא מוכר/.test(res.error||'')) ? 'נדרש עדכון שרת (v17) כדי להציג את היומן.' : ('שגיאה: ' + ((res&&res.error)||'לא ידועה'));
+      return;
+    }
+    const items = res.items || [];
+    if(!items.length){ box.textContent = 'עדיין לא נשלח דבר.'; return; }
+    const chip = (k)=>{
+      const map = {
+        'נשלח':               ['#dcfce7','#166534','✅ נשלח מיידי'],
+        'נשלח (מתוזמן)':      ['#dcfce7','#166534','✅ נשלח (מתוזמן)'],
+        'תוזמן':              ['#e0f2fe','#075985','🕒 נכנס לתור'],
+        'דו״ח נשלח':          ['#ede9fe','#5b21b6','📊 דו״ח נשלח'],
+        'דולג — יום המחקר עבר':['#fef9c3','#854d0e','⏭ דולג (המועד עבר)'],
+        'שגיאה':              ['#fee2e2','#991b1b','❌ שגיאה'],
+      };
+      const c = map[k] || ['#f1f5f9','#475569',k];
+      return '<span style="background:'+c[0]+';color:'+c[1]+';border-radius:20px;padding:2px 10px;font-size:11.5px;font-weight:700;white-space:nowrap;">'+c[2]+'</span>';
+    };
+    box.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:12.5px;">'
+      + '<tr><th style="text-align:right;padding:6px;color:#64748b;">מתי</th><th style="text-align:right;padding:6px;color:#64748b;">אל</th><th style="text-align:right;padding:6px;color:#64748b;">שלב</th><th style="text-align:right;padding:6px;color:#64748b;">סטטוס</th></tr>'
+      + items.map(it=>'<tr style="border-top:1px solid #f1f5f9;">'
+        + '<td style="padding:6px;white-space:nowrap;">'+it.when+'</td>'
+        + '<td style="padding:6px;">'+ (it.name ? '<b>'+it.name+'</b><br>' : '') + '<span style="color:#64748b;">'+it.to+'</span></td>'
+        + '<td style="padding:6px;">'+(it.phase||'—')+'</td>'
+        + '<td style="padding:6px;">'+chip(it.kind)+'</td>'
+        + '</tr>').join('')
+      + '</table>';
   }).catch(e=>{ box.textContent = 'שגיאה: ' + e.message; });
 };
 

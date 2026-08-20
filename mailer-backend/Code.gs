@@ -6,7 +6,7 @@
  * היא יוצרת את תיקיית הקבצים, מתקינה את טריגר התזמון, ומדפיסה את הקישור לתיקייה.
  */
 
-const CODE_VERSION = 'v16-group';
+const CODE_VERSION = 'v17-tick';
 const SECRET = 'lgGnSJZnAsfIs4W822y0k7F6';
 const SENDER_NAME = 'מחקר PRIME';
 const FOLDER_NAME = 'PRIME Mailer Files';
@@ -81,8 +81,39 @@ function doPost(e) {
     const data = JSON.parse(e.postData.contents);
     if (data.secret !== SECRET) return json({ ok: false, error: 'unauthorized' });
 
+    /* דופק חיצוני: מריץ את בדיקת המתוזמנים עכשיו, ומתקין מחדש את הטריגר אם נעלם.
+       כך התזמון עובד גם כשהטריגר של גוגל מת בשקט (הסיבה שהמיילים "לא יצאו בפועל").
+       מוגן בסוד בלבד — שולח רק מה שכבר תוזמן ואושר, לא מקבל תוכן חדש. */
+    if (data.mode === 'tick') {
+      var fixed = false;
+      try {
+        var has = ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'checkScheduled'; });
+        if (!has) { installTrigger_(); fixed = true; }
+      } catch (e) { /* ריצה בהקשר בלי הרשאת טריגרים — הדופק עצמו עדיין שולח */ }
+      var r = checkScheduled();
+      return json({ ok: true, version: CODE_VERSION, triggerReinstalled: fixed,
+        pending: r.pending, sent: r.sent, errors: r.errors });
+    }
+
     // בדיקת גרסה + אבחון יומן (ללא פרטי נחקרים)
     if (data.mode === 'ping') {
+      // מצב הטריגרים ותור ההמתנה — כדי שאפשר יהיה לראות מבחוץ שהתזמון חי
+      var trig = [];
+      try {
+        trig = ScriptApp.getProjectTriggers().map(function (t) {
+          return t.getHandlerFunction() + ' (' + t.getEventType() + ')';
+        });
+      } catch (e) { trig = ['unreadable: ' + e]; }
+      var qStat = { pending: 0, overdue: 0 };
+      try {
+        var qRows = queueSheet_().getDataRange().getValues();
+        var nowT = new Date();
+        for (var qi = 1; qi < qRows.length; qi++) {
+          if (String(qRows[qi][2]) !== 'pending') continue;
+          qStat.pending++;
+          if (new Date(normSendAt_(qRows[qi][1])) <= nowT) qStat.overdue++;
+        }
+      } catch (e) { qStat.error = String(e); }
       var cal = {};
       try {
         var c = primeCalendar_();
@@ -99,7 +130,8 @@ function doPost(e) {
         var p = lookupCalendar_(data.probe || '');
         probe = { ok: p.ok, items: (p.items || []).length, total: p.total, name: p.calendarName, err: p.error };
       } catch (e2) { probe = { thrown: String(e2) }; }
-      return json({ ok: true, version: CODE_VERSION, calendar: cal, probe: probe });
+      return json({ ok: true, version: CODE_VERSION, calendar: cal, probe: probe,
+        triggers: trig, queue: qStat });
     }
 
     const v = verifiedEmail_(data.idToken);
@@ -115,6 +147,7 @@ function doPost(e) {
     // --- ניהול מיילים ממתינים ---
     if (data.mode === 'history')    return json({ ok: true, items: historyFor_(data.email) });
     if (data.mode === 'list')       return json({ ok: true, items: listPending_() });
+    if (data.mode === 'sentlog')    return json({ ok: true, items: sentLog_(data.limit) });
     if (data.mode === 'cancel')     return json(cancelPending_(data.row));
     if (data.mode === 'reschedule') return json(reschedulePending_(data.row, data.sendAt));
 
@@ -301,6 +334,47 @@ function logSend_(d, kind) {
 
 /** פתיחת היומן — הרץ ידנית כדי לקבל את הקישור */
 function openLog() { Logger.log('https://docs.google.com/spreadsheets/d/' + logSheet_().getParent().getId()); }
+
+/**
+ * יומן שליחות לעמוד — אמיר: "שיהיה לוג פשוט שמראה שהמייל שתוזמן יצא".
+ * ממזג את יומן השליחות (מיידי + מתוזמן) עם שורות התור שכבר טופלו
+ * (sent / skipped / error), החדש ביותר ראשון.
+ */
+function sentLog_(limit) {
+  var max = Math.max(5, Math.min(100, limit || 30));
+  var out = [];
+  var rows = logSheet_().getDataRange().getValues();
+  for (var i = 1; i < rows.length; i++) {
+    out.push({
+      when: rows[i][0] instanceof Date
+        ? Utilities.formatDate(rows[i][0], Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm') : String(rows[i][0]),
+      ts: rows[i][0] instanceof Date ? rows[i][0].getTime() : 0,
+      to: String(rows[i][1] || ''), name: String(rows[i][2] || ''), phase: String(rows[i][3] || ''),
+      kind: String(rows[i][6] || ''), sendAt: normSendAt_(rows[i][7]), by: String(rows[i][8] || '')
+    });
+  }
+  // שורות תור שטופלו — מהן רואים גם דילוגים ותקלות של המתוזמנים
+  var qRows = queueSheet_().getDataRange().getValues();
+  for (var k = 1; k < qRows.length; k++) {
+    var st = String(qRows[k][2] || '');
+    if (st === 'pending') continue;
+    var d = {};
+    try { d = JSON.parse(qRows[k][3]) || {}; } catch (e) {}
+    var kind = st.indexOf('sent') === 0 ? 'נשלח (מתוזמן)'
+      : st.indexOf('skipped') === 0 ? 'דולג — יום המחקר עבר'
+      : st.indexOf('error') === 0 ? 'שגיאה' : st;
+    var tsM = st.match(/\d{4}-\d{2}-\d{2}T[\d:.]+Z/);
+    var ts = tsM ? new Date(tsM[0]).getTime() : 0;
+    out.push({
+      when: ts ? Utilities.formatDate(new Date(ts), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm') : st,
+      ts: ts, to: (d.to || []).join(','), name: d.name || '', phase: d.phase || '',
+      kind: kind, sendAt: normSendAt_(qRows[k][1]), by: 'מערכת (תזמון)', queue: true
+    });
+  }
+  // 'תוזמן' מהיומן הישן כפול מול שורת התור — היומן מציג את שתיהן, זה בסדר: אחת "נכנס לתור" ואחת "יצא"
+  out.sort(function (a, b) { return b.ts - a.ts; });
+  return out.slice(0, max);
+}
 
 /** היסטוריית השליחות של נחקר לפי כתובת מייל */
 function historyFor_(email) {
@@ -523,17 +597,37 @@ function checkScheduled() {
   const sh = queueSheet_();
   const rows = sh.getDataRange().getValues();
   const now = new Date();
+  const out = { pending: 0, sent: 0, errors: 0, skippedStale: 0 };
   for (let i = 1; i < rows.length; i++) {
     if (String(rows[i][2]) !== 'pending') continue;
-    if (new Date(normSendAt_(rows[i][1])) <= now) {
-      try {
-        sendMail_(JSON.parse(rows[i][3]));
-        sh.getRange(i + 1, 3).setValue('sent ' + new Date().toISOString());
-      } catch (err) {
-        sh.getRange(i + 1, 3).setValue('error: ' + err);
-      }
+    const due = new Date(normSendAt_(rows[i][1]));
+    if (due > now) { out.pending++; continue; }
+    var d = null;
+    try { d = JSON.parse(rows[i][3]); } catch (e) {}
+    /* אמיר (20.8.2026): מייל שנתקע ויום המחקר שלו כבר עבר — לא שולחים. תזכורת
+       לפגישה שהייתה היא גרועה משתיקה. נחשב עבר-זמנו אם מועד המחקר מאחורינו,
+       או (כשאין מועד מחקר בנתונים) אם מועד השליחה חלף לפני יותר מ-6 ימים —
+       התזכורת נשלחת שבוע לפני, כך שאחרי 6 ימים הפגישה כבר מאחורינו ממילא. */
+    var research = d && d.researchAt ? new Date(d.researchAt) : null;
+    var stale = (research && !isNaN(research) && research < now)
+      || (!(research && !isNaN(research)) && (now - due) > 6 * 24 * 3600 * 1000);
+    if (stale) {
+      sh.getRange(i + 1, 3).setValue('skipped ' + new Date().toISOString() + ' (יום המחקר עבר)');
+      out.skippedStale++;
+      continue;
+    }
+    try {
+      sendMail_(d || JSON.parse(rows[i][3]));
+      sh.getRange(i + 1, 3).setValue('sent ' + new Date().toISOString());
+      // נרשם גם ביומן השליחות — כדי שיהיה מקום אחד שרואים בו שהמייל באמת יצא
+      try { logSend_(Object.assign({}, d, { sentBy: 'מערכת (תזמון)' }), 'נשלח (מתוזמן)'); } catch (e2) {}
+      out.sent++;
+    } catch (err) {
+      sh.getRange(i + 1, 3).setValue('error: ' + err);
+      out.errors++;
     }
   }
+  return out;
 }
 
 function queueSheet_() {

@@ -6,7 +6,7 @@
  * היא יוצרת את תיקיית הקבצים, מתקינה את טריגר התזמון, ומדפיסה את הקישור לתיקייה.
  */
 
-const CODE_VERSION = 'v17-tick';
+const CODE_VERSION = 'v19-auto-full';
 const SECRET = 'lgGnSJZnAsfIs4W822y0k7F6';
 const SENDER_NAME = 'מחקר PRIME';
 const FOLDER_NAME = 'PRIME Mailer Files';
@@ -639,12 +639,129 @@ function checkScheduled() {
   return out;
 }
 
-/* ===== תזכורת אוטומטית — אמיר (20.8.2026): "אני רוצה שזה כן יישלח אוטומטית,
-   בלי אישור. ואם הוא בתוך השבוע הקרוב — שיקבל גם אם זה כבר לא שבוע לפני".
+/* ===== תזכורת אוטומטית — אמיר (20.8.2026): "שישלח אוטומטית בלי אישור; מי
+   שבתוך השבוע הקרוב מקבל גם אם זה כבר לא בדיוק שבוע לפני; ההודעה זהה למייל
+   המקורי — כל ההסברים והקבצים, לא נוסח הוואטסאפ".
    כל ריצת טריגר: אירועי יומן PRIME ב-8 הימים הקרובים. נחקר שיום המחקר שלו
-   בעוד ≤7 ימים ואין לו תזכורת בתור (ידנית או אוטומטית) — נשלחת לו עכשיו
-   תזכורת (הנוסח המאושר: יומן אכילה, שתן חוץ מ-T3, צום 12ש, הגעה), והכל
-   נרשם בתור וביומן השליחות. כישלון נרשם כ-error ומדווח לאמיר בטלגרם. */
+   בעוד ≤7 ימים ואין לו תזכורת בתור — מקבל את מייל ההכנה המלא (תבנית לפי
+   שלב+קבוצה+מוקד, אותם קבצים מצורפים). מפתח הדדופ כולל את מועד האירוע —
+   אם הפגישה זזה ביומן, נשלחת תזכורת מעודכנת אוטומטית. */
+var WD_HE = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+var SITES_INFO = {
+  assuta: { location: 'אסותא רמת החייל, רחוב הברזל 20, בניין אשפוז, קומה 1, חדר 140',
+    parking: '** ביום המחקר נסדיר עבורך חניה - יש לוודא שחנית בחניון בית החולים, ברחוב הברזל 20, רמת החייל.' },
+  ichilov: { location: 'המרכז הרפואי תל אביב ע״ש סוראסקי (איכילוב), דרך וייצמן 6, מגדל האשפוז ע״ש אריסון, קומה 13 - המכון האנדוקריני',
+    parking: '** ביום המחקר נסדיר עבורך חניה - יש לוודא שחנית בחניון בית החולים, דרך וייצמן 6, תל אביב.' }
+};
+var FILES_BY_KEY = {
+  'assuta:start': ['T0 - אסותא.pdf', 'איסוף שתן 24 שעות - הנחיות ליום מחקר.pdf', 'הסכמה מדעת אסותא.pdf'],
+  'assuta:middle:control': ['T3 - ביקורת אסותא.pdf'],
+  'assuta:middle:intervention': ['T3 - התערבות אסותא.pdf'],
+  'assuta:end:control': ['T6 - ביקורת אסותא.pdf', 'איסוף שתן 24 שעות - הנחיות ליום מחקר.pdf'],
+  'assuta:end:intervention': ['T6 - התערבות אסותא.pdf', 'איסוף שתן 24 שעות - הנחיות ליום מחקר.pdf'],
+  'ichilov:start': ['T0 - איכילוב.pdf', 'איסוף שתן 24 שעות - הנחיות ליום מחקר.pdf', 'הסכמה מדעת איכילוב.pdf'],
+  'ichilov:middle:control': ['T3 - ביקורת איכילוב.pdf'],
+  'ichilov:middle:intervention': ['T3 - התערבות איכילוב.pdf'],
+  'ichilov:end:control': ['T6 - ביקורת איכילוב.pdf', 'איסוף שתן 24 שעות - הנחיות ליום מחקר.pdf'],
+  'ichilov:end:intervention': ['T6 - התערבות איכילוב.pdf', 'איסוף שתן 24 שעות - הנחיות ליום מחקר.pdf']
+};
+function p2_(n) { return ('0' + n).slice(-2); }
+function ddmm_(d) { return p2_(d.getDate()) + '/' + p2_(d.getMonth() + 1); }
+function ddmmyyyy_(d) { return ddmm_(d) + '/' + d.getFullYear(); }
+function addDays_(d, n) { var x = new Date(d); x.setDate(x.getDate() + n); return x; }
+function diaryDays_(research) {
+  var out = []; var d = addDays_(research, -2);
+  while (out.length < 3) { var wd = d.getDay(); if (wd >= 0 && wd <= 4) out.push(new Date(d)); d = addDays_(d, -1); }
+  return out.reverse();
+}
+function genderApply_(text, g) {
+  return String(text || '').replace(/\[([^\[\]|]*)\|([^\[\]|]*)\]/g, function (m, a, b) { return g === 'm' ? a : b; });
+}
+
+/* אותן תבניות בדיוק כמו בעמוד המיילר (prime-mailer.html) — שינוי נוסח משנים בשניהם */
+function fullReminder_(name, phase, group, site, gender, research) {
+  var first = String(name || '').trim().split(/\s+/)[0] || '';
+  var fast = new Date(research.getTime() - 12 * 3600 * 1000);
+  var urine = addDays_(research, -2), urineNext = addDays_(research, -1);
+  var diary = diaryDays_(research);
+  var si = SITES_INFO[site] || SITES_INFO.assuta;
+  var map = {
+    'שם': first, 'תאריך_מחקר': ddmmyyyy_(research), 'יום_מחקר': WD_HE[research.getDay()],
+    'שעת_מחקר': p2_(research.getHours()) + ':' + p2_(research.getMinutes()),
+    'יום_צום': WD_HE[fast.getDay()], 'תאריך_צום': ddmmyyyy_(fast),
+    'שעת_צום': p2_(fast.getHours()) + ':' + p2_(fast.getMinutes()),
+    'איסוף_שתן': ddmm_(urine) + ' (יום ' + WD_HE[urine.getDay()] + ' עד ' + WD_HE[urineNext.getDay()] + ' בבוקר)',
+    'יומן_אכילה': diary.map(function (x) { return ddmm_(x) + ' (יום ' + WD_HE[x.getDay()] + ')'; }).join(' + '),
+    'תאריך_קצר': research.getDate() + '.' + (research.getMonth() + 1),
+    'מיקום': si.location, 'חניה': si.parking,
+    'מספר_יום': phase === 'start' ? '1' : phase === 'middle' ? '2' : '3',
+    'משך': phase === 'middle' ? 'כ-3' : '3-4'
+  };
+  var SIGNATURE = '\n--\nתודה רבה על השתתפותך ותרומתך למחקר,\nצוות מחקר PRIME';
+  var RULES_COMMON = 'מצורף דף הנחיות מפורט להכנה ליום המחקר.\n' +
+    'יום המחקר מתקיים ב- {{מיקום}}.\n' +
+    'משך כל הבדיקות צפוי להיות {{משך}} שעות, ולכן מומלץ להביא עמך ארוחה קלה ושתייה לאחר סיום הבדיקות הדורשות צום.\n' +
+    'לקראת יום המחקר, נבקש להקפיד על ההנחיות הבאות:\n\n' +
+    '1. להגיע בצום של 12 שעות. בבוקר יום המחקר ניתן לשתות מים בלבד (צום {{יום_צום}} מ-{{שעת_צום}}).\n' +
+    '2. לשמור על תזונה שגרתית ככל הניתן ביממה שלפני יום המחקר.\n' +
+    '3. להימנע מפעילות גופנית במשך 24 שעות לפני ההגעה.\n' +
+    '4. להימנע מצריכת אלכוהול במשך 24 שעות לפני ההגעה.\n' +
+    '5. להימנע מצריכת קפאין במשך 12 שעות לפני ההגעה.\n' +
+    '6. להימנע ממריחת קרמים או שמנים על הידיים והרגליים ביום המחקר.\n' +
+    '7. להגיע בביגוד נוח ונעליים סגורות, עדיפות לנעלי ספורט.\n' +
+    '8. להביא משקפי קריאה, אם יש צורך.\n' +
+    '9. להביא רשימת תרופות ותוספי תזונה עדכנית, או צילום שלהם.\n' +
+    '10. להביא יומן אכילה של 3 ימים, בהתאם להנחיות המצורפות.';
+  var DIARY_RULES = 'יש לרשום 3 ימי אכילה מלאים, לא כולל שישי/שבת ולא כולל היום שלפני יום המחקר, משום שבאותו ערב מתחיל הצום.\n' +
+    'ניתן לרשום את היומן בטלפון הנייד, בדף או במחברת - לפי הנוחות שלך.\n' +
+    'חשוב לציין ככל האפשר את שעת האכילה, סוג המזון, הכמות, אופן ההכנה, כמה שיותר פרטים.';
+  var VISIT_HEAD = '{{שם}} [היקר|היקרה],\nלקראת הגעתך ליום מחקר {{מספר_יום}} במסגרת מחקר PRIME,\nהנך [מוזמן|מוזמנת] ליום המחקר בתאריך:\nיום {{יום_מחקר}}, {{תאריך_מחקר}}\nבשעה {{שעת_מחקר}}\n\n';
+  var MIDDLE_TAIL = '\nלגבי יומן האכילה:\n' + DIARY_RULES +
+    '\n\n* [מוזמן|מוזמנת] לשלוח למייל 3 ימי חול, בשבוע שלפני ההגעה לאסותא:\n{{יומן_אכילה}}\n\n{{חניה}}' + SIGNATURE;
+  var FULL_VISIT_TAIL = '11. להביא מיכל/י חלבון ריק.\n' +
+    '12. בדיקות דם עדכניות (משלושת החודשים האחרונים).\n' +
+    '13. לקרוא היטב הנחיות לאיסוף שתן (איסוף 24 שעות) ולהגיע עם המיכל!\n' +
+    'את האיסוף יש לבצע בדיוק לפי ההנחיות המצורפות.\n' +
+    '[שים|שימי] לב: בערכה מצורף ברקוד/QR לסרטון הדרכה קצר.\n\n' +
+    'הנחיות ליומן האכילה:\n' + DIARY_RULES +
+    '\n\n* תאריכי יומן אכילה: {{יומן_אכילה}}\n* תאריך איסוף שתן (24 שעות): {{איסוף_שתן}}\n\n' +
+    '* [שים|שימי] לב - ביום {{יום_צום}} ({{תאריך_צום}}), [אתה מתחיל|את מתחילה] צום בשעות הערב (לפחות 12 שעות), כלומר החל מהשעה {{שעת_צום}} - ניתן לשתות מים בלבד.\n' +
+    '** נשמח בבקשה לשלוח אלינו - בדיקות דם (משלושת החודשים האחרונים).\n' +
+    'נתראה ביום {{יום_מחקר}} {{תאריך_מחקר}} בשעה {{שעת_מחקר}}\n' +
+    '*נא לקרוא טוב את כל ההנחיות המצורפות :)\n{{חניה}}' + SIGNATURE;
+  var START_BODY = 'היי {{שם}},\n\n' +
+    'שמחים מאוד שהצטרפת אלינו למחקר PRIME - תודה רבה על שיתוף הפעולה.\n' +
+    'כחלק מההכנה ליום המחקר הראשון, חשוב לנו [שתקרא|שתקראי] בעיון את דף ההנחיות המצורף [ותפעל|ותפעלי] לפיו.\n' +
+    'בדף [תמצא|תמצאי] הנחיות לגבי:\n\n' +
+    '1) הנחיות הגעה ליום המחקר\nתאריך: {{תאריך_מחקר}} יום {{יום_מחקר}}\nבשעה: {{שעת_מחקר}}\nמיקום: {{מיקום}}\n*מומלץ להגיע 10-15 דקות לפני.\n**ניתן לחנות בבניין - יש הסדר חנייה.\n\n' +
+    '2) טופס הסכמה מדעת - לקריאה מראש (חתימה תתבצע ביום המחקר)\n\n' +
+    '3) הנחיות לאיסוף שתן (איסוף 24 שעות)\nאת האיסוף יש לבצע בדיוק לפי ההנחיות המצורפות.\n[שים|שימי] לב: בערכה מצורף ברקוד/QR לסרטון הדרכה קצר.\n\n' +
+    '4) הנחיות ליומן אכילה\nההנחיות ליומן אכילה מופיעות בתוך דף ההנחיות הכללי המצורף.\n\n' +
+    '* תאריכי יומן אכילה: {{יומן_אכילה}}\n* תאריך איסוף שתן (24 שעות): {{איסוף_שתן}}\n\n' +
+    '* [שים|שימי] לב - ביום {{יום_צום}} ({{תאריך_צום}}), [אתה אמור|את אמורה] להתחיל צום בשעות הערב (לפחות 12 שעות), כלומר החל מהשעה {{שעת_צום}} - ניתן לשתות מים בלבד.\n' +
+    '** אשמח בבקשה לשלוח אליי - בדיקות דם (3 חודשים האחרונים) + אישור פעילות גופנית (לבקש מרופא/ת המשפחה) + צילומים של תרופות/ויטמינים [שנוטל|שנוטלת] (כל אלו מופיעים בדף ההנחיות).\n\n' +
+    'נתראה ביום {{יום_מחקר}} {{תאריך_מחקר}} בשעה {{שעת_מחקר}} (להגיע בבקשה עם תעודת זהות/רישיון)\n' +
+    '*נא לקרוא טוב טוב את כל ההנחיות המצורפות :)';
+  var body, subject;
+  if (phase === 'start') { subject = 'הכנה ליום מחקר 1 - מחקר PRIME'; body = START_BODY; }
+  else {
+    subject = 'הכנה ליום מחקר {{מספר_יום}} - מחקר PRIME';
+    if (phase === 'middle') body = VISIT_HEAD + RULES_COMMON + (group === 'intervention' ? '\n11. להביא מיכל חלבון ריק (במידה ויש)\n' : '\n') + MIDDLE_TAIL;
+    else body = VISIT_HEAD + RULES_COMMON + '\n' + FULL_VISIT_TAIL;
+  }
+  var sub = function (t) { return genderApply_(String(t).replace(/\{\{\s*([^}]+?)\s*\}\}/g, function (m, k) { return (k in map) ? map[k] : m; }), gender); };
+  var fkey = site + ':' + (phase === 'start' ? 'start' : phase + ':' + group);
+  return { subject: sub(subject), body: sub(body), attachments: FILES_BY_KEY[fkey] || [] };
+}
+
+/** מין מהתיאור של האירוע (אם הטופס שואל), ברירת מחדל נקבה — כמו בעמוד. */
+function genderFromEvent_(desc) {
+  var m = String(desc || '').match(/(?:מין|מגדר)\s*[:：]\s*([^\r\n]+)/);
+  var ans = m ? m[1] : '';
+  if (ans.indexOf('זכר') >= 0 || /male/i.test(ans)) return 'm';
+  return 'f';
+}
+
 function autoReminders_() {
   const cal = primeCalendar_(); if (!cal) return;
   const now = new Date();
@@ -654,28 +771,36 @@ function autoReminders_() {
   const rows = sh.getDataRange().getValues();
   const normN = function (s) { return String(s || '').replace(/["'׳״\-]/g, ' ').replace(/\s+/g, ' ').trim(); };
   const have = {};
+  const manualCover = [];   // {key, researchMs} — תזמון ידני מכסה רק אם מועדו תואם ליומן
   for (var i = 1; i < rows.length; i++) {
     var d = {}; try { d = JSON.parse(rows[i][3]) || {}; } catch (e) {}
     if (d.autoKey) have[d.autoKey] = true;
     var st = String(rows[i][2] || '');
-    // תזמון ידני (ממתין או שנשלח) לאותו נחקר+שלב גובר על האוטומט
-    if ((st === 'pending' || st.indexOf('sent') === 0) && d.name) {
-      have['np_' + normN(d.name) + '|' + (d.phase || '')] = true;
+    if ((st === 'pending' || st.indexOf('sent') === 0) && d.name && !d.auto && !d.autoKey) {
+      var rMs = d.researchAt ? new Date(d.researchAt).getTime() : 0;
+      manualCover.push({ key: 'np_' + normN(d.name) + '|' + (d.phase || ''), researchMs: rMs });
     }
   }
   for (var j = 0; j < evs.length; j++) {
     var ev = evs[j];
     var start = ev.getStartTime();
-    if (start <= now) continue;                                    // יום המחקר כבר עבר/רץ
+    if (start <= now) continue;
     var sendAt = new Date(start.getTime() - 7 * 24 * 3600 * 1000);
-    if (sendAt > now) continue;                                    // עוד לא נכנסנו לחלון השבוע
+    if (sendAt > now) continue;
     var desc = ev.getDescription() || '', title = ev.getTitle() || '', loc = ev.getLocation() || '';
     var name = nameFromEvent_(title, desc);
     if (!name || name.length < 2) continue;
     var phase = phaseFromText_(loc + ' ' + title + ' ' + desc);
-    var key = 'auto_' + ev.getId();
+    /* המפתח כולל את מועד האירוע: הפגישה זזה ביומן ⇒ מפתח חדש ⇒ תזכורת מעודכנת */
+    var key = 'auto_' + ev.getId() + '_' + Utilities.formatDate(start, Session.getScriptTimeZone(), 'yyyyMMddHHmm');
     if (have[key]) continue;
-    if (have['np_' + normN(name) + '|' + phase]) continue;
+    /* תזמון ידני קיים מכסה רק כשהמועד שנשמר בו קרוב (עד 36 שעות) למועד ביומן —
+       אם הפגישה הוזזה, נשלחת תזכורת מעודכנת */
+    var covKey = 'np_' + normN(name) + '|' + phase;
+    var covered = manualCover.some(function (c) {
+      return c.key === covKey && (!c.researchMs || Math.abs(c.researchMs - start.getTime()) < 36 * 3600 * 1000);
+    });
+    if (covered) continue;
     var email = emailFromEvent_(desc);
     if (!email) {
       try {
@@ -684,45 +809,50 @@ function autoReminders_() {
       } catch (e) {}
     }
     var site = siteFromText_(loc + ' ' + title + ' ' + desc);
-    var payload = { to: email ? [email] : [], name: name, phase: phase, site: site, group: '',
+    var group = groupFromEvent_(desc);
+    var payload = { to: email ? [email] : [], name: name, phase: phase, site: site, group: group,
       sendAt: normSendAt_(sendAt),
       researchAt: Utilities.formatDate(start, Session.getScriptTimeZone(), "yyyy-MM-dd'T'HH:mm"),
-      subject: 'תזכורת ליום המחקר - מחקר PRIME', autoKey: key, auto: true };
-    if (!email) {
-      sh.appendRow([new Date(), payload.sendAt, 'error: אין כתובת מייל באירוע היומן — לשלוח ידנית', JSON.stringify(payload)]);
+      autoKey: key, auto: true };
+    var problem = !email ? 'אין כתובת מייל באירוע היומן'
+      : !phase ? 'לא זוהה שלב (T0/T3/T6) באירוע'
+      : (phase !== 'start' && !group) ? 'אין קבוצת מחקר באירוע היומן'
+      : '';
+    if (problem) {
+      payload.subject = 'תזכורת ' + name;
+      sh.appendRow([new Date(), payload.sendAt, 'error: ' + problem + ' — לשלוח ידנית מהעמוד', JSON.stringify(payload)]);
       have[key] = true;
       continue;
     }
-    payload.body = autoReminderBody_(name, phase, site, start);
+    var mail = fullReminder_(name, phase, group, site, genderFromEvent_(desc), start);
+    payload.subject = mail.subject;
+    payload.body = mail.body;
+    payload.attachments = mail.attachments;
     try {
       sendMail_(payload);
-      sh.appendRow([new Date(), payload.sendAt, 'sent ' + new Date().toISOString() + ' (auto)', JSON.stringify(payload)]);
+      sh.appendRow([new Date(), payload.sendAt, 'sent ' + new Date().toISOString() + ' (auto)',
+        JSON.stringify({ autoKey: key, name: name, phase: phase, site: site, group: group, to: payload.to, researchAt: payload.researchAt, sendAt: payload.sendAt, subject: payload.subject })]);
       try { logSend_(Object.assign({}, payload, { sentBy: 'מערכת (אוטומטי)' }), 'נשלח (תזכורת אוטומטית)'); } catch (e2) {}
     } catch (err) {
-      sh.appendRow([new Date(), payload.sendAt, 'error: ' + err, JSON.stringify(payload)]);
+      sh.appendRow([new Date(), payload.sendAt, 'error: ' + err, JSON.stringify({ autoKey: key, name: name, phase: phase, to: payload.to })]);
     }
     have[key] = true;
   }
-}
-
-/** נוסח התזכורת — זהה להודעת הוואטסאפ המאושרת (ב-T3 אין איסוף שתן). */
-function autoReminderBody_(name, phase, site, start) {
-  var first = String(name).trim().split(/\s+/)[0] || '';
-  var WDH = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
-  var p2 = function (n) { return ('0' + n).slice(-2); };
-  var hhmm = p2(start.getHours()) + ':' + p2(start.getMinutes());
-  var fast = new Date(start.getTime() - 12 * 3600 * 1000);
-  var withUrine = phase !== 'middle';
-  var siteShort = site === 'ichilov' ? 'איכילוב, מגדל אריסון קומה 13' : 'המרכז הרפואי אסותא רמת החייל';
-  return 'היי ' + first + '\n\n'
-    + 'תזכורת לקראת יום המחקר שמתקיים ביום ' + WDH[start.getDay()] + ' (' + p2(start.getDate()) + '.' + p2(start.getMonth() + 1) + ' בשעה ' + hhmm + ')\n\n'
-    + 'לקראת ההגעה, חשוב לוודא:\n\n'
-    + '🥗 יומן אכילה\n* לוודא שיומן האכילה מולא לפי ההנחיות ונשלח\n'
-    + (withUrine ? '\n🧪 איסוף שתן\n* לוודא שאיסוף השתן (24 שעות) בוצע לפי ההנחיות\n* להביא את המיכל ביום המחקר\n' : '')
-    + '\n⏳ צום\n* להתחיל צום בערב שלפני יום המחקר (' + p2(fast.getHours()) + ':' + p2(fast.getMinutes()) + ')\n* לאחר מכן – מים בלבד\n\n'
-    + '📍 הגעה\n* להגיע מעט לפני השעה שנקבעה (' + siteShort + ', בשעה ' + hhmm + ')\n* נא לבוא בבגדי ונעלי ספורט\n\n'
-    + 'אנחנו כאן לכל שאלה או התייעצות 😊\nנתראה ביום ' + WDH[start.getDay()] + '🤍';
-}
+  /* טסט מלא על אמיר (בקשתו 20.8): כאילו יום המחקר שלו חמישי 27.8 07:30, T0 —
+     שני מיילים במקביל: המיידי והתזכורת של שבוע לפני (זהים בתוכן, זו הנקודה),
+     שניהם עם כל הקבצים. חד-פעמי. */
+  try {
+    var props = PropertiesService.getScriptProperties();
+    if (!props.getProperty('TEST_MAIL_V20')) {
+      props.setProperty('TEST_MAIL_V20', String(Date.now()));
+      var tStart = new Date(2026, 7, 27, 7, 30, 0);
+      var tm = fullReminder_('אמיר', 'start', '', 'assuta', 'm', tStart);
+      GmailApp.sendEmail('amirsportdiet@gmail.com', '[בדיקה 1/2 - המייל המיידי] ' + tm.subject, tm.body, {
+        name: SENDER_NAME, htmlBody: rtlHtml_(tm.body), attachments: attachmentsFor_(tm.attachments) });
+      GmailApp.sendEmail('amirsportdiet@gmail.com', '[בדיקה 2/2 - התזכורת שנשלחת שבוע לפני] ' + tm.subject, tm.body, {
+        name: SENDER_NAME, htmlBody: rtlHtml_(tm.body), attachments: attachmentsFor_(tm.attachments) });
+    }
+  } catch (eT) { /* בדיקה בלבד */ }}
 
 /* תמונת-מצב מצומצמת של התור אל הדשבורד (שם, מועד, סטטוס — בלי כתובות ותוכן),
    כדי שהבוט יוכל לענות "מה ממתין ומה יצא". מאומת בסוד של המיילר עצמו. */

@@ -1934,13 +1934,10 @@ const WAIVED = new Set();
 window.waiveMissing = (keys) => {
   const labels = keys.map(k => WAIVE_DEF[k] ? WAIVE_DEF[k].label : k);
   const code = (document.getElementById('f-code')||{}).value || '';
-  if(!confirm('להשמיט מהדו״ח את המדדים החסרים הבאים?
-
-• ' + [...new Set(labels)].join('
-• ')
-    + '
-
-ההשמטה תקפה לנחקר/ת ' + (code ? 'קוד ' + code : 'הנוכחי/ת') + ' בלבד, והדו״ח יופק בלעדיהם.')) return;
+  const NL = String.fromCharCode(10);
+  if(!confirm('להשמיט מהדו״ח את המדדים החסרים הבאים?' + NL + NL
+    + '• ' + [...new Set(labels)].join(NL + '• ') + NL + NL
+    + 'ההשמטה תקפה לנחקר/ת ' + (code ? 'קוד ' + code : 'הנוכחי/ת') + ' בלבד, והדו״ח יופק בלעדיהם.')) return;
   keys.forEach(k => WAIVED.add(k));
   generateReport();
 };

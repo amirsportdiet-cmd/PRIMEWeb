@@ -627,7 +627,26 @@ function checkScheduled() {
       out.errors++;
     }
   }
+  reportQueue_(rows);
   return out;
+}
+
+/* תמונת-מצב מצומצמת של התור אל הדשבורד (שם, מועד, סטטוס — בלי כתובות ותוכן),
+   כדי שהבוט יוכל לענות "מה ממתין ומה יצא". מאומת בסוד של המיילר עצמו. */
+const DASH_SNAP_URL = 'https://us-central1-wellnessprojectar.cloudfunctions.net/waTest?action=primeQueueSnap';
+function reportQueue_(rows) {
+  try {
+    const items = [];
+    for (var i = Math.max(1, rows.length - 60); i < rows.length; i++) {
+      var d = {};
+      try { d = JSON.parse(rows[i][3]) || {}; } catch (e) {}
+      items.push({ row: i + 1, name: d.name || '', phase: d.phase || '',
+        sendAt: normSendAt_(rows[i][1]), status: String(rows[i][2] || '').slice(0, 60) });
+    }
+    UrlFetchApp.fetch(DASH_SNAP_URL, { method: 'post', contentType: 'application/json',
+      headers: { 'x-mailer-secret': SECRET },
+      payload: JSON.stringify({ version: CODE_VERSION, items: items }), muteHttpExceptions: true });
+  } catch (e) { /* דיווח בלבד — כישלון שלו לא נוגע בשליחות */ }
 }
 
 function queueSheet_() {

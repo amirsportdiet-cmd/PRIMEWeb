@@ -754,23 +754,130 @@ function fullReminder_(name, phase, group, site, gender, research) {
   return { subject: sub(subject), body: sub(body), attachments: FILES_BY_KEY[fkey] || [] };
 }
 
+/* מין מ-REDCap (cand_sex: 1=זכר, 2=נקבה; ייצוא 17.8.2026) — לניסוח נכון של המייל.
+   אותה התאמה גמישה כמו הקבוצות. מתעדכן עם כל ייצוא חדש. */
+var SEX_FALLBACK = {
+  'אביב ברשף': 'm',
+  'אביבה פנחסוב': 'f',
+  'אביבה רובין': 'f',
+  'אברהם איגל': 'm',
+  'אורה שורץ': 'f',
+  'אורי קטרי': 'm',
+  'אורן גונן': 'm',
+  'אילנה נתוביץ': 'f',
+  'אירית שרון': 'f',
+  'איתי שגיא': 'm',
+  'אלה נגרו יוסף': 'f',
+  'אלי מלכה': 'm',
+  'אלי שוורצר': 'm',
+  'אלישבע גרינשטיין': 'f',
+  'אלמוג קובריגרו': 'm',
+  'אמנון אגסי': 'm',
+  'אפרת אגסי פלדמן': 'f',
+  'אריאלה קלפנר': 'f',
+  'אשרת הרבסט': 'f',
+  'אתי כובש': 'f',
+  'ברטה ניסימוב': 'f',
+  'בתיה רחום': 'f',
+  "ג'ני פקגוז": 'f',
+  'גיל בן צבי': 'm',
+  'גילה מעתוק': 'f',
+  'גלית רז': 'f',
+  'גלית ריכטר': 'f',
+  'דביר שרעבי': 'm',
+  'דוד בכר': 'm',
+  'דן בוקאי': 'm',
+  'דניאלה נוסבאום': 'f',
+  'ורדית עופר': 'f',
+  'זלמן שטרנליכט': 'f',
+  'חדווה מלמד פגדאו': 'f',
+  'חיים זאב שהם': 'm',
+  'חנה הכרמי': 'f',
+  'טטיאנה ברדר': 'f',
+  'טטיאנה חבין': 'f',
+  'טלי כהנא': 'f',
+  'יהודית מזרחי': 'f',
+  'יוסף בוקסבוים': 'm',
+  'יוספה בלקין': 'f',
+  'יעל ברגשטיין': 'f',
+  'יעל דורון': 'f',
+  'יפית כרפסי': 'f',
+  'יצחק אדלר': 'm',
+  'יצחק רוגק': 'm',
+  'ישראלה רבינא יפעת': 'f',
+  'כרמלה גוטל': 'f',
+  'לי- רון עופר': 'f',
+  'ליטל ניר': 'f',
+  'מאיה מרגולין': 'f',
+  'מאיה סלומונס': 'f',
+  'מיכל לב ארי': 'f',
+  'מיכל פרידמן רם': 'f',
+  'מירי רפאלי': 'f',
+  'נחמה שפירא': 'f',
+  'סוניה ביטרמן גפנר': 'f',
+  'סימון בר ציון': 'f',
+  'סמדר דוד': 'f',
+  'ספי פלג': 'f',
+  'עדנה ברזוזה': 'f',
+  'עודד חיימוב': 'm',
+  'עמית גיא': 'f',
+  'עמליה דגן': 'f',
+  'ענת בצרי': 'f',
+  'ערן מונרוב': 'm',
+  'פליקס שופמן': 'm',
+  'פנינה שטראוס': 'f',
+  'קרן קשת גופמן': 'f',
+  'רביב שוורץ': 'm',
+  'רואי ליטרט': 'm',
+  'רונית אלגרבלי': 'f',
+  'רונית מרסה': 'f',
+  'רותי שליו': 'f',
+  'רחל בן יצחק': 'f',
+  'רם שטיינר': 'm',
+  'שחר ברטל': 'm',
+  'שירלי אלף': 'f',
+  'שלום קמיל': 'm',
+  'שרון בונקר': 'm',
+  'תחיה אבידן': 'f',
+  'תמי מלכה': 'f'
+};
+function sexFromRoster_(name) {
+  var norm = function (x) { return String(x || '').replace(/["'׳״׳״-]/g, ' ').replace(/\s+/g, ' ').trim(); };
+  var q = norm(name).split(' ').filter(String);
+  if (!q.length) return '';
+  var simLast = function (a, b) {
+    if (a === b || a.indexOf(b) >= 0 || b.indexOf(a) >= 0) return true;
+    var pre = 0; while (pre < Math.min(a.length, b.length) && a[pre] === b[pre]) pre++;
+    var suf = 0; while (suf < Math.min(a.length, b.length) - pre && a[a.length - 1 - suf] === b[b.length - 1 - suf]) suf++;
+    return pre >= 2 && suf >= 4;
+  };
+  for (var key in SEX_FALLBACK) {
+    var w = norm(key).split(' ').filter(String);
+    if (w[0] !== q[0]) continue;
+    if (q.length === 1 || w.length === 1) continue;
+    var contained = q.slice(1).every(function (x) { return w.indexOf(x) >= 0; });
+    if (contained || simLast(q[q.length - 1], w[w.length - 1])) return SEX_FALLBACK[key];
+  }
+  return '';
+}
+
 /* קבוצות מחקר מ-REDCap (ייצוא 17.8.2026) — גיבוי כשהתשובה חסרה באירוע היומן.
    1=ביקורת, 2=התערבות. שמות היומן לעיתים בכתיב שונה (גרשטיין/גרינשטיין) —
    ההתאמה: שם פרטי זהה + שם משפחה זהה/מוכל/דומה. מתעדכן עם כל ייצוא חדש. */
 var GROUP_FALLBACK = {
-  'אביב ברשף': 'intervention', 'אורן גונן': 'control', 'אלה נגרו יוסף': 'intervention',
-  'אלי שוורצר': 'control', 'אלישבע גרינשטיין': 'control', 'אלמוג קובריגרו': 'intervention',
-  'אמנון אגסי': 'intervention', 'אתי כובש': 'control', 'ברטה ניסימוב': 'control',
-  'גיל בן צבי': 'intervention', 'גלית ריכטר': 'control', 'דביר שרעבי': 'control',
-  'דוד בכר': 'intervention', 'דן בוקאי': 'control', 'ורדית עופר': 'intervention',
-  'חיים זאב שהם': 'control', 'חנה הכרמי': 'control', 'טטיאנה חבין': 'control',
-  'טלי כהנא': 'control', 'יעל ברגשטיין': 'control', 'יפית כרפסי': 'control',
-  'כרמלה גוטל': 'control', 'ליטל ניר': 'intervention', 'מיכל לב ארי': 'intervention',
-  'מיכל פרידמן רם': 'intervention', 'מירי רפאלי': 'intervention', 'נחמה שפירא': 'intervention',
-  'סוניה ביטרמן גפנר': 'intervention', 'סמדר דוד': 'control', 'עדנה ברזוזה': 'intervention',
-  'עודד חיימוב': 'control', 'עמית גיא': 'control', 'עמליה דגן': 'intervention',
-  'פליקס שופמן': 'intervention', 'רביב שוורץ': 'intervention', 'רואי ליטרט': 'intervention',
-  'רחל בן יצחק': 'control', 'רינת שלום': 'control', 'שחר ברטל': 'control', 'שירלי אלף': 'intervention'
+  "אביב ברשף': 'intervention', 'אורן גונן': 'control', 'אלה נגרו יוסף": 'intervention',
+  "אלי שוורצר': 'control', 'אלישבע גרינשטיין': 'control', 'אלמוג קובריגרו": 'intervention',
+  "אמנון אגסי': 'intervention', 'אתי כובש': 'control', 'ברטה ניסימוב": 'control',
+  "גיל בן צבי': 'intervention', 'גלית ריכטר': 'control', 'דביר שרעבי": 'control',
+  "דוד בכר': 'intervention', 'דן בוקאי': 'control', 'ורדית עופר": 'intervention',
+  "חיים זאב שהם': 'control', 'חנה הכרמי': 'control', 'טטיאנה חבין": 'control',
+  "טלי כהנא': 'control', 'יעל ברגשטיין': 'control', 'יפית כרפסי": 'control',
+  "כרמלה גוטל': 'control', 'ליטל ניר': 'intervention', 'מיכל לב ארי": 'intervention',
+  "מיכל פרידמן רם': 'intervention', 'מירי רפאלי': 'intervention', 'נחמה שפירא": 'intervention',
+  "סוניה ביטרמן גפנר': 'intervention', 'סמדר דוד': 'control', 'עדנה ברזוזה": 'intervention',
+  "עודד חיימוב': 'control', 'עמית גיא': 'control', 'עמליה דגן": 'intervention',
+  "פליקס שופמן': 'intervention', 'רביב שוורץ': 'intervention', 'רואי ליטרט": 'intervention',
+  "רחל בן יצחק': 'control', 'רינת שלום': 'control', 'שחר ברטל': 'control', 'שירלי אלף": 'intervention'
 };
 function groupFromRoster_(name) {
   var norm = function (x) { return String(x || '').replace(/["'׳״\-]/g, ' ').replace(/\s+/g, ' ').trim(); };
@@ -868,7 +975,7 @@ function autoReminders_() {
       }
       continue;
     }
-    var mail = fullReminder_(name, phase, group, site, genderFromEvent_(desc), start);
+    var mail = fullReminder_(name, phase, group, site, sexFromRoster_(name) || genderFromEvent_(desc), start);
     payload.subject = mail.subject;
     payload.body = mail.body;
     payload.attachments = mail.attachments;

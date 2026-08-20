@@ -1626,9 +1626,18 @@ function rcCSV(text){
 
 /* שלוש נקודות זמן במחקר, ולכל אחת אירוע משלה ב-REDCap.
    הרמה נקבעת לפי מה שאפשר להפיק בפועל: השוואה עד הסוף, השוואה עד האמצע, או התחלה בלבד. */
-const RC_EVENT = { s:'t0_arm_1', m:'t3_arm_1', e:'followup_arm_1' };
+/* T6 נרשם ברדקאפ תחת שני שמות אירוע — t6_arm_1 (החדש) או followup_arm_1 (הישן).
+   קוד 12, הראשון שסיים, יושב תחת t6_arm_1 ולא זוהה כשחיפשנו רק את הישן. לכל
+   נקודת זמן יש עכשיו רשימת אירועים, והראשון שיש בו מדידת RMR מנצח. */
+const RC_EVENT = { s:['t0_arm_1'], m:['t3_arm_1'], e:['t6_arm_1','followup_arm_1'] };
 function rcStatus(rec, H){
-  const rowOf = sd => { const r = rec[RC_EVENT[sd]]; return (r && (r[H['rmr_measured']]||'').trim()) ? r : null; };
+  const rowOf = sd => {
+    for(const ev of RC_EVENT[sd]){
+      const r = rec[ev];
+      if(r && (r[H['rmr_measured']]||'').trim()) return r;
+    }
+    return null;
+  };
   const rows = { s: rowOf('s'), m: rowOf('m'), e: rowOf('e') };
   const level = (rows.s && rows.e) ? 'green' : (rows.s && rows.m) ? 'yellow' : 'red';
   return { level, rows, start:!!rows.s, mid:!!rows.m, end:!!rows.e };

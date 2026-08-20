@@ -1930,6 +1930,15 @@ const WAIVE_DEF = {
   sts:     { label:'קימה מכיסא',          match:[/קימה מכיסא/] },
   walk:    { label:'הליכה 2 דקות',        match:[/הליכה/] }
 };
+/* לזיהוי הכרטיס של כל מדד אחרי בניית הדו״ח — גם למדדי הליבה (לצורך תג "נמדד באמצע") */
+const METRIC_MATCH = Object.assign(
+  { wt:[/משקל/], ree:[/REE|הוצאה אנרגטית/] },
+  Object.fromEntries(Object.entries(WAIVE_DEF).map(([k,v]) => [k, v.match]))
+);
+const METRIC_LABEL = Object.assign(
+  { wt:'משקל', ree:'REE' },
+  Object.fromEntries(Object.entries(WAIVE_DEF).map(([k,v]) => [k, v.label]))
+);
 const WAIVED = new Set();
 window.waiveMissing = (keys) => {
   const labels = keys.map(k => WAIVE_DEF[k] ? WAIVE_DEF[k].label : k);
@@ -1954,6 +1963,18 @@ window.generateReport = () => {
   flushActiveInputs();
 
   const sides = activeSides();
+  /* אמיר (20.8.2026): מדד שחסר בסוף אבל נמדד באמצע — לא משמיטים ולא חוסמים:
+     משווים התחלה מול האמצע עבור המדד הזה בלבד, עם הערה קטנה ליד בדוח. */
+  const FALLBACK = {};
+  if (REPORT_MODE === 'compare' && CMP_TO === 'e') {
+    for (const [fid] of PAIRED_FIELDS) {
+      const key = fid.slice(2);
+      if (key === 'date' || WAIVED.has(key)) continue;
+      const endEl = document.getElementById(fid + '-e');
+      const midEl = document.getElementById(fid + '-m');
+      if (endEl && midEl && !endEl.value.trim() && midEl.value.trim()) FALLBACK[key] = 'm';
+    }
+  }
   const REQUIRED = [
     { id:'f-code',     label:'קוד נחקר/ת' },
     { id:'f-age',      label:'גיל' },
@@ -1964,7 +1985,8 @@ window.generateReport = () => {
     // TBW / ICW / ECW אינם ברשימה: הם אינם חובה (חסרים לרוב ב-REDCap)
     PAIRED_FIELDS.flatMap(([id, label]) =>
       sides.map(sd => ({ id: id + '-' + sd, label: label + ' — ' + SIDE_SHORT[sd], waiveKey: WAIVE_DEF[id.slice(2)] ? id.slice(2) : null })))
-  ).filter(f => !(f.waiveKey && WAIVED.has(f.waiveKey)));
+  ).filter(f => !(f.waiveKey && WAIVED.has(f.waiveKey)))
+   .filter(f => !(f.id.endsWith('-e') && FALLBACK[f.id.slice(2, -2)]));
 
   const missing = REQUIRED.filter(f => {
     const el = document.getElementById(f.id);
@@ -2020,7 +2042,7 @@ window.generateReport = () => {
   const FROM = ONE ? null : CMP_FROM;
   const TO   = ONE ? SINGLE_SIDE : CMP_TO;
   const gS = key => FROM ? (+document.getElementById('f-' + key + '-' + FROM).value || 0) : 0;
-  const gE = key => +document.getElementById('f-' + key + '-' + TO).value || 0;
+  const gE = key => +document.getElementById('f-' + key + '-' + (FALLBACK[key] || TO)).value || 0;
 
   const fmtDate = d => {
     if (!d) return '';
@@ -3005,6 +3027,28 @@ ${dateBarEnd}
     note.style.cssText = 'font-size:11px;color:#64748b;padding:6px 24px 14px;text-align:right;';
     note.textContent = 'מדדים שלא נמדדו בנקודות הזמן של דו״ח זה ולכן אינם מוצגים: ' + labels.join(', ');
     document.getElementById('report-content').appendChild(note);
+  }
+  /* תג "נמדד באמצע" על כל כרטיס שערך הסוף שלו הגיע ממדידת T3 */
+  const fbKeys = Object.keys(FALLBACK);
+  if (fbKeys.length) {
+    for (const k of fbKeys) {
+      const pats = METRIC_MATCH[k] || [];
+      document.querySelectorAll('#report-content .card').forEach(el => {
+        const lbl = el.querySelector('.label');
+        if (!lbl || !pats.some(rx => rx.test(el.textContent || ''))) return;
+        if (lbl.querySelector('.fb-tag')) return;
+        const tag = document.createElement('span');
+        tag.className = 'fb-tag';
+        tag.style.cssText = 'font-size:10px;color:#b45309;background:#fef3c7;border-radius:12px;padding:1px 8px;margin-right:6px;font-weight:700;vertical-align:middle;white-space:nowrap;';
+        tag.textContent = 'נמדד באמצע (T3)';
+        lbl.appendChild(tag);
+      });
+    }
+    const note2 = document.createElement('div');
+    note2.style.cssText = 'font-size:11px;color:#92400e;padding:2px 24px 14px;text-align:right;';
+    note2.textContent = 'מדדים שלא נמדדו בסוף המחקר ולכן מוצג עבורם ערך מדידת האמצע (T3): '
+      + fbKeys.map(k => METRIC_LABEL[k] || k).join(', ');
+    document.getElementById('report-content').appendChild(note2);
   }
   document.getElementById('report-code-title').textContent = `קוד נחקר/ת: ${D.code}`;
   document.getElementById('form-screen').style.display = 'none';

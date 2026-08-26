@@ -188,6 +188,7 @@ textarea:focus{ outline:none; border-color:#0d9488; }
     <div class="stats" id="roster-stats" style="display:none"></div>
     <div class="err" id="csv-err"></div>
     <div id="gaps"></div>
+    <div id="outbox"></div>
   </div>
 
   <div class="card">
@@ -267,6 +268,7 @@ const LS_ROSTER = 'prime_alerts_roster_v1';   // מ-REDCap
 const LS_MANUAL = 'prime_alerts_manual_v1';   // הוזן ידנית
 const LS_ALERTS = 'prime_alerts_items_v1';    // פניות + סימוני נשלח
 const LS_FILLS  = 'prime_alerts_fills_v1';    // טלפונים שהושלמו ידנית לנחקרי REDCap
+const LS_OUT    = 'prime_alerts_out_v1';      // נחקרים שיצאו/סיימו - לא במעקב
 
 const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (e) { return d; } };
 const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
@@ -275,6 +277,7 @@ let roster = load(LS_ROSTER, []);
 let manual = load(LS_MANUAL, []);
 let alerts = load(LS_ALERTS, []);
 let fills  = load(LS_FILLS, {});
+let out    = load(LS_OUT, {});   // id -> {name, phone, reason, why, at, by}
 
 /* סנכרון בין שני משתמשים.
    הרשימה והמסננים נשמרים במסמך אחד, אבל כל פנייה נשמרת במסמך נפרד משלה.
@@ -284,7 +287,7 @@ const syncAlert = (a) => { if (window.cloudSaveAlert)  window.cloudSaveAlert(a);
 const syncDrop  = (id) => { if (window.cloudDropAlert) window.cloudDropAlert(id); };
 
 /** הרשימה, ההזנות הידניות וההשלמות — משתנים לעיתים רחוקות */
-window.getState = () => ({ roster, manual, fills });
+window.getState = () => ({ roster, manual, fills, out });
 
 /** נקרא בכל שינוי בענן, גם כשהשינוי הגיע מהמחשב של האחר */
 window.applyCloud = (d) => {
@@ -293,6 +296,7 @@ window.applyCloud = (d) => {
     if (Array.isArray(s.roster)) { roster = s.roster; save(LS_ROSTER, roster); }
     if (Array.isArray(s.manual)) { manual = s.manual; save(LS_MANUAL, manual); }
     if (s.fills && typeof s.fills === 'object') { fills = s.fills; save(LS_FILLS, fills); }
+    if (s.out && typeof s.out === 'object') { out = s.out; save(LS_OUT, out); }
   }
   if (Array.isArray(d.alerts)) {
     alerts = d.alerts.sort((a, b) => (a.at < b.at ? 1 : -1));
@@ -337,6 +341,9 @@ function parseCSV(text) {
 
 // אומת מול גיליון התשובות על 27 נחקרים מזוהים (17.8.2026): קוד 1 = ביקורת, קוד 2 = התערבות
 const RC_ARM = { '1': 'control', '2': 'intervention' };
+// why_withdraw ב-REDCap: קודים לסיבת היציאה
+const WHY_TXT = { '1': 'הפסיק/ה טיפול תרופתי', '2': 'סיבה רפואית',
+                  '3': 'תופעות לוואי', '4': 'קושי בהתחייבות', '99': 'אחר' };
 
 window.onCsv = (ev) => {
   const file = ev.target.files[0];
@@ -348,6 +355,8 @@ window.onCsv = (ev) => {
       const rows = parseCSV(rd.result);
       const H = {}; rows[0].forEach((h, i) => H[h.trim()] = i);
       const need = ['record_id', 'redcap_event_name', 'arm_allocation', 'screen_phone', 'cand_fname', 'cand_sex'];
+      // withdraw_study הוא הסימון של אמיר ב-REDCap: 1 = יצא מהמחקר
+      const hasW = H['withdraw_study'] != null;
       const miss = need.filter(n => H[n] == null);
       if (miss.length) throw new Error('חסרות עמודות בקובץ: ' + miss.join(', '));
 
@@ -363,7 +372,9 @@ window.onCsv = (ev) => {
         return '';
       };
 
-      const out = []; let skipped = 0, noPhone = 0;
+      const list = []; let skipped = 0, noPhone = 0, autoOut = 0;
+      // ערך לא-ריק בכל אחד מאירועי הנחקר (0 גם נחשב, ולכן בודקים 1 במפורש)
+      const anyIs1 = (rs, col) => H[col] != null && rs.some(r => (r[H[col]] || '').trim() === '1');
       for (const id in byId) {
         const rs = byId[id];
         const arm = pick(rs, 'arm_allocation');
@@ -380,11 +391,24 @@ window.onCsv = (ev) => {
         };
         if (!rec.phone && fills[id]) rec.phone = fills[id];   // השלמה ידנית קודמת
         if (!rec.phone) noPhone++;
-        out.push(rec);
+        // סימון אוטומטי מהקובץ: מי שסומן ב-REDCap כיוצא מהמחקר יוצא גם כאן מהמעקב
+        if (hasW && anyIs1(rs, 'withdraw_study')) {
+          const why = pick(rs, 'withdraw_notes') || WHY_TXT[pick(rs, 'why_withdraw')] || '';
+          if (!out[id] || out[id].by === 'file') {
+            if (!out[id]) autoOut++;
+            out[id] = { name: [rec.name, rec.last].filter(Boolean).join(' '), phone: rec.phone,
+                        reason: 'יצא מהמחקר', why, at: out[id] ? out[id].at : new Date().toISOString(),
+                        by: 'file' };
+          }
+        } else if (hasW && out[id] && out[id].by === 'file') {
+          delete out[id];   // הסימון בוטל ב-REDCap - חוזר למעקב
+        }
+        list.push(rec);
       }
-      roster = out; save(LS_ROSTER, roster);
+      roster = list; save(LS_ROSTER, roster);
       document.getElementById('csv-status').textContent =
-        `✅ נטענו ${out.length} נחקרים משובצים · ${skipped} לא משובצים סוננו החוצה`;
+        `✅ נטענו ${list.length} נחקרים משובצים · ${skipped} לא משובצים סוננו החוצה` + (autoOut ? ` · ${autoOut} סומנו בקובץ כיוצאים מהמחקר` : '');
+      save(LS_OUT, out);
       renderRoster(skipped, noPhone);
       renderAlerts();
       sync();
@@ -399,21 +423,103 @@ window.onCsv = (ev) => {
 function renderRoster(skipped, noPhone) {
   const box = document.getElementById('roster-stats');
   if (!roster.length) { box.style.display = 'none'; return; }
-  const int = roster.filter(r => r.group === 'intervention').length;
-  const ctl = roster.filter(r => r.group === 'control').length;
-  const ready = roster.filter(r => r.phone && r.name && r.sex).length;
+  const act = activeRoster();
+  const int = act.filter(r => r.group === 'intervention').length;
+  const ctl = act.filter(r => r.group === 'control').length;
+  const ready = act.filter(r => r.phone && r.name && r.sex).length;
   box.style.display = 'grid';
+  const nOut = Object.keys(out).length;
   box.innerHTML =
-    stat(roster.length, 'משובצים') + stat(int, 'התערבות') + stat(ctl, 'ביקורת') +
+    stat(act.length, 'פעילים במעקב') + stat(int, 'התערבות') + stat(ctl, 'ביקורת') +
     stat(ready, 'מוכנים לזיהוי') + stat(gaps().length, 'חסר טלפון') +
-    stat(manual.length, 'הוזנו ידנית');
+    (nOut ? stat(nOut, 'יצאו מהמחקר') : stat(manual.length, 'הוזנו ידנית'));
   renderGaps();
+  renderOut();
 }
 const stat = (n, l) => `<div class="stat"><div class="n">${n}</div><div class="l">${l}</div></div>`;
 
+
+/** נחקרים שאינם במעקב יותר - יצאו מהמחקר או סיימו אותו */
+const isOut = (r) => !!out[r.id];
+const activeRoster = () => roster.filter(r => !isOut(r));
+/** טלפונים של מי שאינו במעקב - כדי לא להתריע עליהם */
+function outPhones() {
+  const set = new Set();
+  Object.keys(out).forEach(id => {
+    const p = normPhone(out[id].phone || (roster.find(r => r.id === id) || {}).phone || fills[id] || '');
+    if (p) set.add(p);
+  });
+  return set;
+}
+
+/**
+ * הוצאת נחקר מהמעקב. שתי שאלות אישור נפרדות, כפי שביקש אמיר,
+ * כדי שלא יקרה בטעות בלחיצה אחת.
+ */
+window.dropParticipant = (id) => {
+  const r = roster.find(x => x.id === id);
+  if (!r) return;
+  const nm = [r.name, r.last].filter(Boolean).join(' ');
+  // שאלה ראשונה
+  if (!confirm('להוציא את ' + nm + ' מהמעקב?\n\n' +
+               'הוא לא יופיע יותר ברשימת הפעילים, ולא יתקבלו עליו התראות שתיקה.')) return;
+  // שאלה שנייה - אישור סופי
+  if (!confirm('אישור שני ואחרון:\n\n' + nm + ' יוסר מהמעקב. להמשיך?')) return;
+  const reason = (prompt('סיבה (לתיעוד בלבד). ביטול = לא לבצע:', 'סיים את יום המחקר') || '').trim();
+  if (!reason) return;
+  out[id] = { name: nm, phone: r.phone || fills[id] || '', reason, why: '',
+              at: new Date().toISOString(), by: 'manual' };
+  save(LS_OUT, out);
+  renderRoster(); renderAlerts(); renderSilence(); sync();
+};
+
+/** החזרת נחקר למעקב */
+window.restoreParticipant = (id) => {
+  const o = out[id]; if (!o) return;
+  if (!confirm('להחזיר את ' + (o.name || id) + ' למעקב?')) return;
+  delete out[id];
+  save(LS_OUT, out);
+  renderRoster(); renderAlerts(); sync();
+};
+
+/** רשימת הפעילים עם כפתור הוצאה, ורשימת מי שיצא */
+function renderOut() {
+  const box = document.getElementById('outbox');
+  if (!box) return;
+  const outIds = Object.keys(out);
+  const act = activeRoster().slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'he'));
+  const row = (r) => `<div class="gap-row">
+      <div class="gap-n">${esc([r.name, r.last].filter(Boolean).join(' '))} ${groupTag(r.group)}
+        ${r.phone ? `<span dir="ltr" style="color:#64748b;font-size:12px">${esc(r.phone)}</span>` : ''}</div>
+      <button class="btn sm" style="background:#fee2e2;border-color:#fecaca;color:#b91c1c"
+              onclick="dropParticipant('${r.id}')">הוצאה מהמעקב</button>
+    </div>`;
+  box.innerHTML = `
+    <details style="margin-top:10px">
+      <summary style="cursor:pointer;font-weight:700;color:#0f766e">ניהול נחקרים פעילים (${act.length})</summary>
+      <div class="gap-box" style="margin-top:8px">
+        <div class="gap-t">מי שסיים את יום המחקר או יצא ממנו - אפשר להוציא כאן מהמעקב. תישאלו פעמיים לפני שזה קורה.</div>
+        ${act.map(row).join('')}
+      </div>
+    </details>
+    ${outIds.length ? `<div class="gap-box" style="margin-top:10px;background:#f8fafc">
+      <div class="gap-h" style="color:#475569">🚪 ${outIds.length} נחקרים אינם במעקב</div>
+      <div class="gap-t">מי שסומן ב-REDCap כיוצא מהמחקר מתעדכן כאן אוטומטית בכל העלאת קובץ.</div>
+      ${outIds.map(id => {
+        const o = out[id];
+        return `<div class="gap-row">
+          <div class="gap-n">${esc(o.name || id)}
+            <span style="color:#64748b;font-size:12px">${esc(o.reason || '')}${o.why ? ' · ' + esc(o.why) : ''}
+            ${o.by === 'file' ? ' · מהקובץ' : ' · ידני'}</span></div>
+          <button class="btn sm" onclick="restoreParticipant('${id}')">החזרה למעקב</button>
+        </div>`;
+      }).join('')}
+    </div>` : ''}`;
+}
+
 /** נחקרים משובצים שאין להם טלפון, ועדיין לא הושלם ידנית */
 function gaps() {
-  return roster.filter(r => !r.phone && !fills[r.id]);
+  return activeRoster().filter(r => !r.phone && !fills[r.id]);
 }
 
 /**
@@ -706,7 +812,7 @@ function waMessage(kind, person, sexOverride) {
   const dear = name ? `היי ${name} ${f ? 'היקרה' : 'היקר'},` : `היי,`;
   return `${dear}\n\nכחלק מהמחקר אנחנו שולחים לך אחת לשבוע הודעה למעקב אחרי ההתמדה שלך.\n` +
          `נשמח מאוד אם ${f ? 'תוכלי' : 'תוכל'} לענות להודעה שקיבלת השבוע.\n\n` +
-         `המענה שלך מסייע לנו מאוד בהצלחת המחקר 🙏.\n\nתודה ויום מצוין!`;
+         `המענה שלך מסייע לנו מאוד בהצלחת המחקר, ואנחנו מודים לך על כך.\n\nתודה ויום מצוין!`;
 }
 
 /** המין שבו משתמשים לפנייה מסוימת: עקיפה ידנית אם נבחרה, אחרת מה שבקובץ */
@@ -819,16 +925,23 @@ window.applySilence = (items) => {
   renderSilence();
 };
 
+/** מסתירים התראות על נחקרים שכבר יצאו מהמחקר או סיימו אותו */
+function silenceVisible() {
+  const skip = outPhones();
+  return silences.filter(s => !skip.has(normPhone(s.phone || '')));
+}
+
 function renderSilence() {
   const card = document.getElementById('silence-card');
   const box = document.getElementById('silence-list');
   if (!card) return;
-  if (!silences.length) { card.style.display = 'none'; return; }
+  const list = silenceVisible();
+  if (!list.length) { card.style.display = 'none'; return; }
   card.style.display = 'block';
   box.innerHTML = `<table><thead><tr>
       <th>שם</th><th>טלפון</th><th>קבוצה</th><th>דיווח אחרון</th><th>שקט</th><th>הודעה</th><th></th>
     </tr></thead><tbody>` +
-    silences.map(s => {
+    list.map(s => {
       const p = findPerson(s.phone);
       const weeks = Math.floor((s.daysSilent || 0) / 7);
       // אותו נוסח של פניית "לא מילא שאלון" — מותאם מין אם הנחקר מזוהה

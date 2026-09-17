@@ -264,6 +264,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
 .next{ background:#fff; border:1px solid var(--teal); border-radius:12px;
        padding:11px 16px 9px; margin-top:10px; }
 .next-h{ font-size:13.5px; font-weight:700; color:var(--teal); margin-bottom:6px; }
+.next .trend{ background:var(--teal-l); color:#0f5e57; border-radius:8px; padding:5px 10px; margin-bottom:6px; font-size:12.5px; }
 .next-i{ display:flex; gap:8px; align-items:flex-start; font-size:11.5px;
          color:#334155; line-height:1.55; margin-bottom:5px; }
 .next-i b{ color:var(--navy); }
@@ -311,6 +312,31 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
 .tag{ display:inline-block; font-size:12px; font-weight:700; padding:3px 12px; border-radius:24px; }
 .tag.ok{ background:var(--green-l); color:#047857; }
 .tag.warn{ background:var(--amber-l); color:#b45309; }
+/* AB 16.9 — ערך תקין אבל עד 5% מעל ערך הסף: הסמן יושב ליד האזור הצהוב, והתגית אומרת את זה */
+.tag.near{ background:#ecfccb; color:#4d7c0f; }
+/* AB 16.9 — מדידות גוף והיקפים בכרטיסים עם סרגל, באותה שפה עיצובית כמו שאר הדו״ח */
+.anthro{ display:grid; grid-template-columns:.62fr .9fr repeat(4,1fr); gap:8px; }
+.anthro .stat{ display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:1px; padding:6px 9px; text-align:center; }
+.anthro .stat .l{ font-size:10.5px; color:var(--muted); min-height:27px; }
+.anthro .stat .v{ font-size:20px; font-weight:700; color:var(--navy); }
+.anthro .stat .v small{ font-size:10px; font-weight:500; color:var(--muted); }
+.anthro .stat .meta{ font-size:9.2px; line-height:1.45; margin-top:4px; }
+.anthro .stat .sd{ font-size:9.4px; color:#475569; line-height:1.3; margin-top:3px; }
+.anthro .stat .bar-wrap{ margin-top:auto; width:100%; padding-top:4px; }
+.anthro .stat .scale{ font-size:8.6px; }
+.anthro .stat .nrm{ font-size:9.2px; color:#64748b; line-height:1.3; margin-top:3px; }
+.anthro .stat .nrm b{ color:var(--navy); }
+.anthro .tag{ font-size:9.5px; padding:1.5px 8px; display:block; width:fit-content; margin:3px auto 0; }
+.anthro .stat .nt{ min-height:62px; width:100%; }
+.cgrid.g5{ grid-template-columns:repeat(5,1fr); }
+/* AB 16.9 — יישור בין כרטיסים באותה שורה: כל חלק בכרטיס (ראש, הסבר, תמונה, סרגל, נורמה)
+   יושב באותו גובה בשני הכרטיסים, כי כולם חולקים את שורות הרשת של ההורה (subgrid) */
+.sheet2 .grid2.aligned{ grid-auto-rows:auto; flex:0 0 auto; }
+.grid2.aligned > .card{ display:grid; grid-template-rows:subgrid; grid-row:span 5; row-gap:0; }
+.grid2.aligned > .card > .bar-wrap{ margin-top:0; align-self:end; }
+.lossbox.l3{ grid-template-columns:1fr 1fr 1.35fr; }
+.lossbox .lb-x{ font-size:9.6px; color:#475569; line-height:1.45; margin-top:3px; }
+.since + .since{ margin-top:0; }
 .note .tag, .desc .tag, .meta .tag{ display:block; width:fit-content; margin:4px auto 0; }
 .bar-wrap{ margin-top:5px; }
 .bar{ position:relative; height:11px; border-radius:8px; background:linear-gradient(90deg,#fde68a 0%,#a7f3d0 35%,#a7f3d0 65%,#fecaca 100%); }
@@ -341,7 +367,8 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
 .qbanner{ display:flex; gap:11px; align-items:flex-start; background:#fffbeb; border:1px solid #fcd34d;
           border-right:5px solid #f59e0b; border-radius:12px; padding:10px 15px; margin-bottom:11px; }
 .qbanner .qb-icon{ font-size:19px; line-height:1.1; }
-.qbanner .qb-t{ font-size:13px; font-weight:800; color:#92400e; margin-bottom:2px; }
+.qbanner .qb-t{ font-size:15.5px; font-weight:800; color:#92400e; margin-bottom:3px; text-align:center; }
+.qbanner > div:last-child{ flex:1; }
 .qbanner .qb-b{ font-size:11.5px; color:#78350f; line-height:1.6; }
 .qbanner b{ color:#7c2d12; }
 /* יישור הסרגלים לתחתית הכרטיס, כך שיהיו בקו אחד (הערה 21) */
@@ -467,7 +494,7 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
   .dlt { font-size:10px; }
   .qbanner { padding:6px 11px; margin-bottom:6px; gap:8px; }
   .qbanner .qb-icon { font-size:15px; }
-  .qbanner .qb-t { font-size:11px; }
+  .qbanner .qb-t { font-size:13.5px; }
   .qbanner .qb-b { font-size:10.5px; line-height:1.5; }
   .lossbox { gap:6px; margin:5px 0 4px; }
   .lossbox .lb-item { padding:5px 10px; }
@@ -513,6 +540,12 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
   .lossbox .lb-v { font-size:16px; }
   .statrow5 .stat { padding:4px 7px; }
   .statrow5 .stat .v { font-size:15px; }
+  .anthro { gap:5px; }
+  .anthro .stat { padding:4px 6px; }
+  .anthro .stat .l { font-size:9.5px; min-height:22px; }
+  .anthro .stat .v { font-size:15px; }
+  .anthro .stat .sd, .anthro .stat .nrm { font-size:8.6px; }
+  .anthro .stat .nt { min-height:64px; }
   .dual .dv { font-size:16px; }
   .since { margin:2px 0 1px; padding:2px 7px; }
   .summary { padding:6px 12px; font-size:10.5px; margin-top:6px; }
@@ -531,13 +564,18 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
   .chip { font-size:8.5px; padding:1px 5px; }
   .next { padding:6px 12px 5px; margin-top:4px; }
   .next-i { margin-bottom:3px; }
+  .next .trend { font-size:11px; padding:3px 9px; margin-bottom:4px; }
+  /* AB 16.9 — עמוד הבדיקות התפקודיות קיבל יותר טקסט (השוואה לכל יד, סיווג מפורט), ולכן התמונות וקופסת הסיכום קטנו מעט */
+  .sheet2 .ill .photo { height:56px; }
+  .sheet2 .summary { margin-top:4px; padding:5px 12px; }
+  .sheet2 .phen { margin-top:4px; }
   .contact { padding:5px 12px 4px; margin-top:3px; }
   .ct-p { padding:3px 8px; }
   .ct-r { margin:0 0 1px; }
 
   /* הערה 44 — הפונטים גדלו, ולכן העמוד עלול לגלוש. שובר את העמודים בגבולות נקיים */
   .card, .ccard, .phen, .next, .contact, .refbox, .lossbox, .qbanner,
-  .ptbar, .summary, .statrow5 { break-inside:avoid; }
+  .ptbar, .summary, .statrow5, .anthro { break-inside:avoid; }
   .sec-head, .csub, .ph-h, .next-h, .ct-h { break-after:avoid; }
   .phen { padding:7px 13px 6px; margin-top:6px; }
   .ph-h { font-size:9px; } .ph-t { font-size:12.5px; }
@@ -1401,16 +1439,10 @@ const NORMS = {
   waist: { okM: 102, okF: 88 },   // less than
   whtr: { ok: 0.5 },              // less than
   calf: { okM: 34, okF: 33 },     // greater than
-  // אחוז שומן — לפי ד"ר אסף בוך (Heo M et al., Am J Clin Nutr 2012;95:594-602, NHANES 1999-2004)
-  // ערך תקין = עד הסף; מעל סף ההשמנה = השמנה
-  fatPct: {
-    m: { '<65': 25, '65+': 28 },
-    f: { '<65': 37, '65+': 40 }
-  },
-  // סף השמנה לכרטיס אחוז השומן — לפי דף פענוח ה-InBody 770 של ד"ר אסף בוך (Heo 2012)
-  obesity: { m: 30, f: 42 },
-  // סף השמנה לצורך סיווג "השמנה סרקופנית" בלבד — קונצנזוס ESPEN/EASO לפי גיל ומין
-  // (מצגת אסף בוך, שקופיות 47 ו-92 · Obes Facts 2022;15:321-335)
+  /* AB 16.9 — אחוז שומן: סף אחד בלבד לכל הדו״ח (כרטיס השומן, תמונת המצב, "להמשך הדרך",
+     טבלת הסיכום). קודם היו שלושה ספים (Heo 28%/30% וקונצנזוס 31%) והם סתרו זה את זה.
+     ערך הסף לפי גיל ומין מנייר העמדה ESPEN/EASO (מצגת אסף בוך, שקופיות 47 ו-92 ·
+     Donini LM et al., Obes Facts 2022;15:321-335). עד הסף = תקין, מעליו = השמנה. */
   obesitySO: {
     m: [[39, 26], [59, 29], [999, 31]],
     f: [[39, 39], [59, 41], [999, 43]]
@@ -1455,6 +1487,24 @@ function obesitySOFor(age, sex) {
   const tbl = sex === 'm' ? NORMS.obesitySO.m : NORMS.obesitySO.f;
   for (const [maxAge, cut] of tbl) if (age <= maxAge) return cut;
   return tbl[tbl.length - 1][1];
+}
+// שם קבוצת הגיל של ערך הסף, לתצוגה
+function obesityBandLabel(age) {
+  return age <= 39 ? 'בני 20-39' : age <= 59 ? 'בני 40-59' : 'בני 60 ומעלה';
+}
+/* AB 16.9 — תגית למדד שבו ערך גבוה רצוי (SMI, ASMM): מתחת לסף "לשיפור", עד 5% מעליו
+   "תקין, קרוב לסף", ומעל זה "בטווח תקין". כך התגית והסמן על הסרגל לא סותרים זה את זה. */
+const NEAR_PCT = 5;
+function tagGteNear(v, thr) {
+  if (!(v >= thr)) return '<span class="tag warn">לשיפור</span>';
+  if (v < thr * (1 + NEAR_PCT / 100)) return '<span class="tag near">תקין, קרוב לסף</span>';
+  return '<span class="tag ok">בטווח תקין</span>';
+}
+/* מיקום סמן כשהסרגל נבנה סביב ערך סף (ערך גבוה רצוי): הסף יושב במעבר מצהוב לירוק
+   (35% מימין), והטווח "קרוב לסף" נופל ממש אחריו. */
+function markPosThr(val, thr) {
+  const lo = thr * 0.825, hi = thr * 1.325;
+  return markPos(val, lo, hi);
 }
 // ערך הסף לקימה מכיסא ב-30 שניות (שקופית 46): מתחת לערך זה, כוח הרגליים ירוד
 function stsCriterion(age, sex) {
@@ -1527,7 +1577,7 @@ function markPos(val, lo, hi) {
  * שם המדידה נקבע לפי נקודת הזמן שנבחרה להשוואה (ראו SINCE_LABEL).
  */
 let SINCE_LABEL = 'בכניסה למחקר';
-function since(startVal, endVal, unit, dec, mdc) {
+function since(startVal, endVal, unit, dec, mdc, lbl) {
   const s = +startVal, e = +endVal;
   if (!isFinite(s) || !isFinite(e) || s === 0) return '';
   const diff = e - s;
@@ -1537,7 +1587,7 @@ function since(startVal, endVal, unit, dec, mdc) {
   // הסוגריים עם הסימן מבודדים ל-LTR, אחרת דו-כיווניות ה-RTL מעיפה את ה-+/− לצד השני
   const amount = flat ? ''
               : ` ${n(Math.abs(diff), dec)}${unit} <span dir="ltr">(${pct > 0 ? '+' : '−'}${n(Math.abs(pct), 1)}%)</span>`;
-  return `<div class="since">${SINCE_LABEL}: <b>${n(s, dec)}${unit}</b> · שינוי: ${arrow}${amount}${sigTag(diff, mdc, flat)}</div>`;
+  return `<div class="since">${lbl ? `<b>${lbl}</b> ` : ''}${SINCE_LABEL}: <b>${n(s, dec)}${unit}</b> · שינוי: ${arrow}${amount}${sigTag(diff, mdc, flat)}</div>`;
 }
 
 /**
@@ -2173,10 +2223,10 @@ window.generateReport = () => {
   const whtrS = D.waistS / height;
 
   // Tags
-  const ageGroup = age < 65 ? '<65' : '65+';
-  const fatPctMax = sex === 'm' ? NORMS.fatPct.m[ageGroup] : NORMS.fatPct.f[ageGroup];
-  const obesityCut   = sex === 'm' ? NORMS.obesity.m : NORMS.obesity.f;  // כרטיס אחוז השומן (דף ה-InBody)
-  const obesityCutSO = obesitySOFor(age, sex);                           // סיווג הפנוטיפ (ESPEN/EASO)
+  // AB 16.9 — סף אחוז שומן אחד (ESPEN/EASO לפי גיל ומין) שמשמש בכל מקום בדו״ח
+  const obesityCutSO = obesitySOFor(age, sex);
+  const fatPctMax    = obesityCutSO;
+  const obesityCut   = obesityCutSO;
   const stsCrit      = stsCriterion(age, sex);
 
   /* מסה רזה אפנדיקולרית (ASMM) — סכום 4 הגפיים מדף ה-InBody.
@@ -2205,7 +2255,7 @@ window.generateReport = () => {
   const sppbNorm = sppbForAge(age, sex);
   // הערה 37 — תרגום סף אחוז השומן למסת שומן בק״ג לפי המשקל בפועל
   const fmMaxKg  = D.wtE > 0 ? D.wtE * fatPctMax  / 100 : null;
-  const fmObesKg = D.wtE > 0 ? D.wtE * obesityCut / 100 : null;
+
 
   // הערה 39 — פס תאריכים בראש כל עמוד, כדי שתאריך המדידה תמיד מול העיניים
   const dateBarEnd = (D.dateE || D.dateS)
@@ -2218,8 +2268,10 @@ window.generateReport = () => {
   const tWaist = sex === 'm' ? tagLt(D.waistE, 102) : tagLt(D.waistE, 88);
   const tWhtr = tagLt(whtrE, NORMS.whtr.ok);
   const tCalf = sex === 'm' ? tagGte(D.calfE, 34) : tagGte(D.calfE, 33);
-  const tFatPct = tagLt(fatPctE, fatPctMax);
-  const tSmi = tagGte(D.smiE, smiMin);
+  const tFatPct = fatPctE <= fatPctMax ? '<span class="tag ok">בטווח תקין</span>' : '<span class="tag warn">לשיפור</span>';
+  const tSmi = tagGteNear(D.smiE, smiMin);
+  const tAsmm = asmmPctE !== null ? tagGteNear(asmmPctE, asmmMin) : '';
+  const smiS2 = +D.smiS;
 
   // --- שינוי במשקל והרכבו (הערה 13) ---
   const wtLoss    = D.wtS - D.wtE;                                  // ק״ג שירדו (חיובי = ירידה)
@@ -2227,6 +2279,23 @@ window.generateReport = () => {
   const ffmLoss   = ffmS - ffmE;                                     // ק״ג מסה נטולת שומן שירדו
   // איזה חלק מהירידה במשקל הגיע ממסה נטולת שומן (רלוונטי רק כשיש ירידה)
   const ffmShare  = wtLoss > 0 ? (ffmLoss / wtLoss) * 100 : null;
+  /* AB 16.9 — פרשנות לחלק של המסה הרזה בירידה, מחוברת לחוק הרבע. יחס מעל 25% אינו בהכרח
+     אובדן שריר: אם מדדי השריר (SMI ו-ASMM ביחס למשקל) נשמרו או השתפרו, אפשר להיות מרוצים. */
+  const smiKept  = (D.smiE > 0 && D.smiS > 0) ? D.smiE >= D.smiS : null;
+  const asmmKeptPct = (asmm('E') !== null && asmm('S') !== null && D.wtE > 0 && D.wtS > 0)
+    ? (asmm('E') / D.wtE) >= (asmm('S') / D.wtS) : null;
+  const ffmInterp = (() => {
+    if (ffmShare === null) return '';
+    if (ffmShare <= 0) return 'המסה הנטולת שומן לא ירדה כלל, כך שכל הירידה במשקל הגיעה משומן.';
+    if (ffmShare <= 25) return 'פחות מהממוצע של כ-25% שצפוי בירידה במשקל ללא אימוני כוח (חוק הרבע), כלומר רוב הירידה הגיעה משומן.';
+    const known = [smiKept, asmmKeptPct].filter((x) => x !== null);
+    const names = [smiKept !== null ? 'מדד ה-SMI' : '', asmmKeptPct !== null ? 'מסת השרירים בגפיים ביחס למשקל (ASMM)' : ''].filter(Boolean).join(' ו');
+    if (known.length && known.every(Boolean))
+      return `מעל הממוצע של 25% (חוק הרבע), אבל ${names} נשמרו ואף השתפרו. לכן הירידה במסה הרזה אינה מעידה על אובדן שריר משמעותי, וחלק ממנה עשוי להיות נוזלים ורקמות שאינן שריר.`;
+    if (known.length)
+      return `מעל הממוצע של 25% (חוק הרבע), ו${names} לא נשמרו במלואם. כדאי לחזק אימוני כוח וצריכת חלבון כדי לשמר את השריר.`;
+    return 'מעל הממוצע של 25% (חוק הרבע). כדאי לבדוק גם את מדדי מסת השריר, ולחזק אימוני כוח וצריכת חלבון.';
+  })();
   const wtChangeMeta = D.wtS > 0
     ? `<span class="tag ${wtLossPct >= 5 ? 'ok' : 'warn'}">${wtLoss >= 0 ? '▼' : '▲'} ${n(Math.abs(wtLossPct),1)}%</span>`
     : '';
@@ -2262,8 +2331,8 @@ window.generateReport = () => {
        obeseCard = הסף הקליני שמוצג בכרטיס אחוז השומן (דף ה-InBody), ובו משתמשים
                    בכל פעם שנאמרת המילה "השמנה" סתם.
        obeseSO   = הסף המחמיר של ESPEN/EASO, ובו משתמשים אך ורק לאבחנת "השמנה סרקופנית". */
-    const obeseCard = fatPctE >= obesityCut;
-    const obeseSO   = fatPctE >= obesityCutSO;
+    const obeseCard = fatPctE > obesityCut;
+    const obeseSO   = fatPctE > obesityCutSO;
     // מסת שריר נמוכה — ASMM/משקל אם הוזן (הקריטריון שאסף מלמד), אחרת SMI
     const lowMass  = asmmPctE !== null ? asmmPctE < asmmMin : D.smiE < smiMin;
     const lowStrHg = hgMaxE > 0 && ((sex === 'm' && hgMaxE < 27) || (sex === 'f' && hgMaxE < 16));
@@ -2271,25 +2340,32 @@ window.generateReport = () => {
     const lowStr   = lowStrHg || lowStrSts;
     const sarco    = lowStr && lowMass;
 
+    const which = lowMass
+      ? (asmmPctE !== null ? `מסת השריר בגפיים ביחס למשקל (${n(asmmPctE,1)}%) נמוכה מהסף (${n(asmmMin,1)}%)` : `מדד ה-SMI (${n(D.smiE,2)}) נמוך מהסף (${n(smiMin,1)})`)
+      : [lowStrHg ? `כוח הלפיתה ביד החזקה (${n(hgMaxE,1)} ק״ג) נמוך מהסף (${sex === 'm' ? 27 : 16} ק״ג)` : '',
+         lowStrSts ? `מספר הקימות מכיסא (${D.stsE}) נמוך מהסף (${stsCrit.min})` : ''].filter(Boolean).join(', וגם ');
     let title, body, cls;
     if (obeseSO && sarco) {
       cls = 'warn'; title = 'הממצאים מתאימים להשמנה סרקופנית';
-      body = 'אחוז השומן גבוה, ובמקביל גם מסת השריר וגם הכוח נמוכים מהערכים המומלצים. זהו השילוב שהמחקר מבקש לזהות ולטפל בו, משום ששתי התופעות יחד משפיעות על התפקוד יותר מכל אחת מהן בנפרד';
+      body = 'אחוז השומן גבוה, ובמקביל גם מסת השריר וגם הכוח נמוכים מהערכים המומלצים. זהו השילוב שהמחקר מבקש לזהות ולטפל בו, משום ששתי התופעות יחד משפיעות על התפקוד יותר מכל אחת מהן בנפרד.';
     } else if (sarco && obeseCard) {
       cls = 'warn'; title = 'הממצאים מתאימים לסרקופניה יחד עם השמנה';
       body = `מסת השריר והכוח נמוכים מהערכים המומלצים, ואחוז השומן מעל הסף להשמנה. אחוז השומן נמצא מעט מתחת לסף המחמיר יותר (${obesityCutSO}%) שנדרש להגדרה הפורמלית של השמנה סרקופנית, ולכן הממצאים מוצגים כאן בנפרד`;
     } else if (sarco) {
       cls = 'warn'; title = 'הממצאים מתאימים לסרקופניה';
-      body = 'מסת השריר והכוח נמוכים מהערכים המומלצים, בעוד אחוז השומן אינו בטווח ההשמנה. אימוני התנגדות וצריכת חלבון מספקת הם הכלים המרכזיים לשיפור';
+      body = 'מסת השריר והכוח נמוכים מהערכים המומלצים, בעוד אחוז השומן אינו בטווח ההשמנה. אימוני התנגדות וצריכת חלבון מספקת הם הכלים המרכזיים לשיפור.';
+    } else if (obeseCard && (lowStr || lowMass)) {
+      cls = 'warn'; title = 'הממצאים מתאימים להשמנה, עם ממצא חלקי במדדי השריר';
+      body = `אחוז השומן (${n(fatPctE,1)}%) מעל הסף המוגדר להשמנה לגילך ולמינך (${obesityCut}%). בנוסף, ${which}, ${lowMass ? 'אך הכוח נשמר' : 'אך מסת השריר נשמרה'}. מצב זה אינו עונה להגדרת סרקופניה, אך כדאי לשים לב אליו.`;
     } else if (obeseCard) {
       cls = 'warn'; title = 'הממצאים מתאימים להשמנה, ללא סרקופניה';
-      body = 'אחוז השומן מעל הסף המוגדר להשמנה, אך מסת השריר והכוח נשמרו בטווחים התקינים, וזו נקודת פתיחה טובה';
+      body = `אחוז השומן (${n(fatPctE,1)}%) מעל הסף המוגדר להשמנה לגילך ולמינך (${obesityCut}%), אך מסת השריר והכוח נשמרו בטווחים התקינים, וזו נקודת פתיחה טובה.`;
     } else if (lowStr || lowMass) {
       cls = 'warn'; title = 'ממצא חלקי: אחד ממדדי השריר מתחת לטווח';
-      body = `${lowMass ? 'מסת השריר נמוכה מהמומלץ אך הכוח נשמר' : 'הכוח נמוך מהמומלץ אך מסת השריר נשמרה'}. מצב זה אינו עונה להגדרת סרקופניה, אך כדאי לשים לב אליו`;
+      body = `${which}, ${lowMass ? 'אך הכוח נשמר' : 'אך מסת השריר נשמרה'}. מצב זה אינו עונה להגדרת סרקופניה, אך כדאי לשים לב אליו.`;
     } else {
       cls = 'ok'; title = 'הממצאים אינם מתאימים להשמנה או לסרקופניה';
-      body = 'אחוז השומן, מסת השריר והכוח נמצאים כולם בטווחים המומלצים לגילך ולמינך';
+      body = `אחוז השומן (${n(fatPctE,1)}%, עד ${obesityCut}%), מסת השריר והכוח נמצאים כולם בטווחים המומלצים לגילך ולמינך.`;
     }
     return { cls, title, body };
   })();
@@ -2305,19 +2381,19 @@ window.generateReport = () => {
   const nextSteps = (() => {
     const c = [];
     if ((asmmPctE !== null && asmmPctE < asmmMin) || (asmmPctE === null && D.smiE > 0 && D.smiE < smiMin))
-      c.push(['שימור מסת השריר', 'מדד מסת השריר נמוך מהטווח המומלץ. אימוני התנגדות סדירים, יחד עם צריכת חלבון מספקת ומפוזרת על פני היום, הם הדרך המרכזית לשמר ולבנות מסת שריר']);
+      c.push(['שימור מסת השריר', 'מדד מסת השריר נמוך מהטווח המומלץ. אימוני התנגדות סדירים, יחד עם צריכת חלבון מספקת ומפוזרת על פני היום, הם הדרך המרכזית לשמר ולבנות מסת שריר.']);
     if (D.sppbE > 0 && D.sppbE <= 9)
-      c.push(['חיזוק היציבות והניידות', 'ציון התפקוד הגופני מצביע על מקום לשיפור. תרגילי שיווי משקל וחיזוק שרירי הרגליים, גם בבית ולכמה דקות ביום, משפרים יציבות ומפחיתים סיכון לנפילות']);
+      c.push(['חיזוק היציבות והניידות', 'ציון התפקוד הגופני מצביע על מקום לשיפור. תרגילי שיווי משקל וחיזוק שרירי הרגליים, גם בבית ולכמה דקות ביום, משפרים יציבות ומפחיתים סיכון לנפילות.']);
     if (isFinite(fatPctE) && fatPctE > fatPctMax)
-      c.push(['הרכב הגוף', 'אחוז השומן גבוה מהטווח המומלץ לגיל ולמין. שילוב של פעילות גופנית ותזונה מותאמת מסייע להמשיך ולשפר את הרכב הגוף, גם ללא שינוי גדול במשקל']);
+      c.push(['הרכב הגוף', `אחוז השומן (${n(fatPctE,1)}%) גבוה מערך הסף לגילך ולמינך (${fatPctMax}%). שילוב של פעילות גופנית ותזונה מותאמת מסייע להמשיך ולשפר את הרכב הגוף, גם ללא שינוי גדול במשקל.`]);
     if (D.stsE > 0 && D.stsE < stsCrit.min && !(D.smiE > 0 && D.smiE < smiMin))
-      c.push(['כוח הרגליים', `במבחן הקימה מכיסא בוצעו ${D.stsE} קימות, מתחת לערך הסף של ${stsCrit.min} לגילך. תרגילי קימה מכיסא וחיזוק שרירי הירך והישבן משפרים זאת במהירות יחסית`]);
+      c.push(['כוח הרגליים', `במבחן הקימה מכיסא בוצעו ${D.stsE} קימות, מתחת לערך הסף של ${stsCrit.min} לגילך. תרגילי קימה מכיסא וחיזוק שרירי הירך והישבן משפרים זאת במהירות יחסית.`]);
     if (hgMaxE > 0 && ((sex === 'm' && hgMaxE < 27) || (sex === 'f' && hgMaxE < 16)))
-      c.push(['כוח האחיזה', 'כוח הלפיתה נמוך מערך הסף. כוח האחיזה משקף כוח כללי בגוף, ואימוני התנגדות לפלג הגוף העליון יכולים לשפר אותו']);
+      c.push(['כוח האחיזה', 'כוח הלפיתה נמוך מערך הסף. כוח האחיזה משקף כוח כללי בגוף, ואימוני התנגדות לפלג הגוף העליון יכולים לשפר אותו.']);
     if (isFinite(D.walkE) && D.walkE > 0 && D.walkE < walkRef * 0.85)
-      c.push(['סיבולת והליכה', 'מרחק ההליכה נמוך מהצפוי לגיל. הוספה הדרגתית של הליכה יומית, גם בקטעים קצרים, משפרת סיבולת לב-ריאה ותפקוד יומיומי']);
+      c.push(['סיבולת והליכה', 'מרחק ההליכה נמוך מהצפוי לגיל. הוספה הדרגתית של הליכה יומית, גם בקטעים קצרים, משפרת סיבולת לב-ריאה ותפקוד יומיומי.']);
     if (!c.length)
-      c.push(['שמירה על ההישגים', 'הערכים נמצאים בטווחים התקינים. ההמלצה המרכזית היא להמשיך בשגרה שנבנתה: פעילות גופנית סדירה, חלבון מספק לאורך היום, ושינה טובה']);
+      c.push(['שמירה על ההישגים', 'הערכים נמצאים בטווחים התקינים. ההמלצה המרכזית היא להמשיך בשגרה שנבנתה: פעילות גופנית סדירה, חלבון מספק לאורך היום, ושינה טובה.']);
     return c.slice(0, 3);
   })();
 
@@ -2376,15 +2452,15 @@ window.generateReport = () => {
 ${dateBarEnd}
 
 <div class="intro">
-  <p>תודה רבה על השתתפותך במחקר <b>PRIME</b> ועל שיתוף הפעולה לאורך הדרך</p>
+  <p>תודה רבה על השתתפותך במחקר <b>PRIME</b> ועל שיתוף הפעולה לאורך הדרך.</p>
   <p>בדו״ח זה מרוכזות תוצאות הבדיקות שביצעת: <b>חילוף חומרים במנוחה</b> (QNRG), <b>הרכב גוף</b> (InBody),
-     <b>מדידות גוף והיקפים</b> ו<b>בדיקות תפקודיות</b></p>
+     <b>מדידות גוף והיקפים</b> ו<b>בדיקות תפקודיות</b>.</p>
   ${ONE
     ? `<p>הערכים המוצגים בדו״ח הם מהבדיקה שביצעת ב<b>${measureB}</b>${D.dateE ? ` (${D.dateE})` : ''},
-       ולצד כל תוצאה מופיע הטווח התקין לגילך ולמינך. בעמוד האחרון מרוכזות כל התוצאות במבט אחד</p>`
-    : `<p>הערכים המוצגים בעמודים <span dir="ltr">1-2</span> הם מהבדיקה שביצעת ב<b>${measureB}</b>${D.dateE ? ` (${D.dateE})` : ''},
-       ובעמוד האחרון מוצגת <b>השוואה מלאה בין הבדיקה ב${fromB}${D.dateS ? ` (${D.dateS})` : ''} לבין הבדיקה ב${measureB}</b>,
-       כדי לראות את המגמה והשינוי בין שתי נקודות הזמן</p>`}
+       ולצד כל תוצאה מופיע הטווח התקין לגילך ולמינך. בעמוד האחרון מרוכזות כל התוצאות במבט אחד.</p>`
+    : `<p>הערכים המוצגים בעמודים <span dir="ltr">1-3</span> הם מהבדיקה שביצעת ב<b>${measureB}</b>${D.dateE ? ` (${D.dateE})` : ''},
+       ובכל כרטיס מופיע גם הערך מהבדיקה ב${fromB} והשינוי ממנה. בעמוד האחרון מרוכזת <b>השוואה מלאה בין הבדיקה ב${fromB}${D.dateS ? ` (${D.dateS})` : ''} לבין הבדיקה ב${measureB}</b>,
+       כדי לראות את המגמה והשינוי בין שתי נקודות הזמן במבט אחד.</p>`}
 </div>
 
 <div class="ptbar">
@@ -2402,19 +2478,19 @@ ${dateBarEnd}
   <div>
     <div class="qb-t">חוק הרבע, למה זה הלב של המחקר</div>
     <div class="qb-b">בירידה במשקל <b>ללא אימוני כוח</b>, בממוצע כ-<b>25% מהמשקל היורד מגיע מהמסה נטולת השומן</b>, כלומר משריר ולא משומן.
-      לכן השילוב של <b>חלבון ואימוני כוח</b> במחקר נועד לשמר את השריר ולוודא שהירידה מגיעה מהמקום הנכון</div>
+      לכן השילוב של <b>חלבון ואימוני כוח</b> במחקר נועד לשמר את השריר ולוודא שהירידה מגיעה מהמקום הנכון.</div>
   </div>
 </div>
 
 <div class="section">
   <div class="sec-head"><div class="sec-num">1</div><h2>בדיקת חילוף חומרים במנוחה במכשיר ה-QNRG, או במילים אחרות: כמה אנרגיה הגוף שלך שורף/מוציא במנוחה ביממה?</h2></div>
-  <div class="lead">הבדיקה מודדת, באמצעות מסכה ובמנוחה, כמה <b>חמצן</b> הגוף צורך וכמה <b>פחמן דו-חמצני</b> הוא פולט, ומתוך זה מחושב במדויק כמה קלוריות הגוף שלך שורף, ואיזה "דלק" הוא מעדיף</div>
+  <div class="lead">הבדיקה מודדת, באמצעות מסכה ובמנוחה, כמה <b>חמצן</b> הגוף צורך וכמה <b>פחמן דו-חמצני</b> הוא פולט, ומתוך זה מחושב במדויק כמה קלוריות הגוף שלך שורף, ואיזה "דלק" הוא מעדיף.</div>
   <div class="grid">
     <div class="card">
       <div class="label">הוצאה אנרגטית במנוחה&nbsp;<span class="nb">(REE)</span></div>
       <div class="val">${Math.round(D.reeE).toLocaleString('he')} <small>קק״ל/יום</small></div>
       ${since(D.reeS, D.reeE, " קק״ל", 0)}
-      <div class="desc">הקלוריות שהגוף שורף במנוחה מלאה ביממה. מספר זה מהווה כ-70% מסך שריפת הקלוריות היומית</div>
+      <div class="desc">הקלוריות שהגוף שורף במנוחה מלאה ביממה. מספר זה מהווה כ-70% מסך שריפת הקלוריות היומית.</div>
       <div class="bar-wrap">
         <div class="bar bar-hi-good"><div class="mark" style="right:${reePctPos}%;"></div></div>
         <div class="scale"><span>נמוך מהצפוי</span><span>צפוי</span><span>גבוה מהצפוי</span></div>
@@ -2425,7 +2501,7 @@ ${dateBarEnd}
       <div class="label">מנת הנשימה&nbsp;<span class="nb">(RER)</span></div>
       <div class="val">${n(D.rerE,2)}</div>
       ${since(D.rerS, D.rerE, "", 2)}
-      <div class="desc">מדד שמראה איזה "דלק" הגוף שורף כרגע: שומן או פחמימה. הוא מחושב מהיחס בין הפחמן הדו-חמצני שנפלט לחמצן שנצרך, ולכן הוא נקרא "מנת הנשימה". בבדיקה בצום, ככל שהערך נמוך יותר, כך שריפת השומן גבוהה יותר</div>
+      <div class="desc">מדד שמראה איזה "דלק" הגוף שורף כרגע: שומן או פחמימה. הוא מחושב מהיחס בין הפחמן הדו-חמצני שנפלט לחמצן שנצרך, ולכן הוא נקרא "מנת הנשימה". בבדיקה בצום, ככל שהערך נמוך יותר, כך שריפת השומן גבוהה יותר.</div>
       <div class="bar-wrap">
         <div class="bar bar-lo-good"><div class="mark" style="right:${rerPos}%;"></div></div>
         <div class="scale"><span>0.70 · שומן</span><span>תמהיל</span><span>1.00 · פחמימה</span></div>
@@ -2439,31 +2515,35 @@ ${dateBarEnd}
         <div class="a" style="width:${fatBurnWidth}%;">שומן ${fatBurnWidth}%</div>
         <div class="b" style="width:${chBurnWidth}%;">פחמימה ${chBurnWidth}%</div>
       </div>
-      <div class="desc">תמהיל מטבולי הנגזר מ-RER. ${fatBurnWidth >= 60 ? 'שריפת שומן כמקור עיקרי, תמהיל בריא' : 'תמהיל מטבולי בהתאם לערכי RER'}</div>
+      <div class="desc">תמהיל מטבולי הנגזר מ-RER. ${fatBurnWidth >= 60 ? 'שריפת שומן כמקור עיקרי, תמהיל בריא.' : 'תמהיל מטבולי בהתאם לערכי RER.'}</div>
     </div>
   </div>
 </div>
 
 <div class="section">
   <div class="sec-head"><div class="sec-num">2</div><h2>מדידות גוף והיקפים · Anthropometrics</h2></div>
-  <div class="statrow5">
+  <div class="anthro">
     <div class="stat"><div class="l">גובה · Height</div><div class="v">${height} <small>ס״מ</small></div></div>
     <div class="stat"><div class="l">משקל · Weight</div><div class="v">${n(D.wtE,1)} <small>ק״ג</small></div>${delta(D.wtS, D.wtE, 1, ' ק״ג')}<div class="meta">${wtChangeMeta}</div></div>
-    <div class="stat"><div class="l">BMI · מדד מסת גוף</div><div class="v">${n(bmiE,1)} <small>ק״ג/מ²</small></div>${delta(bmiS, bmiE, 1, '')}<div class="meta">${tBmi}</div></div>
-    <div class="stat"><div class="l">היקף מותניים · Waist</div><div class="v">${n(D.waistE,0)} <small>ס״מ</small></div>${delta(D.waistS, D.waistE, 1, ' ס״מ')}<div class="meta">${tWaist}</div></div>
-    <div class="stat"><div class="l">יחס מותן-גובה · WHtR</div><div class="v">${n(whtrE,2)}</div>${delta(whtrS, whtrE, 2, '')}<div class="meta">${tWhtr}</div></div>
-    <div class="stat"><div class="l">היקף שוק · Calf</div><div class="v">${n(D.calfE,0)} <small>ס״מ</small></div>${delta(D.calfS, D.calfE, 1, ' ס״מ')}<div class="meta">${tCalf}</div></div>
+    <div class="stat"><div class="l">BMI · מדד מסת גוף</div><div class="v">${n(bmiE,1)} <small>ק״ג/מ²</small></div>${delta(bmiS, bmiE, 1, ' ק״ג/מ²')}
+      <div class="bar-wrap"><div class="bar bar-hi-bad"><div class="mark" style="right:${markPos(bmiE, 15, 40)}%;"></div></div>
+        <div class="scale"><span>נמוך</span><span>תקין</span><span>גבוה</span></div></div>
+      <div class="nt"><div class="nrm">תקין: <b dir="ltr">18.5-24.9</b><br>עודף משקל: <span dir="ltr">25-29.9</span> · השמנה: <span dir="ltr">&#8805;30</span></div>${tBmi}</div></div>
+    <div class="stat"><div class="l">היקף מותניים · Waist</div><div class="v">${n(D.waistE,0)} <small>ס״מ</small></div>${delta(D.waistS, D.waistE, 1, ' ס״מ')}
+      <div class="bar-wrap"><div class="bar bar-lo-good"><div class="mark" style="right:${markPos(D.waistE, (sex === 'm' ? 102 : 88) - 38, (sex === 'm' ? 102 : 88) + 18)}%;"></div></div>
+        <div class="scale"><span>רצוי</span><span></span><span>גבוה</span></div></div>
+      <div class="nt"><div class="nrm">רצוי: ${sex === 'm' ? '<b>גברים מתחת ל-102</b> · נשים מתחת ל-88' : 'גברים מתחת ל-102 · <b>נשים מתחת ל-88</b>'} ס״מ</div>${tWaist}</div></div>
+    <div class="stat"><div class="l">יחס מותן-גובה · WHtR</div><div class="v">${n(whtrE,2)}</div>${delta(whtrS, whtrE, 2, '')}
+      <div class="sd">בודק <b>איפה</b> יושב השומן ולא רק כמה יש ממנו. שומן בטני קשור לסיכון גבוה יותר, ולכן המדד מנבא סיכון מטבולי טוב יותר מה-BMI, שאינו מבחין בין שריר לשומן.</div>
+      <div class="bar-wrap"><div class="bar bar-lo-good"><div class="mark" style="right:${markPos(whtrE, 0.35, 0.72)}%;"></div></div>
+        <div class="scale"><span>רצוי</span><span></span><span>גבוה</span></div></div>
+      <div class="nt"><div class="nrm">רצוי: מתחת ל-<b>0.5</b></div>${tWhtr}</div></div>
+    <div class="stat"><div class="l">היקף שוק · Calf</div><div class="v">${n(D.calfE,0)} <small>ס״מ</small></div>${delta(D.calfS, D.calfE, 1, ' ס״מ')}
+      <div class="bar-wrap"><div class="bar bar-hi-good"><div class="mark" style="right:${markPosThr(D.calfE, sex === 'm' ? 34 : 33)}%;"></div></div>
+        <div class="scale"><span>נמוך</span><span></span><span>תקין</span></div></div>
+      <div class="nt"><div class="nrm">תקין: ${sex === 'm' ? '<b>גברים מעל 34</b> · נשים מעל 33' : 'גברים מעל 34 · <b>נשים מעל 33</b>'} ס״מ</div>${tCalf}</div></div>
   </div>
-  <div class="refbox">
-    <div class="rt">טווחי ייחוס תקינים</div>
-    <div class="items">
-      <div><b>BMI (ק״ג/מ²):</b> <span dir="ltr">18.5-24.9</span> (עודף משקל <span dir="ltr">25-29.9</span>; השמנה <span dir="ltr">&#8805;30</span>)</div>
-      <div><b>ערך רצוי ליחס מותן-גובה (WHtR):</b> מתחת ל-0.5. מדד זה בודק <b>איפה</b> יושב השומן ולא רק כמה יש ממנו, ולכן הוא מנבא סיכון מטבולי טוב יותר מ-BMI: שומן בטני קשור לסיכון גבוה יותר, ואילו ה-BMI אינו מבחין בין שריר לשומן ולא בין שומן בבטן לשומן בירכיים</div>
-      <div><b>ערכים רצויים להיקף מותניים:</b> גברים מתחת ל-102, נשים מתחת ל-88 ס״מ</div>
-      <div><b>ערכים תקינים להיקף שוק:</b> גברים מעל 34, נשים מעל 33 ס״מ</div>
-    </div>
-  </div>
-  <div class="agenote">* ערכי הסף התלויים בגיל ובמין (אחוז שומן, קימה מכיסא) מותאמים לגיל ולמין של הנחקר/ת</div>
+  <div class="agenote">* ערכי הייחוס נבחרים אוטומטית מטבלאות מפורסמות לפי הגיל והמין שלך (למשל אחוז שומן, קימה מכיסא ומבחן הליכה), והמקור מצוין בכל כרטיס.</div>
 </div>
 <div class="foot"><span>קוד: ${D.code} · גיל ${age} · ${sex==='m'?'זכר':'נקבה'}</span><span>מחקר PRIME</span></div>
 </div>
@@ -2477,19 +2557,20 @@ ${dateBarEnd}
 ${dateBarEnd}
 <div class="section">
   <div class="sec-head"><div class="sec-num">3</div><h2>בדיקת הרכב גוף באמצעות מכשיר ה-InBody, או במילים אחרות: ממה המשקל שלך מורכב?</h2></div>
-  <div class="lead">זרם חשמלי חלש עובר בגוף ומעריך את הרכבו: <b>מים</b>, <b>שומן</b>, <b>רקמה נטולת שומן</b> (שמתוכה מסה רזה ומסת שריר), <b>מינרלים</b> ו<b>עצם</b>. חשוב לדעת: המכשיר מודד מסה נטולת שומן, ומסת השריר היא אומדן הנגזר ממנה, ולא מדידה ישירה</div>
+  <div class="lead">זרם חשמלי חלש עובר בגוף ומעריך את הרכבו: <b>מים</b>, <b>שומן</b>, <b>רקמה נטולת שומן</b> (שמתוכה מסה רזה ומסת שריר), <b>מינרלים</b> ו<b>עצם</b>. חשוב לדעת: המכשיר מודד מסה נטולת שומן, ומסת השריר היא אומדן הנגזר ממנה, ולא מדידה ישירה.</div>
   <div class="grid g${bodyCards}">
     <div class="card">
       <div class="label">מסת שומן · Fat Mass&nbsp;<span class="nb">(FM)</span></div>
       <div class="val">${n(D.fmE,1)} <small>ק״ג · ${n(fatPctE,1)}% אחוז שומן</small></div>
       ${since(D.fmS, D.fmE, " ק״ג", 1)}
-      <div class="desc">חלק המשקל שמורכב משומן, במשקל ובאחוזים</div>
+      ${(isFinite(fatPctS) && fatPctS > 0) ? `<div class="since">אחוז השומן ${SINCE_LABEL}: <b>${n(fatPctS,1)}%</b> · שינוי: ${Math.abs(fatPctE - fatPctS) < 0.05 ? 'ללא שינוי' : `${fatPctE > fatPctS ? '▲' : '▼'} ${n(Math.abs(fatPctE - fatPctS),1)} נק׳ אחוז`}</div>` : ''}
+      <div class="desc">חלק ממשקל הגוף הכולל שמורכב משומן, במשקל ובאחוזים.</div>
       <div class="bar-wrap">
-        <div class="bar bar-hi-bad"><div class="mark" style="right:${markPos(fatPctE, 0, 50)}%;"></div></div>
+        <div class="bar bar-hi-bad"><div class="mark" style="right:${markPos(fatPctE, 0, fatPctMax / 0.62)}%;"></div></div>
         <div class="scale"><span>נמוך</span><span>תקין</span><span>גבוה</span></div>
       </div>
-      <div class="note">ערך תקין ${sex === 'm' ? 'לגברים' : 'לנשים'} ${age < 65 ? 'עד גיל 65' : 'מגיל 65 ומעלה'}: עד <b>${fatPctMax}%</b>${fmMaxKg !== null ? `, שהם <b>${n(fmMaxKg,1)} ק״ג</b> במשקל הנוכחי` : ''} · מעל <b>${obesityCut}%</b>${fmObesKg !== null ? ` (<b>${n(fmObesKg,1)} ק״ג</b>)` : ''} מוגדר השמנה ${tFatPct}
-        <div class="ref ltr">Heo M et al., Am J Clin Nutr 2012;95:594-602 (NHANES 1999-2004)</div></div>
+      <div class="note">ערך תקין ${sex === 'm' ? 'לגברים' : 'לנשים'} ${obesityBandLabel(age)}: עד <b>${fatPctMax}%</b>${fmMaxKg !== null ? `, שהם <b>${n(fmMaxKg,1)} ק״ג</b> במשקל הנוכחי` : ''} · מעל ערך זה מוגדר השמנה ${tFatPct}
+        <div class="ref ltr">ESPEN/EASO consensus, Donini LM et al., Obes Facts 2022;15:321-335</div></div>
     </div>
     <div class="card">
       <div class="label">מסה נטולת שומן ומסת שריר</div>
@@ -2497,30 +2578,32 @@ ${dateBarEnd}
         <div><div class="dv">${n(ffmE,1)}<small> ק״ג</small></div><div class="dl">FFM · מסה נטולת שומן</div></div>
         <div><div class="dv">${n(D.smmE,1)}<small> ק״ג</small></div><div class="dl">SMM · מסת שריר</div></div>
       </div>
-      ${since(ffmS, ffmE, " ק״ג", 1)}
-      <div class="desc">מסה נטולת שומן (FFM) = המשקל פחות השומן. שמירה עליה בירידה במשקל היא מטרת-העל.
-        ${D.smiE > 0 ? `מדד <b>SMI</b> מבטא את מסת השריר ביחס לגובה, ומשמש להערכת סיכון לסרקופניה` : ''}</div>
+      ${since(ffmS, ffmE, " ק״ג", 1, null, 'FFM')}
+      ${since(D.smmS, D.smmE, " ק״ג", 1, null, 'SMM')}
+      <div class="desc">מסה נטולת שומן (FFM) = המשקל הכולל של הגוף פחות משקל השומן. שמירה עליה בירידה במשקל היא מטרת-העל.</div>
       ${D.smiE > 0 ? `
-      <div class="val" style="font-size:19px; margin-top:4px;">${n(D.smiE,2)} <small>ק״ג/מ² · SMI</small></div>
-      ${since(D.smiS, D.smiE, "", 2)}
+      <div class="val" style="font-size:19px; margin-top:6px;">${n(D.smiE,2)} <small>ק״ג/מ² · SMI</small></div>
+      ${since(D.smiS, D.smiE, " ק״ג/מ²", 2)}
+      <div class="desc">מדד ה-<b>SMI</b> מבטא את היחס בין מסת השריר בידיים וברגליים לבין הגובה (בריבוע), ומשמש, בין היתר, להערכת סיכון לסרקופניה.</div>
       <div class="bar-wrap">
-        <div class="bar bar-hi-good"><div class="mark" style="right:${markPos(D.smiE, 4, 11)}%;"></div></div>
-        <div class="scale"><span>נמוך · סיכון</span><span>גבולי</span><span>תקין</span></div>
+        <div class="bar bar-hi-good"><div class="mark" style="right:${markPosThr(D.smiE, smiMin)}%;"></div></div>
+        <div class="scale"><span>נמוך · סיכון</span><span>קרוב לסף</span><span>תקין</span></div>
       </div>
-      <div class="note">SMI תקין: <b>גברים מעל 7.0</b> · <b>נשים מעל 5.5</b> ק״ג/מ² ${tSmi}
+      <div class="note">SMI תקין: ${sex === 'm' ? '<b>גברים מעל 7.0</b> · נשים מעל 5.5' : 'גברים מעל 7.0 · <b>נשים מעל 5.5</b>'} ק״ג/מ². עד 5% מעל ערך הסף מסומן "קרוב לסף" ${tSmi}
         <div class="ref ltr">Cruz-Jentoft AJ et al., EWGSOP2, Age Ageing 2019;48:16-31</div></div>` : ''}
     </div>
     ${asmmPctE !== null ? `<div class="card">
-      <div class="label">מסת שריר בגפיים&nbsp;<span class="nb">(ASMM)</span></div>
+      <div class="label">מסת שרירים בגפיים ביחס למשקל&nbsp;<span class="nb">(ASMM)</span></div>
       <div class="val">${n(asmmPctE,1)}<small>% ממשקל הגוף</small></div>
       ${asmmPctS !== null ? since(asmmPctS, asmmPctE, "%", 1) : ''}
-      <div class="desc">סכום המסה הרזה בשתי הידיים ושתי הרגליים, <b>${n(asmmE,2)} ק״ג</b>, כאחוז ממשקל הגוף. אלו השרירים שמזיזים אותך בפועל, ולכן זהו המדד המשמש להערכת סרקופניה</div>
+      <div class="desc">סכום המסה הרזה בשתי הידיים ושתי הרגליים, <b>${n(asmmE,2)} ק״ג</b>, כאחוז ממשקל הגוף. אלו השרירים שמזיזים אותך בפועל, ולכן זהו המדד המשמש להערכת סרקופניה. בירידה במשקל הוא רגיש במיוחד לשינוי, כי המשקל שבמכנה יורד.</div>
       <div class="bar-wrap">
-        <div class="bar bar-hi-good"><div class="mark" style="right:${markPos(asmmPctE, 12, 36)}%;"></div></div>
-        <div class="scale"><span>נמוך · סיכון</span><span>גבולי</span><span>תקין</span></div>
+        <div class="bar bar-hi-good"><div class="mark" style="right:${markPosThr(asmmPctE, asmmMin)}%;"></div></div>
+        <div class="scale"><span>נמוך · סיכון</span><span>קרוב לסף</span><span>תקין</span></div>
       </div>
-      <div class="note">תקין: <b>גברים מעל ${n(NORMS.asmmPct.okM,1)}%</b> · <b>נשים מעל ${n(NORMS.asmmPct.okF,1)}%</b> ${tagGte(asmmPctE, asmmMin)}
-        ${(armGap !== null || legGap !== null) ? `<div style="margin-top:2px;">איזון בין ימין לשמאל: ידיים ${armGap === null ? '—' : n(armGap,1) + '%'} · רגליים ${legGap === null ? '—' : n(legGap,1) + '%'} ${(Math.max(armGap || 0, legGap || 0) > NORMS.limbGapPct) ? '<span class="tag warn">פער מעל 5%</span>' : '<span class="tag ok">מאוזן</span>'}</div>` : ''}
+      <div class="note">תקין: ${sex === 'm' ? `<b>גברים מעל ${n(NORMS.asmmPct.okM,1)}%</b> · נשים מעל ${n(NORMS.asmmPct.okF,1)}%` : `גברים מעל ${n(NORMS.asmmPct.okM,1)}% · <b>נשים מעל ${n(NORMS.asmmPct.okF,1)}%</b>`} ${tAsmm}
+        ${(armGap !== null || legGap !== null) ? `<div style="margin-top:4px;"><b>איזון בין ימין לשמאל:</b> הפער בין המסה הרזה בצד ימין לשמאל, ביד וברגל. פער של עד 5% נחשב מאוזן.
+          ידיים: <b>${armGap === null ? '—' : n(armGap,1) + '%'}</b> · רגליים: <b>${legGap === null ? '—' : n(legGap,1) + '%'}</b> ${(Math.max(armGap || 0, legGap || 0) > NORMS.limbGapPct) ? '<span class="tag warn">פער מעל 5%</span>' : '<span class="tag ok">מאוזן</span>'}</div>` : ''}
         <div class="ref ltr">
         <span class="src">Obes Facts 2022;15:321-335</span>
         <span class="src">J Am Geriatr Soc 2013;61:974-80</span>
@@ -2528,19 +2611,31 @@ ${dateBarEnd}
       </div></div>
     </div>` : ''}
     ${hasFluidSplit ? `<div class="card">
-      <div class="label">נוזלים · Total Body Water&nbsp;<span class="nb">(TBW)</span></div>
-      <div class="val">${n(D.tbwE,1)} <small>ליטר</small></div>
-      ${since(D.tbwS, D.tbwE, " ל׳", 1)}
-      <div class="split" style="height:26px; font-size:11.5px;">
-        <div class="a" style="width:${Math.round(D.icwE/D.tbwE*100)}%; background:#0ea5e9;">ICW · ${n(D.icwE,1)}</div>
-        <div class="b" style="width:${Math.round(D.ecwE/D.tbwE*100)}%; background:#7dd3fc; color:#0c4a6e;">ECW · ${n(D.ecwE,1)}</div>
+      <div class="label">נוזלים בגוף · Total Body Water&nbsp;<span class="nb">(TBW, ICW, ECW)</span></div>
+      <div class="dual">
+        <div><div class="dv">${n(D.tbwE,1)}<small> ל׳</small></div><div class="dl">TBW · סך המים</div></div>
+        <div><div class="dv">${n(D.icwE,1)}<small> ל׳</small></div><div class="dl">ICW · בתוך התאים</div></div>
+        <div><div class="dv">${n(D.ecwE,1)}<small> ל׳</small></div><div class="dl">ECW · מחוץ לתאים</div></div>
       </div>
-      <div class="desc"><b>סך</b> המים בגוף. יחס ECW/TBW: <b>${n(ecwTbwE,3)}</b>, תקין <span dir="ltr">0.360-0.390</span>. ${tagOk(ecwTbwE, 0.360, 0.390)}</div>
+      ${since(D.tbwS, D.tbwE, " ל׳", 1, null, 'TBW')}
+      ${(D.icwS > 0 && D.ecwS > 0) ? `<div class="since"><b>ICW</b> ${SINCE_LABEL}: <b>${n(D.icwS,1)} ל׳</b> · <b>ECW</b> ${SINCE_LABEL}: <b>${n(D.ecwS,1)} ל׳</b></div>` : ''}
+      <div class="split" style="height:24px; font-size:11px;">
+        <div class="a" style="width:${Math.round(D.icwE/D.tbwE*100)}%; background:#0ea5e9;">בתוך התאים ${Math.round(D.icwE/D.tbwE*100)}%</div>
+        <div class="b" style="width:${Math.round(D.ecwE/D.tbwE*100)}%; background:#7dd3fc; color:#0c4a6e;">מחוץ לתאים ${Math.round(D.ecwE/D.tbwE*100)}%</div>
+      </div>
+      <div class="desc">המים מתחלקים לנוזלים <b>בתוך התאים</b> (ICW) ו<b>מחוץ לתאים</b> (ECW). בגוף בריא יש בערך <b>פי 1.5</b> יותר נוזלים בתוך התאים, ורובם בתוך השריר (אצלך ב${measureB}: פי <b>${n(D.icwE / D.ecwE,1)}</b>). יחס ECW/TBW גבוה מהתקין עשוי להעיד על הצטברות נוזלים (בצקת), דלקת או ירידה באיכות השריר.</div>
+      <div class="val" style="font-size:19px; margin-top:6px;">${n(ecwTbwE,3)} <small>יחס ECW/TBW</small></div>
+      ${(D.ecwS > 0 && D.tbwS > 0) ? since(D.ecwS / D.tbwS, ecwTbwE, "", 3) : ''}
+      <div class="bar-wrap">
+        <div class="bar bar-hi-bad"><div class="mark" style="right:${markPos(ecwTbwE, 0.330, 0.420)}%;"></div></div>
+        <div class="scale"><span>נמוך</span><span>תקין</span><span>גבוה</span></div>
+      </div>
+      <div class="note">יחס ECW/TBW תקין: <b dir="ltr">0.360-0.390</b> ${tagOk(ecwTbwE, 0.360, 0.390)}</div>
     </div>` : hasFluidTotal ? `<div class="card">
       <div class="label">נוזלים · Total Body Water&nbsp;<span class="nb">(TBW)</span></div>
       <div class="val">${n(D.tbwE,1)} <small>ליטר</small></div>
       ${since(D.tbwS, D.tbwE, " ל׳", 1)}
-      <div class="desc"><b>סך</b> המים בגוף, כ-${Math.round(D.wtE > 0 ? D.tbwE / D.wtE * 100 : 0)}% ממשקל הגוף. רוב המים בגוף נמצאים בתוך השריר, ולכן שמירה על מסת השריר שומרת גם על מאגר הנוזלים</div>
+      <div class="desc"><b>סך</b> המים בגוף, כ-${Math.round(D.wtE > 0 ? D.tbwE / D.wtE * 100 : 0)}% ממשקל הגוף. רוב המים בגוף נמצאים בתוך השריר, ולכן שמירה על מסת השריר שומרת גם על מאגר הנוזלים.</div>
     </div>` : ''}
   </div>
   ${ONE ? `
@@ -2553,19 +2648,25 @@ ${dateBarEnd}
     <div class="lb-item">
       <div class="lb-l">מסה נטולת שומן <span class="nb">(FFM)</span></div>
       <div class="lb-v">${n(ffmE,1)} <small>ק״ג</small></div>
-      <div class="lb-s">${D.wtE > 0 ? `${n(ffmE / D.wtE * 100,0)}% ממשקל הגוף. ` : ''}זהו החלק הפעיל של הגוף: שריר, עצם ונוזלים, והוא שקובע את הכוח והתפקוד</div>
+      <div class="lb-s">${D.wtE > 0 ? `${n(ffmE / D.wtE * 100,0)}% ממשקל הגוף. ` : ''}זהו החלק הפעיל של הגוף: שריר, עצם ונוזלים, והוא שקובע את הכוח והתפקוד.</div>
     </div>
   </div>` : wtLoss > 0 ? `
-  <div class="lossbox">
+  <div class="lossbox l3">
+    <div class="lb-item">
+      <div class="lb-l">משקל</div>
+      <div class="lb-v">${n(D.wtS,1)} ← ${n(D.wtE,1)} <small>ק״ג</small></div>
+      <div class="lb-s">ב${fromB} ← ב${measureB}</div>
+    </div>
     <div class="lb-item">
       <div class="lb-l">ירידה במשקל</div>
-      <div class="lb-v">${n(wtLoss,1)} <small>ק״ג</small></div>
-      <div class="lb-s">${n(wtLossPct,1)}% ממשקל הגוף ההתחלתי
-        <span class="tag ${wtLossPct >= 5 ? 'ok' : 'warn'}">${wtLossPct >= 5 ? 'ירידה משמעותית' : 'פחות מ-5%'}</span></div>
+      <div class="lb-v">▼ ${n(wtLoss,1)} <small>ק״ג</small></div>
+      <div class="lb-s">${n(wtLossPct,1)}% ממשקל הגוף ההתחלתי <span class="tag ${wtLossPct >= 5 ? 'ok' : 'warn'}" style="display:inline-block; margin:0 4px;">${wtLossPct >= 5 ? 'ירידה משמעותית' : 'פחות מ-5%'}</span></div>
+      <div class="lb-x">ירידה של <b>5% ומעלה</b> ממשקל הגוף ההתחלתי נחשבת משמעותית מבחינה קלינית, ומלווה בדרך כלל בשיפור במדדים כמו לחץ דם, סוכר ושומנים בדם.</div>
     </div>
     <div class="lb-item">
       <div class="lb-l">מתוך הירידה, מהמסה נטולת השומן</div>
       <div class="lb-v">${ffmShare === null ? '—' : n(Math.max(0,ffmShare),0) + '%'}</div>
+      <div class="lb-x">${ffmInterp}</div>
     </div>
   </div>` : ''}
   ${hasUrine ? `
@@ -2579,11 +2680,11 @@ ${dateBarEnd}
     ${hasNbal ? `<div class="lb-item">
       <div class="lb-l">מאזן חנקן</div>
       <div class="lb-v"><span dir="ltr">${nbalV > 0 ? '+' : ''}${n(nbalV,1)}</span> <small>גרם ליום</small></div>
-      <div class="lb-s">מאזן חיובי מעיד שהגוף בונה יותר חלבון ממה שהוא מפרק, ומאזן שלילי שההפך. בתקופה של ירידה במשקל מאזן שלילי קל הוא שכיח</div>
+      <div class="lb-s">מאזן חיובי מעיד שהגוף בונה יותר חלבון ממה שהוא מפרק, ומאזן שלילי שההפך. בתקופה של ירידה במשקל מאזן שלילי קל הוא שכיח.</div>
     </div>` : ''}
   </div>
-  <div class="ref" style="margin-top:4px;">* הערכים מוערכים מ<b>איסוף שתן של 24 שעות</b> שנאסף ב${sideB(urSide)}, ולכן הם תלויים בשלמות האיסוף: איסוף חלקי מוריד את שני הערכים. איסוף השתן נעשה בכניסה למחקר ובסיומו בלבד</div>` : ''}
-  <div class="ref" style="margin-top:4px;">* ${ONE ? 'הערכים מבוססים על' : 'החישוב מבוסס על'} FFM (מסה נטולת שומן) ממכשיר ה-InBody</div>
+  <div class="ref" style="margin-top:4px;">* הערכים מוערכים מ<b>איסוף שתן של 24 שעות</b> שנאסף ב${sideB(urSide)}, ולכן הם תלויים בשלמות האיסוף: איסוף חלקי מוריד את שני הערכים. איסוף השתן נעשה בכניסה למחקר ובסיומו בלבד.</div>` : ''}
+  <div class="ref" style="margin-top:4px;">* ${ONE ? 'הערכים מבוססים על' : 'החישוב מבוסס על'} FFM (מסה נטולת שומן) ממכשיר ה-InBody.</div>
 </div>
 <div class="foot"><span>קוד: ${D.code} · גיל ${age} · ${sex==='m'?'זכר':'נקבה'}</span><span>מחקר PRIME</span></div>
 </div>`;
@@ -2591,7 +2692,21 @@ ${dateBarEnd}
   // ================================================================
   // PAGE 2
   // ================================================================
-  const hgNote = sex === 'm' ? 'תקין: גברים <span dir="ltr">&#8805;27</span>, נשים <span dir="ltr">&#8805;16</span> ק״ג' : 'תקין: נשים <span dir="ltr">&#8805;16</span>, גברים <span dir="ltr">&#8805;27</span> ק״ג';
+  /* AB 16.9 — השוואה לכניסה בכל יד בנפרד, בקופסה אחת של שתי שורות */
+  const hgSince = (() => {
+    const one = (sv, ev) => {
+      const a = +sv, b = +ev;
+      if (!isFinite(a) || !isFinite(b) || !a) return null;
+      const d = b - a, flat = Math.abs(d) < 0.05;
+      return { s: a, txt: flat ? 'ללא שינוי' : `${d > 0 ? '▲' : '▼'} ${n(Math.abs(d),1)} <span dir="ltr">(${d > 0 ? '+' : '−'}${n(Math.abs(d / a * 100),1)}%)</span>${sigTag(d, NORMS.mdc.hg, flat)}` };
+    };
+    const r = one(D.hgrS, D.hgrE), l = one(D.hglS, D.hglE);
+    if (!r && !l) return '';
+    return `<div class="since">${SINCE_LABEL}: ${r ? `ימין <b>${n(r.s,1)} ק״ג</b>` : ''}${r && l ? ' · ' : ''}${l ? `שמאל <b>${n(l.s,1)} ק״ג</b>` : ''}<br>
+      שינוי: ${r ? `ימין ${r.txt}` : ''}${r && l ? ' · ' : ''}${l ? `שמאל ${l.txt}` : ''}</div>`;
+  })();
+  const hgNote = (sex === 'm' ? 'תקין: <b>גברים <span dir="ltr">&#8805;27</span></b>, נשים <span dir="ltr">&#8805;16</span> ק״ג' : 'תקין: <b>נשים <span dir="ltr">&#8805;16</span></b>, גברים <span dir="ltr">&#8805;27</span> ק״ג')
+    + ' (ביד החזקה). ערכי סף אלה מתייחסים לאוכלוסייה מבוגרת, בני 60 ומעלה';
   const stsNote = `ערך הסף לגיל <span dir="ltr">${stsCrit.band}</span> (${sex==='m'?'גברים':'נשים'}): <b>${stsCrit.min} חזרות</b> ומעלה${stsCrit.below60 ? ' · הנורמות המפורסמות מתחילות בגיל 60, ולכן מוצג כאן הסף של הקבוצה הצעירה ביותר' : ''}`;
 
   const page2 = `
@@ -2604,16 +2719,18 @@ ${dateBarEnd}
 ${dateBarEnd}
 <div class="section">
   <div class="sec-head"><div class="sec-num">4</div><h2>בדיקות תפקודיות, או במילים אחרות: איך הגוף שלי מתפקד בפועל?</h2></div>
-  <div class="lead">מעבר להרכב הגוף, חשוב לבדוק איך הגוף <b>מתפקד בפועל</b>: כמה כוח יש לך, שיווי המשקל והסיבולת. הבדיקות רגישות מאוד לשינויים בשריר ובכושר לאורך המחקר</div>
-  <div class="grid2">
+  <div class="lead">מעבר להרכב הגוף, חשוב לבדוק איך הגוף <b>מתפקד בפועל</b>: כמה כוח יש לך, שיווי המשקל והסיבולת. הבדיקות רגישות לשינויים בשריר ובכושר לאורך המחקר.</div>
+  <div class="grid2 aligned">
     <div class="card">
+      <div class="ctop">
       <div class="label">כוח לפיתה&nbsp;<span class="nb">(Handgrip Strength)</span></div>
       <div class="dual">
         <div><div class="dv">${n(D.hgrE,1)}<small> ק״ג</small></div><div class="dl">יד ימין</div></div>
         <div><div class="dv">${n(D.hglE,1)}<small> ק״ג</small></div><div class="dl">יד שמאל</div></div>
       </div>
-      ${since(Math.max(D.hgrS,D.hglS), Math.max(D.hgrE,D.hglE), " ק״ג", 1, NORMS.mdc.hg)}
-      <div class="desc">הבדיקה מתבצעת באמצעות מכשיר <b>דינמומטר JAMAR</b>. נמדד כוח הלפיתה של כף היד, ומוצג <b>הערך הגבוה ביותר</b> שנמדד בכל יד. זהו מדד אמין לכוח השרירים בכל הגוף, וירידה בו עשויה להעיד על מצב של אובדן כוח, תפקוד ומסת שריר (מצב הקרוי <b>סרקופניה</b>)</div>
+      ${hgSince}
+      </div>
+      <div class="desc">הבדיקה מתבצעת באמצעות מכשיר <b>דינמומטר JAMAR</b>. נמדד כוח הלפיתה של כף היד, ומוצג <b>הערך הגבוה ביותר</b> שנמדד בכל יד. זהו מדד אמין לכוח השרירים בכל הגוף, וירידה בו עשויה להעיד על מצב של אובדן כוח, תפקוד ומסת שריר (מצב הקרוי <b>סרקופניה</b>).</div>
       <div class="ill"><img class="photo" src="images/prime/hg.png" alt="כוח לפיתה" onerror="this.style.display='none'"></div>
       <div class="bar-wrap">
         <div class="bar bar-hi-good"><div class="mark" style="right:${markPos(hgMaxE, 0, 70)}%;"></div></div>
@@ -2626,16 +2743,19 @@ ${dateBarEnd}
       </div></div>
     </div>
     <div class="card">
+      <div class="ctop">
       <div class="label">סוללת מבחנים קצרה להערכת התפקוד הגופני&nbsp;<span class="nb">(SPPB)</span></div>
       <div class="val"><span dir="ltr">${D.sppbE} <small>/ 12</small></span></div>
       ${since(D.sppbS, D.sppbE, "", 0, NORMS.mdc.sppb)}
-      <div class="desc">מבחן משולב משלושה חלקים, כל אחד מנוקד מ-0 עד 4 נקודות: <b>שיווי משקל</b> בעמידה בשלוש תנוחות (<span dir="ltr">0-4</span>), <b>מהירות הליכה</b> למרחק 4 מטר (<span dir="ltr">0-4</span>), ו<b>קימה מכיסא</b> 5 פעמים ללא עזרת הידיים (<span dir="ltr">0-4</span>). סכום שלושתם הוא <b>הציון הכולל: <span dir="ltr">0-12</span></b>, וככל שהוא גבוה יותר, כך התפקוד טוב יותר</div>
+      </div>
+      <div class="desc">מבחן משולב משלושה חלקים, כל אחד מנוקד מ-0 עד 4 נקודות: <b>שיווי משקל</b> בעמידה בשלוש תנוחות (<span dir="ltr">0-4</span>), <b>מהירות הליכה</b> למרחק 4 מטר (<span dir="ltr">0-4</span>), ו<b>קימה מכיסא</b> 5 פעמים ללא עזרת הידיים (<span dir="ltr">0-4</span>). סכום שלושתם הוא <b>הציון הכולל: <span dir="ltr">0-12</span></b>, וככל שהוא גבוה יותר, כך התפקוד טוב יותר.</div>
       <div class="ill"><img class="photo" src="images/prime/sppb.png" alt="SPPB" onerror="this.style.display='none'"></div>
       <div class="bar-wrap">
         <div class="bar bar-hi-good"><div class="mark" style="right:${markPos(D.sppbE, 0, 12)}%;"></div></div>
         <div class="scale"><span>0 · מוגבל</span><span>סיכון</span><span>12 · מצוין</span></div>
       </div>
-      <div class="note">ציון <span dir="ltr">&#8805;10</span> = תפקוד טוב; <span dir="ltr">&#8804;8</span> = סיכון לירידה תפקודית · ממוצע לגיל ${sppbNorm.age} (${sex==='m'?'גברים':'נשים'}): ${n(sppbNorm.mean,1)} מתוך 12 ${tSppb}
+      <div class="note">ציון <span dir="ltr">&#8805;10</span> = תפקוד טוב; <span dir="ltr">&#8804;8</span> = סיכון לירידה תפקודית.
+        <div style="margin-top:2px;">לשם השוואה: הציון הממוצע באוכלוסייה ב${sex==='m'?'קרב גברים':'קרב נשים'} בני ${sppbNorm.age} הוא <b>${n(sppbNorm.mean,1)}</b> מתוך 12 (מחקר Tromsø)</div> ${tSppb}
         <div class="ref ltr">
         <span class="src">Guralnik JM et al., J Gerontol 1994;49:M85-94</span>
         <span class="src">Bergland A &amp; Strand BH, BMC Geriatr 2019;19:216 (Tromsø)</span>
@@ -2643,10 +2763,12 @@ ${dateBarEnd}
       </div></div>
     </div>
     <div class="card">
+      <div class="ctop">
       <div class="label">קימה מכיסא ב-30 שניות&nbsp;<span class="nb" dir="ltr">(30s STS)</span></div>
       <div class="val">${D.stsE} <small>חזרות</small></div>
       ${since(D.stsS, D.stsE, " חז׳", 0, NORMS.mdc.sts)}
-      <div class="desc">כמה פעמים מצליחים לקום מכיסא ולשבת חזרה, בלי עזרת הידיים, ב-30 שניות. מודד כוח וסיבולת שרירי הרגליים</div>
+      </div>
+      <div class="desc">כמה פעמים מצליחים לקום מכיסא ולשבת חזרה, בלי עזרת הידיים, ב-30 שניות. מודד כוח וסיבולת שרירי הרגליים.</div>
       <div class="ill"><img class="photo" src="images/prime/sts.png" alt="קימה מכיסא" onerror="this.style.display='none'"></div>
       <div class="bar-wrap">
         <div class="bar bar-hi-good"><div class="mark" style="right:${markPos(D.stsE, 0, 25)}%;"></div></div>
@@ -2656,10 +2778,12 @@ ${dateBarEnd}
         <div class="ref ltr">Rikli RE &amp; Jones CJ, Gerontologist 2013;53:255-6</div></div>
     </div>
     <div class="card">
+      <div class="ctop">
       <div class="label">מבחן הליכה 2 דקות&nbsp;<span class="nb" dir="ltr">(2-min walk)</span></div>
       <div class="val">${D.walkE} <small>מטר</small></div>
       ${since(D.walkS, D.walkE, " מ׳", 1, NORMS.mdc.walk)}
-      <div class="desc">המרחק שעוברים בהליכה רציפה במשך 2 דקות. מודד סיבולת לב-ריאה ויכולת תפקודית</div>
+      </div>
+      <div class="desc">המרחק שעוברים בהליכה רציפה במשך 2 דקות. מודד סיבולת לב-ריאה ויכולת תפקודית.</div>
       <div class="ill"><img class="photo" src="images/prime/walk.png" alt="מבחן הליכה" onerror="this.style.display='none'"></div>
       <div class="bar-wrap">
         <div class="bar bar-hi-good"><div class="mark" style="right:${markPos(D.walkE, 0, 250)}%;"></div></div>
@@ -2673,9 +2797,9 @@ ${dateBarEnd}
     <div class="ph-h">תמונת המצב המשולבת, הרכב גוף וכוח</div>
     <div class="ph-t">${phen.title}</div>
     <div class="ph-b">${phen.body}</div>
-    <div class="ph-f">הסיווג מבוסס על הקונצנזוס להשמנה סרקופנית (<span class="cit">ESPEN/EASO, Obes Facts 2022</span>): כוח ירוד נקבע לפי כוח לפיתה מתחת ל-${sex==='m'?'27':'16'} ק״ג או קימה מכיסא מתחת ל-${stsCrit.min} חזרות; מסת שריר נמוכה לפי ${asmmPctE !== null ? `מסה רזה בגפיים מתחת ל-${n(asmmMin,1)}% ממשקל הגוף` : `מדד SMI מתחת ל-${n(smiMin,1)} ק״ג/מ²`}; ואחוז שומן גבוה מעל ${obesityCutSO}% לגיל ולמין. אינו מהווה אבחנה רפואית</div>
+    <div class="ph-f">הסיווג מבוסס על הקונצנזוס להשמנה סרקופנית (<span class="cit">ESPEN/EASO, Obes Facts 2022</span>): <b>סרקופניה</b> = כוח ירוד וגם מסת שריר נמוכה. <b>כוח ירוד</b>: לפיתה ביד החזקה מתחת ל-${sex==='m'?'27':'16'} ק״ג <b>או</b> קימה מכיסא מתחת ל-${stsCrit.min} (מספיק אחד מהשניים). <b>מסת שריר נמוכה</b>: ${asmmPctE !== null ? `שרירי הגפיים מתחת ל-${n(asmmMin,1)}% ממשקל הגוף` : `SMI מתחת ל-${n(smiMin,1)} ק״ג/מ²`}. <b>השמנה</b>: אחוז שומן מעל ${obesityCutSO}% ל${sex==='m'?'גברים':'נשים'} ${obesityBandLabel(age)}. אינו מהווה אבחנה רפואית.</div>
   </div>` : ''}
-  <div class="summary">המטרה אינה רק לרדת במשקל, אלא גם לשמור על ה<b>כוח, העצמאות והניידות</b>. שמירה או שיפור של הערכים האלה לאורך המחקר הם סימן מצוין לכך שירידת המשקל מגיעה מהמקום הנכון</div>
+  <div class="summary">המטרה אינה רק לרדת במשקל, אלא גם לשמור על ה<b>כוח, העצמאות והניידות</b>. שמירה או שיפור של הערכים האלה לאורך המחקר הם סימן מצוין לכך שירידת המשקל מגיעה מהמקום הנכון.</div>
 </div>
 <div class="foot"><span>קוד: ${D.code}</span><span>מחקר PRIME</span></div>
 </div>`;
@@ -2692,6 +2816,10 @@ ${dateBarEnd}
   const cFfm  = mkChip(ffmS, ffmE, 'preserve', 'ק״ג', 1);
   const cSmm  = mkChip(D.smmS, D.smmE, 'up', 'ק״ג', 1);
   const cBmi  = mkChip(bmiS, bmiE, 'down', '', 1);
+  // AB 16.9 — SMI ו-ASMM בעמוד ההשוואה, כשנמדדו בשתי הנקודות
+  const hasSmiCmp  = D.smiE > 0 && D.smiS > 0;
+  const hasAsmmCmp = asmmPctE !== null && asmmPctS !== null;
+  const cmpBodyCols = (4 + (hasSmiCmp ? 1 : 0) + (hasAsmmCmp ? 1 : 0)) > 4 ? 'g3' : 'g4';
   const cWaist= mkChip(D.waistS, D.waistE, 'down', 'ס״מ', 1);
   const cWhtr = mkChip(whtrS, whtrE, 'down', '', 2);
   const cCalf = mkChip(D.calfS, D.calfE, 'preserve', 'ס״מ', 1);
@@ -2723,7 +2851,9 @@ ${dateBarEnd}
   const iRer  = mkInterp(D.rerS, D.rerE, 'down', T.rer);
   const iWt   = mkInterp(D.wtS, D.wtE, 'down', T.wt);
   const iFm   = mkInterp(D.fmS, D.fmE, 'down', T.fm);
-  const iFfm  = mkInterp(ffmS, ffmE, 'preserve', T.ffm);
+  const muscleKept = [smiKept, asmmKeptPct].filter((x) => x !== null);
+  const iFfm  = mkInterp(ffmS, ffmE, 'preserve', (muscleKept.length && muscleKept.every(Boolean))
+    ? { ...T.ffm, bigDown: 'ירידה במסה הרזה, אך מדדי מסת השריר נשמרו ואף השתפרו' } : T.ffm);
   const iSmm  = mkInterp(D.smmS, D.smmE, 'up', T.smm);
   const iBmi  = mkInterp(bmiS, bmiE, 'down', T.bmi);
   const iWaist= mkInterp(D.waistS, D.waistE, 'down', T.waist);
@@ -2753,7 +2883,7 @@ ${dateBarEnd}
   <div class="head-badge">מחקר PRIME</div>
 </div>
 ${dateBarCmp}
-<div class="lead">התוצאות שלך ב<b>${fromB}</b> (מימין) לעומת <b>${measureB}</b> (משמאל). <b>החץ</b> מראה את כיוון השינוי, עלייה או ירידה, ו<b>הצבע</b> מראה אם השינוי הוא לטובה. שים לב שלא בכל מדד עלייה היא דבר טוב: למשל ירידה באחוז השומן היא שיפור, ולכן היא מסומנת בירוק</div>
+<div class="lead">התוצאות שלך ב<b>${fromB}</b> (מימין) לעומת <b>${measureB}</b> (משמאל). <b>החץ</b> מראה את כיוון השינוי, עלייה או ירידה, ו<b>הצבע</b> מראה אם השינוי הוא לטובה. שים לב שלא בכל מדד עלייה היא דבר טוב: למשל ירידה באחוז השומן היא שיפור, ולכן היא מסומנת בירוק.</div>
 <div class="clegend">
   <span><span class="chip up" style="padding:1px 7px;">&#9650; ✓</span> שינוי בכיוון הרצוי</span>
   <span><span class="chip down" style="padding:1px 7px;">&#9660;</span> שינוי בכיוון ההפוך</span>
@@ -2792,8 +2922,8 @@ ${dateBarCmp}
     </div>
   </div>
   <div>
-    <div class="csub">הרכב גוף</div>
-    <div class="cgrid g4">
+    <div class="csub">משקל והרכב הגוף</div>
+    <div class="cgrid ${cmpBodyCols}">
       <div class="ccard">
         <div class="cl">משקל</div>
         <div class="crow">
@@ -2834,6 +2964,24 @@ ${dateBarCmp}
         </div>
         <div class="cinterp">${iSmm}</div>
       </div>
+      ${hasSmiCmp ? `<div class="ccard">
+        <div class="cl">מדד מסת שריר (SMI)</div>
+        <div class="crow">
+          <div class="cside"><div class="ct">${fromShort}</div><div class="cv s">${n(D.smiS,2)}<span class="ex">ק״ג/מ²</span></div></div>
+          ${mkChip(D.smiS, D.smiE, 'up', 'ק״ג/מ²', 2)}
+          <div class="cside"><div class="ct">${toShort}</div><div class="cv e">${n(D.smiE,2)}<span class="ex">ק״ג/מ²</span></div></div>
+        </div>
+        <div class="cinterp">${mkInterp(D.smiS, D.smiE, 'up', { up:'עלייה במדד מסת השריר ביחס לגובה', down:'ירידה במדד מסת השריר ביחס לגובה', flat:'מדד מסת השריר נשמר' })}</div>
+      </div>` : ''}
+      ${hasAsmmCmp ? `<div class="ccard">
+        <div class="cl">מסת שרירים בגפיים ביחס למשקל (ASMM)</div>
+        <div class="crow">
+          <div class="cside"><div class="ct">${fromShort}</div><div class="cv s">${n(asmmPctS,1)}<span class="ex">% מהמשקל</span></div></div>
+          ${mkChip(asmmPctS, asmmPctE, 'up', '%', 1)}
+          <div class="cside"><div class="ct">${toShort}</div><div class="cv e">${n(asmmPctE,1)}<span class="ex">% מהמשקל</span></div></div>
+        </div>
+        <div class="cinterp">${mkInterp(asmmPctS, asmmPctE, 'up', { up:'עלייה בחלק של שרירי הגפיים מתוך המשקל', down:'ירידה בחלק של שרירי הגפיים מתוך המשקל', flat:'החלק של שרירי הגפיים נשמר' })}</div>
+      </div>` : ''}
     </div>
   </div>
   <div>
@@ -2842,9 +2990,9 @@ ${dateBarCmp}
       <div class="ccard">
         <div class="cl">BMI</div>
         <div class="crow">
-          <div class="cside"><div class="ct">${fromShort}</div><div class="cv s">${n(bmiS,1)}</div></div>
+          <div class="cside"><div class="ct">${fromShort}</div><div class="cv s">${n(bmiS,1)}<span class="ex">ק״ג/מ²</span></div></div>
           ${cBmi}
-          <div class="cside"><div class="ct">${toShort}</div><div class="cv e">${n(bmiE,1)}</div></div>
+          <div class="cside"><div class="ct">${toShort}</div><div class="cv e">${n(bmiE,1)}<span class="ex">ק״ג/מ²</span></div></div>
         </div>
         <div class="cinterp">${iBmi}</div>
       </div>
@@ -2879,7 +3027,7 @@ ${dateBarCmp}
   </div>
   <div>
     <div class="csub">בדיקות תפקודיות</div>
-    <div class="cgrid g4">
+    <div class="cgrid g5">
       <div class="ccard">
         <div class="cl">כוח לפיתה, יד ימין</div>
         <div class="crow">
@@ -2927,13 +3075,11 @@ ${dateBarCmp}
       </div>
     </div>
   </div>
-  <div class="summary" style="padding:13px 18px; font-size:12.5px;">
-    <b>המגמה הכללית:</b> ${D.wtE < D.wtS ? 'ירידה במשקל' : 'שינוי במשקל'}, ${D.fmE < D.fmS ? 'ירידה בשומן' : 'שינוי בשומן'}, ${D.smmE >= D.smmS ? 'תוך שמירה/עלייה במסת השריר' : 'ושינוי במסת השריר'}
-  </div>
   <div class="next">
+    <div class="trend"><b>המגמה הכללית:</b> ${D.wtE < D.wtS ? 'ירידה במשקל' : 'שינוי במשקל'}, ${D.fmE < D.fmS ? 'ירידה בשומן' : 'שינוי בשומן'}, ${D.smmE >= D.smmS ? 'תוך שמירה/עלייה במסת השריר' : 'ושינוי במסת השריר'}</div>
     <div class="next-h">להמשך הדרך</div>
     ${nextSteps.map((s, i) => `<div class="next-i"><span class="next-n">${i + 1}</span><div><b>${s[0]}</b> ${s[1]}</div></div>`).join('')}
-    <div class="next-f">ההמלצות כאן כלליות ומבוססות על תוצאות הבדיקות במחקר. הן אינן מחליפות ייעוץ רפואי או תזונתי אישי</div>
+    <div class="next-f">ההמלצות כאן כלליות ומבוססות על תוצאות הבדיקות במחקר. הן אינן מחליפות ייעוץ רפואי או תזונתי אישי.</div>
   </div>
   <div class="contact">
     <div class="ct-h">נשמח לעמוד לרשותך בכל שאלה</div>
@@ -2988,7 +3134,7 @@ ${dateBarCmp}
     sRow('מסת שריר (SMM)', `${n(D.smmE,1)} ק״ג`, '', ''),
     sRow('מסה נטולת שומן (FFM)', `${n(ffmE,1)} ק״ג`, '', ''),
     ...(D.smiE > 0 ? [sRow('מדד מסת שריר (SMI)', `${n(D.smiE,1)} ק״ג/מ²`, `מעל ${n(smiMin,1)}`, tSmi)] : []),
-    ...(asmmPctE !== null ? [sRow('מסה רזה בגפיים (ASMM)', `${n(asmmPctE,1)}% ממשקל הגוף`, `מעל ${n(asmmMin,1)}%`, tagGte(asmmPctE, asmmMin))] : []),
+    ...(asmmPctE !== null ? [sRow('מסת שרירים בגפיים ביחס למשקל (ASMM)', `${n(asmmPctE,1)}% ממשקל הגוף`, `מעל ${n(asmmMin,1)}%`, tAsmm)] : []),
     ...(D.tbwE > 0 ? [sRow('סך נוזלי הגוף (TBW)', `${n(D.tbwE,1)} ליטר`, '', '')] : []),
     ...(hasFluidSplit ? [sRow('יחס נוזלים חוץ-תאיים (ECW/TBW)', n(ecwTbwE,3), '<span dir="ltr">0.360-0.390</span>', tagOk(ecwTbwE, 0.360, 0.390))] : [])
   ]);
@@ -3007,7 +3153,7 @@ ${dateBarCmp}
 
   const secFunc = sTable('בדיקות תפקודיות', [
     sRow('כוח לפיתה (היד החזקה)', `${n(hgMaxE,1)} ק״ג`, `<span dir="ltr">&#8805;${sex === 'm' ? 27 : 16}</span> ק״ג`, tHg),
-    sRow('תפקוד גופני (SPPB)', `${D.sppbE} מתוך 12`, `<span dir="ltr">&#8805;${NORMS.sppb.ok}</span> · ממוצע לגיל ${sppbNorm.age}: ${n(sppbNorm.mean,1)}`, tSppb),
+    sRow('תפקוד גופני (SPPB)', `${D.sppbE} מתוך 12`, `<span dir="ltr">&#8805;${NORMS.sppb.ok}</span> · ממוצע באוכלוסייה לגיל ${sppbNorm.age}: ${n(sppbNorm.mean,1)}`, tSppb),
     sRow('קימה מכיסא (30 שניות)', `${D.stsE} חזרות`, `${stsCrit.min} ומעלה (גיל <span dir="ltr">${stsCrit.band}</span>)`, tSts),
     sRow('מבחן הליכה 2 דקות', `${D.walkE} מטר`, `<span dir="ltr">${n(walkExp.lo,0)}-${n(walkExp.hi,0)}</span> מ׳${walkPred !== null ? ` · צפי אישי: ~${n(walkPred,0)} מ׳` : ''}`, tWalk)
   ]);
@@ -3020,7 +3166,7 @@ ${dateBarCmp}
   <div class="head-badge">מחקר PRIME</div>
 </div>
 ${dateBarEnd}
-<div class="lead">בטבלאות שלהלן מרוכזות כל התוצאות שלך מ<b>מדידת ${measureHe}</b>, לצד <b>הטווח התקין</b> לגילך ולמינך. הסימון <span class="tag ok">בטווח תקין</span> מציין מדד שנמצא בטווח המומלץ, והסימון <span class="tag warn">לשיפור</span> מציין מדד שכדאי לשים אליו לב</div>
+<div class="lead">בטבלאות שלהלן מרוכזות כל התוצאות שלך מ<b>מדידת ${measureHe}</b>, לצד <b>הטווח התקין</b> לגילך ולמינך. הסימון <span class="tag ok">בטווח תקין</span> מציין מדד שנמצא בטווח המומלץ, והסימון <span class="tag warn">לשיפור</span> מציין מדד שכדאי לשים אליו לב.</div>
 <div class="cbody">
   <div class="stbl-wrap">${secMetab}${secBody}${secUrine}${secAnthro}${secFunc}</div>
   <div class="contact">

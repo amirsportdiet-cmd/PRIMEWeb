@@ -796,16 +796,6 @@ input:focus, select:focus { outline:none; border-color:#0d9488; box-shadow:0 0 0
             <input type="number" class="field-active-input" data-field="f-prot" data-side="s" data-ph-s="לדוגמה: 78" data-ph-m="לדוגמה: 78" data-ph-e="לדוגמה: 78" placeholder="לדוגמה: 78" min="0" max="400" step="0.01" inputmode="decimal" oninput="storeVal(this)">
             <input type="hidden" id="f-prot-s"><input type="hidden" id="f-prot-m"><input type="hidden" id="f-prot-e">
           </div>
-          <div class="field-card">
-            <div class="field-label">מאזן חנקן (גרם ליום) <span class="opt">רשות</span></div>
-            <div class="field-tab-row">
-              <button type="button" class="field-tab start active" data-side="s" onclick="switchTab(this,'f-nbal','s')">התחלה</button>
-              <button type="button" class="field-tab mid" data-side="m" onclick="switchTab(this,'f-nbal','m')">אמצע</button>
-              <button type="button" class="field-tab end" data-side="e" onclick="switchTab(this,'f-nbal','e')">סוף</button>
-            </div>
-            <input type="number" class="field-active-input" data-field="f-nbal" data-side="s" data-ph-s="לדוגמה: -3.8" data-ph-m="לדוגמה: -3.8" data-ph-e="לדוגמה: -3.8" placeholder="לדוגמה: -3.8" min="-60" max="60" step="0.01" inputmode="decimal" oninput="storeVal(this)">
-            <input type="hidden" id="f-nbal-s"><input type="hidden" id="f-nbal-m"><input type="hidden" id="f-nbal-e">
-          </div>
         </div>
       </div>
     </div>
@@ -1627,6 +1617,46 @@ const RC_MAP = {
    ✅ אומת מול אמיר רובין: 1 = התערבות, 2 = ביקורת. */
 const RC_ARM = { '1': 'intervention', '2': 'control' };
 
+/* איתור ההקצאה בקובץ, בצורה סבלנית.
+   שלוש הרחבות מול הגרסה הקודמת, וכולן גיבוי בלבד - ייצוא raw רגיל נקרא בדיוק כמו קודם:
+   1. שם העמודה: קודם arm_allocation המדויקת, ואם אינה קיימת גם עמודה שכתוב בה
+      "הקצאה לקבוצה" (כך נראית הכותרת בייצוא עם תוויות).
+   2. הערך: גם קוד (1/2) וגם התווית המלאה ("התערבות"/"ביקורת").
+   3. המקום: קודם t0 ואז המסך, שבהם ההקצאה אמורה להיות רשומה, ואחר כך כל אירוע אחר -
+      מספיק שהיא נרשמה במקום אחד כדי שהקבוצה תזוהה. */
+function rcArmCols(H){
+  const cols = Object.keys(H);
+  const exact = cols.filter((c) => c === 'arm_allocation');
+  if(exact.length) return exact;
+  return cols.filter((c) => /arm_allocation/i.test(c)
+    || (c.indexOf('הקצא') >= 0 && (c.indexOf('קבוצ') >= 0 || c.indexOf('זרוע') >= 0)));
+}
+function rcArmValue(v){
+  const t = String(v == null ? '' : v).trim();
+  if(!t) return '';
+  if(Object.prototype.hasOwnProperty.call(RC_ARM, t)) return RC_ARM[t];
+  if(/התערב|intervention|treat/i.test(t)) return 'intervention';
+  if(/ביקורת|בקרה|control|placebo/i.test(t)) return 'control';
+  return '';
+}
+function rcArm(rec, H){
+  if(!rec || !H) return '';
+  const cols = rcArmCols(H);
+  if(!cols.length) return '';
+  const first = ['t0_arm_1', 'screening_arm_1'];
+  const order = first.concat(Object.keys(rec).filter((ev) => first.indexOf(ev) < 0));
+  for(const ev of order){
+    const row = rec[ev];
+    if(!row) continue;
+    for(const c of cols){
+      if(H[c] == null) continue;
+      const g = rcArmValue(row[H[c]]);
+      if(g) return g;
+    }
+  }
+  return '';
+}
+
 /* עמודות חלופיות. שני מקרים שונים:
    1. היקף שוק — ב-REDCap יש עמודה לשוק ימין ועמודה לשוק שמאל, והמודד בוחר צד
       (side_calf_anthro). מי שנמדד בשמאל משאיר את עמודת ימין ריקה, ולכן צריך
@@ -1637,8 +1667,7 @@ const RC_ARM = { '1': 'intervention', '2': 'control' };
    (הסיומת _t0 מול _t6). אין מדידה כזו באמצע המחקר, ולכן m ריק.
    הערכים כבר מחושבים ב-REDCap ואנחנו רק קוראים אותם. */
 const RC_PER_SIDE = {
-  prot: { s:'protein_intake_t0', m:'', e:'protein_intake_t6' },
-  nbal: { s:'nitrogenb_t0',      m:'', e:'nitrogenb_t6' }
+  prot: { s:'protein_intake_t0', m:'', e:'protein_intake_t6' }
 };
 
 const RC_ALT = {
@@ -1707,7 +1736,14 @@ function rcParse(text){
   const header = rows[0].map(h => h.trim());
   const H = {}; header.forEach((h,i) => H[h] = i);
   if(H['record_id'] == null || H['redcap_event_name'] == null){
-    status.textContent = 'לא נמצאו העמודות record_id / redcap_event_name — ודא שייצאת CSV raw data.'; return;
+    /* הטעות הנפוצה: ייצוא "labels" במקום "raw data". שם כל הכותרות מוחלפות
+       בטקסט השאלה, ולכן אי אפשר לקרוא אותו. מזהים את זה ואומרים במפורש מה לעשות. */
+    const labelsLike = H['Record ID'] != null || H['Event Name'] != null;
+    status.innerHTML = labelsLike
+      ? 'זה נראה ייצוא <b>עם תוויות</b> (labels), שבו שמות העמודות הוחלפו בטקסט השאלות.<br>'
+        + 'ב-REDCap: Data Exports → All data → CSV / Microsoft Excel (<b>raw data</b>), ובלי לסמן שאלון בודד.'
+      : 'לא נמצאו העמודות record_id / redcap_event_name — ודא שייצאת CSV raw data של כל הנתונים.';
+    return;
   }
   RC_HEADER = H;
   const byId = {};
@@ -1801,9 +1837,9 @@ window.rcLoadParticipant = (id) => {
   document.getElementById('f-height').value = height;
   const sx = cell(scr,'cand_sex');
   if(sx === '1') setSex('m'); else if(sx === '2') setSex('f');
-  // קבוצת מחקר — arm_allocation נרשם באירוע t0. אם חסר, משאירים ריק לבחירה ידנית.
-  const arm = cell(t0,'arm_allocation') || cell(scr,'arm_allocation');
-  const grp = RC_ARM[arm];
+  /* קבוצת מחקר — נקראת דרך rcArm, שמחפש את ההקצאה בכל האירועים ובכל
+     צורות הרישום. אם באמת אין הקצאה בקובץ, משאירים ריק לבחירה ידנית. */
+  const grp = rcArm(rec, H);
   if(grp) setGroup(grp); else clearGroup();
   rcSyncVisible();
   const code = document.getElementById('f-code').value;
@@ -2169,7 +2205,6 @@ window.generateReport = () => {
     walkS: gS('walk'), walkE: gE('walk'),
     // איסוף שתן 24 שעות
     protS: gS('prot'), protE: gE('prot'),
-    nbalS: gS('nbal'), nbalE: gE('nbal'),
   };
 
   // שמות נקודות הזמן שהדו״ח הזה מציג, לשימוש בכל הכותרות והמשפטים
@@ -2191,20 +2226,18 @@ window.generateReport = () => {
   /* נתוני הנוזלים אינם קיימים בכל ייצוא של REDCap ואינם שדה חובה.
      לכן מבדילים בין שלושה מצבים: פירוק מלא, סך נוזלים בלבד, ואין נתון כלל. */
   const ecwTbwE = D.ecwE / D.tbwE;
-  /* צריכת חלבון ומאזן חנקן מאיסוף שתן של 24 שעות.
+  /* צריכת חלבון מאיסוף שתן של 24 שעות.
      האיסוף נעשה בכניסה למחקר ובסיומו בלבד, ולא באמצע. לכן בדו״ח שמשווה
      התחלה מול אמצע הערך קיים רק בצד ההתחלה, ואם נציג רק את הנקודה המוצגת
      הוא ייעלם בלי סיבה. במקרה כזה לוקחים אותו מנקודת ההשוואה ואומרים במפורש
-     מאיזו מדידה הוא. מאזן חנקן יכול להיות שלילי, ולכן נבדק "הוזן ערך" ולא "גדול מאפס". */
+     מאיזו מדידה הוא. (מאזן חנקן הוסר לפי בקשת אמיר, 24.9.) */
   const urRaw  = (key, sd) => sd ? String(((document.getElementById('f-' + key + '-' + sd) || {}).value) || '').trim() : '';
   const urNum  = (key, sd) => { const v = urRaw(key, sd); return v === '' ? null : (+v || 0); };
-  const urAny  = (sd) => sd && (urRaw('prot', sd) !== '' || urRaw('nbal', sd) !== '');
+  const urAny  = (sd) => sd && urRaw('prot', sd) !== '';
   const urSide = urAny(TO) ? TO : (urAny(FROM) ? FROM : null);
   const protV  = urSide ? urNum('prot', urSide) : null;
-  const nbalV  = urSide ? urNum('nbal', urSide) : null;
   const hasProt = protV !== null && protV > 0;
-  const hasNbal = nbalV !== null;
-  const hasUrine = hasProt || hasNbal;
+  const hasUrine = hasProt;
   // משקל מאותה נקודת זמן שבה נאסף השתן, אחרת היחס לק״ג אינו נכון
   const urWt = urSide ? (+((document.getElementById('f-wt-' + urSide) || {}).value) || 0) : 0;
   const protPerKg = (hasProt && urWt > 0) ? protV / urWt : null;
@@ -2677,13 +2710,8 @@ ${dateBarEnd}
       <div class="lb-s">${protPerKg !== null ? `<b>${n(protPerKg,2)}</b> גרם לכל ק״ג משקל גוף` : ''}${
         (protPrev !== null && protPrev > 0) ? ` · ב${sideB(FROM)}: ${n(protPrev,0)} גרם ליום` : ''}</div>
     </div>` : ''}
-    ${hasNbal ? `<div class="lb-item">
-      <div class="lb-l">מאזן חנקן</div>
-      <div class="lb-v"><span dir="ltr">${nbalV > 0 ? '+' : ''}${n(nbalV,1)}</span> <small>גרם ליום</small></div>
-      <div class="lb-s">מאזן חיובי מעיד שהגוף בונה יותר חלבון ממה שהוא מפרק, ומאזן שלילי שההפך. בתקופה של ירידה במשקל מאזן שלילי קל הוא שכיח.</div>
-    </div>` : ''}
   </div>
-  <div class="ref" style="margin-top:4px;">* הערכים מוערכים מ<b>איסוף שתן של 24 שעות</b> שנאסף ב${sideB(urSide)}, ולכן הם תלויים בשלמות האיסוף: איסוף חלקי מוריד את שני הערכים. איסוף השתן נעשה בכניסה למחקר ובסיומו בלבד.</div>` : ''}
+  <div class="ref" style="margin-top:4px;">* הערכים מוערכים מ<b>איסוף שתן של 24 שעות</b> שנאסף ב${sideB(urSide)}, ולכן הוא תלוי בשלמות האיסוף: איסוף חלקי מוריד את הערך. איסוף השתן נעשה בכניסה למחקר ובסיומו בלבד.</div>` : ''}
   <div class="ref" style="margin-top:4px;">* ${ONE ? 'הערכים מבוססים על' : 'החישוב מבוסס על'} FFM (מסה נטולת שומן) ממכשיר ה-InBody.</div>
 </div>
 <div class="foot"><span>קוד: ${D.code} · גיל ${age} · ${sex==='m'?'זכר':'נקבה'}</span><span>מחקר PRIME</span></div>
@@ -3139,10 +3167,9 @@ ${dateBarCmp}
     ...(hasFluidSplit ? [sRow('יחס נוזלים חוץ-תאיים (ECW/TBW)', n(ecwTbwE,3), '<span dir="ltr">0.360-0.390</span>', tagOk(ecwTbwE, 0.360, 0.390))] : [])
   ]);
 
-  const secUrine = sTable('צריכת חלבון ומאזן חנקן · איסוף שתן 24 שעות ב' + (urSide ? sideB(urSide) : ''), [
+  const secUrine = sTable('צריכת חלבון · איסוף שתן 24 שעות ב' + (urSide ? sideB(urSide) : ''), [
     ...(hasProt ? [sRow('צריכת חלבון מוערכת', `${n(protV,0)} גרם ליום`,
-                        protPerKg !== null ? `${n(protPerKg,2)} גרם לק״ג משקל גוף` : '', '')] : []),
-    ...(hasNbal ? [sRow('מאזן חנקן', `<span dir="ltr">${nbalV > 0 ? '+' : ''}${n(nbalV,1)}</span> גרם ליום`, '', '')] : [])
+                        protPerKg !== null ? `${n(protPerKg,2)} גרם לק״ג משקל גוף` : '', '')] : [])
   ]);
 
   const secAnthro = sTable('מדידות גוף והיקפים', [

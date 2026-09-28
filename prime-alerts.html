@@ -296,7 +296,19 @@ window.applyCloud = (d) => {
     if (Array.isArray(s.roster)) { roster = s.roster; save(LS_ROSTER, roster); }
     if (Array.isArray(s.manual)) { manual = s.manual; save(LS_MANUAL, manual); }
     if (s.fills && typeof s.fills === 'object') { fills = s.fills; save(LS_FILLS, fills); }
-    if (s.out && typeof s.out === 'object') { out = s.out; save(LS_OUT, out); }
+    if (s.out && typeof s.out === 'object') {
+      /* פעם אחת: מה שהוצא ידנית בדפדפן הזה לפני שהרשימה נשמרה בענן - מצטרף לענן ולא נמחק */
+      let added = false;
+      if (!localStorage.getItem('prime_out_merged_v1')) {
+        const local = load(LS_OUT, {});
+        for (const k in local) if (!s.out[k]) { s.out[k] = local[k]; added = true; }
+        localStorage.setItem('prime_out_merged_v1', '1');
+      }
+      out = s.out; save(LS_OUT, out);
+      if (added) sync();
+    } else if (Object.keys(out).length) {
+      sync();   // בענן עוד אין רשימה - מעלים את מה שיש כאן
+    }
   }
   if (Array.isArray(d.alerts)) {
     alerts = d.alerts.sort((a, b) => (a.at < b.at ? 1 : -1));
@@ -389,6 +401,8 @@ window.onCsv = (ev) => {
           group: RC_ARM[arm] || '',
           code: pick(rs, 'code_participant')
         };
+        // יצא מהמחקר לפי REDCap - נשמר גם על הנחקר עצמו, כדי שכל מי שקורא את הרשימה יראה
+        if (hasW && anyIs1(rs, 'withdraw_study')) rec.withdrawn = true;
         if (!rec.phone && fills[id]) rec.phone = fills[id];   // השלמה ידנית קודמת
         if (!rec.phone) noPhone++;
         // סימון אוטומטי מהקובץ: מי שסומן ב-REDCap כיוצא מהמחקר יוצא גם כאן מהמעקב
@@ -1117,8 +1131,10 @@ window.cloudSaveState = () => {
     try {
       badge('שומר…', 'saving');
       const s = window.getState();
+      /* 28.9: גם רשימת מי שהוצא מהמעקב. עד עכשיו היא נשמרה רק בדפדפן, ולכן בדיקת השתיקה
+         בענן (primeSilenceWatch) ומחשבים אחרים לא ראו אותה - מי שיצא מהמחקר המשיך להופיע. */
       await setDoc(CLOUD_DOC, { _doc: 'state', roster: s.roster, manual: s.manual,
-        fills: s.fills, updatedAt: serverTimestamp(), updatedBy: window.currentUser() });
+        fills: s.fills, out: s.out || {}, updatedAt: serverTimestamp(), updatedBy: window.currentUser() });
       badge('☁ מגובה', 'ok');
     } catch (e) { badge('⚠ הגיבוי נכשל', 'bad', String(e)); }
   }, 700);
@@ -1154,7 +1170,7 @@ window.cloudSnapshot = async (state) => {
   await setDoc(doc(db, 'primeAlerts', id), {
     _doc: 'snapshot', date: new Date().toISOString(),
     roster: state.roster || [], manual: state.manual || [],
-    fills: state.fills || {}, alerts: state.alerts || [],
+    fills: state.fills || {}, out: state.out || {}, alerts: state.alerts || [],
     by: window.currentUser()
   });
 };
@@ -1185,7 +1201,7 @@ window.cloudRestore = async (d) => {
   await Promise.all((d.alerts || []).map(a =>
     setDoc(alertDoc(a.id), { _doc: 'alert', ...a, updatedAt: serverTimestamp(), updatedBy: window.currentUser() })));
   await setDoc(CLOUD_DOC, { _doc: 'state', roster: d.roster || [], manual: d.manual || [],
-    fills: d.fills || {}, updatedAt: serverTimestamp(), updatedBy: window.currentUser() });
+    fills: d.fills || {}, out: d.out || {}, updatedAt: serverTimestamp(), updatedBy: window.currentUser() });
 };
 
 /** מאזין חי: כל שינוי שאחד עושה מופיע אצל השני תוך שנייה */

@@ -6,7 +6,7 @@
  * היא יוצרת את תיקיית הקבצים, מתקינה את טריגר התזמון, ומדפיסה את הקישור לתיקייה.
  */
 
-const CODE_VERSION = 'v19-auto-full';
+const CODE_VERSION = 'v20-calendar-sync';
 const SECRET = 'lgGnSJZnAsfIs4W822y0k7F6';
 const SENDER_NAME = 'מחקר PRIME';
 const FOLDER_NAME = 'PRIME Mailer Files';
@@ -618,9 +618,20 @@ function checkScheduled() {
     }
     /* הפגישה הוזזה מאז התזמון הידני? לא שולחים תאריך שגוי — מבטלים, והאוטומט
        שולח את המעודכן (הוא סורק את היומן כל רבע שעה) */
+    /* v20 (29.9.2026, אמיר: "אם עושים שינויים למישהו, זה תמיד יתעדכן... גם אם מוחקים אותו
+       - שהתזמון יימחק"). תזמון ידני נבדק מול היומן ממש לפני שהוא יוצא:
+       - כל הזזה (גם שעה באותו יום) - מבוטל, והאוטומט שולח מייל עם המועד הנכון;
+       - הפגישה כבר לא ביומן (נמחקה/בוטלה) - לא נשלח, ומסומן כשגיאה כדי שתגיע התראה;
+       - שם משובש (למשל "חנה הכרמיInvitee Email: <a href=...") מנוקה לפני ההשוואה. */
     if (d && d.name && d.researchAt && !d.auto) {
-      var cur = eventStartForName_(d.name);
-      if (cur && Math.abs(cur.getTime() - new Date(d.researchAt).getTime()) > 36 * 3600 * 1000) {
+      var cleanName = String(d.name).split(/Invitee|<|@|\|/)[0].trim();
+      var cur = eventStartForName_(cleanName);
+      if (!cur) {
+        sh.getRange(i + 1, 3).setValue('error: הפגישה של ' + cleanName + ' לא נמצאת ביומן (נמחקה?) — לא נשלח');
+        out.errors++;
+        continue;
+      }
+      if (Math.abs(cur.getTime() - new Date(d.researchAt).getTime()) > 30 * 60 * 1000) {
         sh.getRange(i + 1, 3).setValue('בוטל אוטומטית ' + new Date().toISOString() + ' (הפגישה הוזזה - תישלח תזכורת מעודכנת)');
         continue;
       }

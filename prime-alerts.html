@@ -403,7 +403,7 @@ window.onCsv = (ev) => {
         };
         // יצא מהמחקר לפי REDCap - נשמר גם על הנחקר עצמו, כדי שכל מי שקורא את הרשימה יראה
         if (hasW && anyIs1(rs, 'withdraw_study')) rec.withdrawn = true;
-        if (!rec.phone && fills[id]) rec.phone = fills[id];   // השלמה ידנית קודמת
+        if (fills[id] && String(rec.phone || '').replace(/\D/g, '').length < 10) rec.phone = fills[id];   // השלמה ידנית קודמת (גם כשב-REDCap המספר קצוץ)
         if (!rec.phone) noPhone++;
         // סימון אוטומטי מהקובץ: מי שסומן ב-REDCap כיוצא מהמחקר יוצא גם כאן מהמעקב
         if (hasW && anyIs1(rs, 'withdraw_study')) {
@@ -460,7 +460,8 @@ const activeRoster = () => roster.filter(r => !isOut(r));
 function outPhones() {
   const set = new Set();
   Object.keys(out).forEach(id => {
-    const p = normPhone(out[id].phone || (roster.find(r => r.id === id) || {}).phone || fills[id] || '');
+    const full = (v) => (String(v || '').replace(/\D/g, '').length >= 10 ? v : '');
+    const p = normPhone(fills[id] || full(out[id].phone) || (roster.find(r => r.id === id) || {}).phone || out[id].phone || '');
     if (p) set.add(p);
   });
   return set;

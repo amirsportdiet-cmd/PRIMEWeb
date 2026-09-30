@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The PRIME Study | Protein, Resistance Training and Incretin Medications</title>
+    <meta name="description" content="The PRIME Study: a multicenter randomized clinical trial testing whether protein supplementation and resistance training preserve lean body mass during incretin-based obesity treatment.">
+    <!-- Unlisted on purpose: reached only through GLPEAN, never linked from the Hebrew site. -->
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --primary: #1a3a5c;
+            --primary-light: #2a5580;
+            --primary-dark: #0a1628;
+            --accent: #d4af55;
+            --accent-light: #e8c96a;
+            --bg-light: #f5f6f8;
+            --bg-white: #ffffff;
+            --text-dark: #1a1a1a;
+            --text-body: #3a3a3a;
+            --text-muted: #6b6b6b;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 20px rgba(0,0,0,0.1);
+            --shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
+            --radius: 16px;
+            --radius-sm: 10px;
+            --red-muted: #c0392b;
+            --green-muted: #27ae60;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Heebo', sans-serif;
+            background: var(--bg-light);
+            color: var(--text-body);
+            line-height: 1.7;
+            font-size: 17px;
+        }
+
+        /* ===== NAVBAR ===== */
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+            transition: box-shadow 0.3s;
+        }
+        .navbar.scrolled { box-shadow: var(--shadow-sm); }
+        .navbar-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 70px;
+        }
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--primary);
+            font-weight: 800;
+            font-size: 22px;
+        }
+        .nav-logo img { height: 50px; width: auto; object-fit: contain; border-radius: 6px; }
+        .nav-links { display: flex; gap: 32px; list-style: none; }
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-body);
+            font-weight: 500;
+            font-size: 15px;
+            transition: color 0.2s;
+            position: relative;
+        }
+        .nav-links a:hover { color: var(--primary); }
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--primary);
+            transition: width 0.3s;
+        }
+        .nav-links a:hover::after { width: 100%; }
+
+        .mobile-toggle {
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+        }
+        .mobile-toggle span {
+            display: block;
+            width: 24px;
+            height: 2px;
+            background: var(--text-dark);
+            margin: 6px 0;
+            transition: 0.3s;
+        }
+
+        /* ===== HERO ===== */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(160deg, #0a1628 0%, #132744 30%, #1a3a5c 60%, #0f2b4a 100%);
+            color: white;
+            text-align: center;
+            padding: 120px 24px 80px;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 25% 75%, rgba(212,175,85,0.12) 0%, transparent 45%),
+                        radial-gradient(circle at 75% 25%, rgba(212,175,85,0.08) 0%, transparent 40%),
+                        radial-gradient(circle at 50% 50%, rgba(255,255,255,0.03) 0%, transparent 60%);
+            animation: float 20s ease-in-out infinite;
+        }
+        .hero::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 120px;
+            background: linear-gradient(to top, var(--bg-light), transparent);
+            z-index: 1;
+        }
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(2deg); }
+            66% { transform: translate(-20px, 20px) rotate(-1deg); }
+        }
+        .hero-content { position: relative; z-index: 2; max-width: 800px; }
+        .hero-logo {
+            width: 220px;
+            height: auto;
+            object-fit: contain;
+            margin-bottom: 32px;
+            filter: drop-shadow(0 4px 20px rgba(212,175,85,0.3));
+            border-radius: 20px;
+            mix-blend-mode: lighten;
+        }
+        .hero h1 {
+            font-size: clamp(36px, 6vw, 56px);
+            font-weight: 900;
+            margin-bottom: 8px;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, #ffffff 0%, #d4af55 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero .subtitle {
+            font-size: clamp(16px, 2.5vw, 20px);
+            font-weight: 300;
+            opacity: 0.9;
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+        .hero .full-name {
+            font-size: 14px;
+            font-weight: 400;
+            opacity: 0.55;
+            margin-bottom: 40px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+        .hero-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(135deg, #d4af55 0%, #e8c96a 100%);
+            color: #0a1628;
+            padding: 16px 36px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 17px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 24px rgba(212,175,85,0.35);
+        }
+        .hero-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(212,175,85,0.5); }
+
+        .scroll-indicator {
+            position: absolute;
+            bottom: 32px;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: bounce 2s infinite;
+            opacity: 0.6;
+            z-index: 2;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(10px); }
+        }
+
+        /* ===== SECTIONS ===== */
+        section { padding: 100px 24px; }
+        .container { max-width: 1100px; margin: 0 auto; }
+        .section-header { text-align: center; margin-bottom: 60px; }
+        .section-header h2 {
+            font-size: clamp(28px, 4vw, 40px);
+            font-weight: 800;
+            color: var(--primary-dark);
+            margin-bottom: 16px;
+        }
+        .section-header p {
+            font-size: 18px;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* ===== ABOUT ===== */
+        .about-section { background: var(--bg-white); }
+        .about-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+        }
+        .about-text h3 {
+            font-size: 24px;
+            color: var(--primary);
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+        .about-text p { margin-bottom: 16px; color: var(--text-body); }
+        .about-image img {
+            width: 100%;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* ===== STATS ===== */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+            margin-top: 48px;
+        }
+        .stat-item {
+            text-align: center;
+            padding: 28px 16px;
+            background: var(--bg-light);
+            border-radius: var(--radius-sm);
+        }
+        .stat-number {
+            font-size: 36px;
+            font-weight: 800;
+            color: var(--primary);
+            display: block;
+        }
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* ===== PROBLEM / WHY ===== */
+        .why-section { background: var(--bg-light); }
+        .why-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 28px;
+        }
+        .why-card {
+            background: var(--bg-white);
+            border-radius: var(--radius);
+            padding: 36px 28px;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.3s, box-shadow 0.3s;
+            border-top: 4px solid var(--primary);
+            text-align: center;
+        }
+        .why-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+        .why-card .card-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-light);
+            border-radius: 50%;
+        }
+        .why-card .card-icon svg { width: 44px; height: 44px; }
+        .why-card .card-icon--image {
+            width: 100%;
+            height: auto;
+            aspect-ratio: 16/9;
+            border-radius: var(--radius-sm);
+            background: none;
+            overflow: hidden;
+        }
+        .why-card .card-icon--image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .why-card h3 {
+            font-size: 20px;
+            color: var(--primary-dark);
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+        .why-card p { font-size: 15px; color: var(--text-muted); line-height: 1.7; text-align: left; }
+
+        /* ===== STUDY DESIGN ===== */
+        .design-section { background: var(--bg-white); }
+        .design-groups {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+        }
+        .group-card {
+            padding: 36px 32px;
+            border-radius: var(--radius);
+            border: 2px solid;
+            transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .group-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            left: 0;
+            height: 5px;
+        }
+        .group-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        }
+        .group-card.control, .group-card.intervention {
+            border-color: #e0e0e0;
+            background: #fafafa;
+        }
+        .group-card.control::before, .group-card.intervention::before {
+            background: #e0e0e0;
+        }
+        .group-card.control:hover {
+            border-color: #9e9e9e;
+            background: #f5f5f5;
+        }
+        .group-card.control:hover::before {
+            background: linear-gradient(90deg, #757575, #9e9e9e);
+        }
+        .group-card.intervention:hover {
+            border-color: var(--primary);
+            background: linear-gradient(160deg, rgba(26,58,92,0.03), rgba(42,85,128,0.08));
+        }
+        .group-card.intervention:hover::before {
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+        }
+        .group-card h3 {
+            font-size: 22px;
+            margin-bottom: 20px;
+            font-weight: 800;
+        }
+        .group-card.control h3 { color: var(--text-body); }
+        .group-card.intervention h3 { color: var(--text-body); }
+        .group-card.intervention:hover h3 { color: var(--primary); }
+        .group-card .group-subtitle {
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(0,0,0,0.08);
+            color: var(--text-muted);
+        }
+        .group-card ul {
+            list-style: none;
+            padding: 0;
+        }
+        .group-card li {
+            padding: 10px 0;
+            padding-left: 30px;
+            position: relative;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+        .group-card li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 16px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        .group-card.control li::before { background: #bdbdbd; }
+        .group-card.intervention li::before { background: #bdbdbd; }
+        .group-card.control:hover li::before { background: #757575; }
+        .group-card.intervention:hover li::before { background: var(--primary); }
+        .group-footnote {
+            margin-top: 14px;
+            font-size: 13px;
+            color: var(--text-muted);
+            padding-top: 12px;
+            border-top: 1px dashed rgba(0,0,0,0.1);
+        }
+
+        /* ===== MEASUREMENTS ===== */
+        .measurements-section { background: var(--bg-light); }
+        .measurements-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+        }
+        .measure-card {
+            background: var(--bg-white);
+            border-radius: var(--radius-sm);
+            padding: 28px;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+        .measure-card .measure-icon {
+            flex-shrink: 0;
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 22px;
+        }
+        .measure-card .measure-icon--img {
+            background: none;
+            overflow: hidden;
+            padding: 0;
+            width: 56px;
+            height: 56px;
+            border-radius: 10px;
+        }
+        .measure-card .measure-icon--img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .measure-card h4 {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 6px;
+        }
+        .measure-card p {
+            font-size: 14px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+        .measure-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .measure-list li {
+            font-size: 14px;
+            color: var(--text-muted);
+            line-height: 1.6;
+            padding-left: 16px;
+            position: relative;
+        }
+        .measure-list li::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        /* ===== CRITERIA ===== */
+        .criteria-section { background: var(--bg-white); }
+        .criteria-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+        }
+        .criteria-box {
+            border-radius: var(--radius);
+            padding: 32px;
+        }
+        .criteria-box.inclusion {
+            background: rgba(39,174,96,0.06);
+            border: 2px solid rgba(39,174,96,0.2);
+        }
+        .criteria-box.exclusion {
+            background: rgba(192,57,43,0.04);
+            border: 2px solid rgba(192,57,43,0.15);
+        }
+        .criteria-box h3 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .criteria-box.inclusion h3 { color: var(--green-muted); }
+        .criteria-box.exclusion h3 { color: var(--red-muted); }
+        .criteria-box ul {
+            list-style: none;
+            padding: 0;
+        }
+        .criteria-box li {
+            padding: 8px 0;
+            padding-left: 28px;
+            position: relative;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+        .criteria-box li::before {
+            position: absolute;
+            left: 0;
+            top: 10px;
+            font-size: 16px;
+        }
+        .criteria-box.inclusion li::before { content: '\2705'; }
+        .criteria-box.exclusion li::before { content: '\274C'; }
+
+        /* ===== TEAM ===== */
+        .team-section { background: var(--bg-light); }
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 28px;
+        }
+        .team-card {
+            background: var(--bg-white);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.3s, box-shadow 0.3s;
+            text-align: center;
+        }
+        .team-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+        .team-card--link {
+            display: block;
+            text-decoration: none;
+            color: inherit;
+            cursor: pointer;
+        }
+        .team-card--link:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+        .team-card--link .team-card-info h3 { color: var(--primary-dark); }
+        .team-card--link:hover .team-card-info h3 { color: var(--primary); }
+        .team-card img {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            object-position: top;
+        }
+        .team-card-info { padding: 20px 16px; }
+        .team-card-info h3 {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 4px;
+        }
+        .team-card-info p {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        /* ===== APPROVALS ===== */
+        .approvals-section { background: var(--bg-white); }
+        .approvals-list {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+        }
+        .approval-item {
+            padding: 28px;
+            background: var(--bg-light);
+            border-radius: var(--radius-sm);
+            text-align: center;
+        }
+        .approval-item .label {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        .approval-item .value {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary-dark);
+            word-break: break-all;
+        }
+        .approval-item--link {
+            text-decoration: none;
+            display: block;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .approval-item--link:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-md);
+            background: var(--bg-white);
+        }
+        .approval-item--link:hover .value {
+            color: var(--primary);
+        }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            background: #070e1a;
+            color: rgba(255,255,255,0.5);
+            text-align: center;
+            padding: 28px 24px;
+            font-size: 14px;
+        }
+        .footer a { color: var(--accent-light); text-decoration: none; }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 900px) {
+            .about-grid { grid-template-columns: 1fr; gap: 40px; }
+            .stats-bar { grid-template-columns: repeat(2, 1fr); }
+            .why-cards { grid-template-columns: 1fr; }
+            .team-grid { grid-template-columns: repeat(2, 1fr); }
+            .design-groups { grid-template-columns: 1fr; }
+            .measurements-grid { grid-template-columns: 1fr; }
+            .criteria-columns { grid-template-columns: 1fr; }
+            .approvals-list { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 650px) {
+            .nav-links { display: none; }
+            .nav-links.open {
+                display: flex;
+                flex-direction: column;
+                position: absolute;
+                top: 70px;
+                right: 0;
+                left: 0;
+                background: white;
+                padding: 24px;
+                gap: 20px;
+                box-shadow: var(--shadow-md);
+            }
+            .mobile-toggle { display: block; }
+            section { padding: 64px 16px; }
+            .hero { padding: 100px 16px 60px; }
+            .hero-logo { width: 150px; }
+            .stats-bar { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+            .stat-number { font-size: 28px; }
+            .measure-card { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar" id="navbar">
+    <div class="navbar-inner">
+        <a href="#" class="nav-logo">
+            <img src="../images/logo.jpg" alt="PRIME Logo">
+            <span>PRIME</span>
+        </a>
+        <ul class="nav-links" id="navLinks">
+            <li><a href="#about">About</a></li>
+            <li><a href="#why">Why It Matters</a></li>
+            <li><a href="#design">Study Design</a></li>
+            <li><a href="#measurements">Measurements</a></li>
+            <li><a href="#criteria">Eligibility</a></li>
+            <li><a href="#team">Research Team</a></li>
+        </ul>
+        <button class="mobile-toggle" id="mobileToggle" aria-label="Menu">
+            <span></span><span></span><span></span>
+        </button>
+    </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero" id="hero">
+    <div class="hero-content">
+        <img src="../images/logo.jpg" alt="PRIME Study Logo" class="hero-logo">
+        <h1>The PRIME Study</h1>
+        <p class="subtitle">A multicenter randomized clinical trial testing a novel approach to preserving lean body mass in patients treated with incretin-based obesity medications</p>
+        <p class="full-name">Protein, Resistance, Incretin Management Effect</p>
+        <a href="#about" class="hero-cta">
+            Read more about the study
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+        </a>
+    </div>
+    <div class="scroll-indicator">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+    </div>
+</section>
+
+<!-- About -->
+<section class="about-section" id="about">
+    <div class="container">
+        <div class="section-header">
+            <h2>About the Study</h2>
+            <p>A multicenter randomized clinical trial testing a novel approach to preserving lean body mass in patients treated with incretin-based obesity medications</p>
+        </div>
+        <div class="about-content" style="max-width:800px; margin:0 auto; text-align:center;">
+                <h3 style="font-size:24px; color:var(--primary); margin-bottom:20px; font-weight:700;">Background</h3>
+                <p style="margin-bottom:16px; color:var(--text-body);">
+                    New incretin-based medications (such as Wegovy and Mounjaro) produce impressive weight loss.
+                    There is a catch, however: according to published studies, <strong>25% to 40% of the total weight lost comes from lean body mass, and with it, a considerable loss of muscle mass</strong>.
+                </p>
+                <p style="margin-bottom:16px; color:var(--text-body);">
+                    Losing muscle mass can impair daily function, weaken the body,
+                    and raise the risk of a condition called <strong>sarcopenia</strong>:
+                    a progressive loss of muscle mass, strength and function, usually as part of aging, but also as a result of physical inactivity, inadequate nutrition or chronic disease.
+                </p>
+                <h3 style="font-size:24px; color:var(--primary); margin-bottom:20px; margin-top:32px; font-weight:700;">What are we testing?</h3>
+                <p style="margin-bottom:16px; color:var(--text-body);">
+                    Can a <strong>daily protein supplement</strong> (25 g per day)
+                    combined with <strong>resistance training</strong> (3 times a week)
+                    help preserve lean body mass, even while taking incretin-based obesity medications?
+                </p>
+                <p style="margin-bottom:16px; color:var(--text-body);">
+                    The study is conducted at <strong>Tel Aviv Sourasky Medical Center (Ichilov)</strong> and at <strong>Assuta Ramat HaHayal Medical Center</strong>.
+                </p>
+        </div>
+        <div class="stats-bar">
+            <div class="stat-item">
+                <span class="stat-number">240</span>
+                <span class="stat-label">Participants</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">6</span>
+                <span class="stat-label">Months of follow-up</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">2</span>
+                <span class="stat-label">Medical centers</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">45+</span>
+                <span class="stat-label">Participant age</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Why it matters -->
+<section class="why-section" id="why">
+    <div class="container">
+        <div class="section-header">
+            <h2>Why Does This Study Matter?</h2>
+            <p>The problem, and the solution we are testing</p>
+        </div>
+        <div class="why-cards">
+            <div class="why-card">
+                <div class="card-icon card-icon--image">
+                    <img src="../images/GLP-1.jpg" alt="GLP-1 medication">
+                </div>
+                <h3>New Drugs, a New Challenge</h3>
+                <p>
+                    The new incretin-based obesity medications are highly effective for weight loss and for improving related conditions, but part of the weight lost comes from lean body mass, and with it, from muscle mass.
+                </p>
+            </div>
+            <div class="why-card">
+                <div class="card-icon card-icon--image">
+                    <img src="../images/weight.jpg" alt="Weights for strength training">
+                </div>
+                <h3>Muscle = Health</h3>
+                <p>
+                    Muscle is essential for movement, stability, a healthy metabolism, and preventing falls and fractures, especially as we age.
+                </p>
+            </div>
+            <div class="why-card">
+                <div class="card-icon card-icon--image">
+                    <img src="../images/protein.jpg" alt="Protein powder">
+                </div>
+                <h3>A Science-Based Solution</h3>
+                <p>
+                    We are testing whether combining a protein supplement with resistance training can reduce the loss of lean body mass and support higher-quality weight loss.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Study Design -->
+<section class="design-section" id="design">
+    <div class="container">
+        <div class="section-header">
+            <h2>How Does the Study Work?</h2>
+            <p>240 participants are randomly assigned to one of two groups</p>
+        </div>
+        <div class="design-groups">
+            <div class="group-card control">
+                <h3>&#x1F539; Control Group</h3>
+                <ul>
+                    <li>Healthy eating recommendations</li>
+                </ul>
+            </div>
+            <div class="group-card intervention">
+                <h3>&#x1F7E2; Intervention Group</h3>
+                <ul>
+                    <li>Daily protein supplement: 25 g per day</li>
+                    <li>Resistance training 3 times a week (one session via Zoom with a trainer)</li>
+                    <li>Healthy eating recommendations</li>
+                </ul>
+            </div>
+        </div>
+        <p style="text-align:center; margin-top:24px; color:var(--text-muted); font-size:13px; font-style:italic;">* The study does not provide the medication and does not advise on medication-related matters</p>
+    </div>
+</section>
+
+<!-- Measurements -->
+<section class="measurements-section" id="measurements">
+    <div class="container">
+        <div class="section-header">
+            <h2>Measurements and Assessments</h2>
+            <p>A range of advanced measurements is carried out throughout the study to assess the effect of the intervention</p>
+        </div>
+        <div class="measurements-grid">
+            <div class="measure-card">
+                <div class="measure-icon measure-icon--img"><img src="../images/bodycomposition.jpg" alt="Body composition"></div>
+                <div>
+                    <h4>Body Composition</h4>
+                    <ul class="measure-list">
+                        <li>Body composition and bone density by DXA *</li>
+                        <li>Body composition by bioelectrical impedance (BIA) using InBody</li>
+                        <li>Ultrasound of the anterior thigh muscle (rectus femoris) *</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="measure-card">
+                <div class="measure-icon measure-icon--img"><img src="../images/scale.jpg" alt="Anthropometric measurements"></div>
+                <div>
+                    <h4>Anthropometric Measurements</h4>
+                    <ul class="measure-list">
+                        <li>Weight</li>
+                        <li>Height</li>
+                        <li>Circumferences (waist, calf)</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="measure-card">
+                <div class="measure-icon measure-icon--img"><img src="../images/walking.jpg" alt="Physical function"></div>
+                <div>
+                    <h4>Physical Function Tests</h4>
+                    <ul class="measure-list">
+                        <li>2-minute walk test</li>
+                        <li>Handgrip strength</li>
+                        <li>Short Physical Performance Battery (SPPB)</li>
+                        <li>30-second sit-to-stand test</li>
+                        <li>Wearable sensors for physical function and balance *</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="measure-card">
+                <div class="measure-icon measure-icon--img"><img src="../images/Question.jpg" alt="Dietary intake"></div>
+                <div>
+                    <h4>Diet and Behavior Questionnaires</h4>
+                    <ul class="measure-list">
+                        <li>3-day food diary</li>
+                        <li>Food frequency questionnaire (FFQ)</li>
+                        <li>Additional questionnaires</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="measure-card">
+                <div class="measure-icon measure-icon--img"><img src="../images/nitrogen.jpg" alt="Nitrogen and protein balance"></div>
+                <div>
+                    <h4>Nitrogen Balance</h4>
+                    <ul class="measure-list">
+                        <li>Urine collection to measure urinary nitrogen excretion</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="measure-card">
+                <div class="measure-icon measure-icon--img"><img src="../images/calorimetry.jpg" alt="Metabolism"></div>
+                <div>
+                    <h4>Metabolic Rate</h4>
+                    <p>Resting metabolic rate (RMR) measured by indirect calorimetry with the Q-NRG device</p>
+                </div>
+            </div>
+        </div>
+        <p style="margin-top:24px; font-size:13px; color:var(--text-muted); text-align:center;">* Performed at Tel Aviv Sourasky Medical Center (Ichilov) only</p>
+    </div>
+</section>
+
+<!-- Criteria -->
+<section class="criteria-section" id="criteria">
+    <div class="container">
+        <div class="section-header">
+            <h2>Eligibility Criteria</h2>
+            <p>Inclusion and exclusion criteria for the study</p>
+        </div>
+        <div class="criteria-columns">
+            <div class="criteria-box inclusion">
+                <h3>&#x2705; Inclusion Criteria</h3>
+                <ul>
+                    <li>Age 45 or older</li>
+                    <li>BMI &ge; 30, or BMI &ge; 27 kg/m&sup2; with at least one adiposity-related complication</li>
+                    <li>Able to read and speak Hebrew</li>
+                    <li>Starting treatment with Wegovy or Mounjaro</li>
+                </ul>
+            </div>
+            <div class="criteria-box exclusion">
+                <h3>&#x274C; Exclusion Criteria</h3>
+                <ul>
+                    <li>Contraindications to Mounjaro or Wegovy (e.g., trying to conceive, current pregnancy or breastfeeding)</li>
+                    <li>Treatment with insulin or sulfonylureas</li>
+                    <li>Uncontrolled psychiatric disorders</li>
+                    <li>Diagnosis of inflammatory bowel disease (IBD)</li>
+                    <li>Cognitive impairment</li>
+                    <li>Active bulimia nervosa</li>
+                    <li>Past metabolic bariatric surgery or endoscopic sleeve gastroplasty</li>
+                    <li>Use of obesity medications in the past month</li>
+                    <li>Active weight-loss treatment with a loss of &ge;5% of body weight in the past 3 months</li>
+                    <li>Implanted electronic device (e.g., pacemaker)</li>
+                    <li>Significant physical limitation that would prevent independent resistance training</li>
+                    <li>Resistance training more than once a week during the past 3 months</li>
+                    <li>Chronic kidney disease requiring dietary protein restriction</li>
+                    <li>Avoidance of milk-based protein supplements for any reason (e.g., milk allergy, vegan diet)</li>
+                    <li>Frequent use of protein supplements</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Team -->
+<section class="team-section" id="team">
+    <div class="container">
+        <div class="section-header">
+            <h2>The Research Team</h2>
+            <p>A multidisciplinary research team from leading medical and academic centers in Israel and Canada</p>
+        </div>
+        <div class="team-grid">
+            <a href="https://pniot.ariel.ac.il/projects/trp/GeneralInformation.asp?numRec=730" target="_blank" rel="noopener" class="team-card team-card--link">
+                <img src="../images/team-shiri.jpg" alt="Dr. Shiri Sherf-Dagan">
+                <div class="team-card-info">
+                    <h3>Dr. Shiri Sherf-Dagan</h3>
+                    <p>Researcher, Head of the Department of Nutritional Sciences, Ariel University</p>
+                    <p>Researcher, Assuta Ramat HaHayal</p>
+                    <p>Head of the NEO Lab</p>
+                </div>
+            </a>
+            <a href="https://www.ariel.ac.il/wp/metabolab/he/laboratory-staff/" target="_blank" rel="noopener" class="team-card team-card--link">
+                <img src="../images/team-assaf.jpg" alt="Dr. Assaf Buch">
+                <div class="team-card-info">
+                    <h3>Dr. Assaf Buch</h3>
+                    <p>Researcher, Department of Nutritional Sciences, Ariel University</p>
+                    <p>Researcher, Tel Aviv Sourasky Medical Center (Ichilov)</p>
+                    <p>Head of MetaboLab</p>
+                </div>
+            </a>
+            <a href="https://ben-porat-lab.welfare.haifa.ac.il/the-lab" target="_blank" rel="noopener" class="team-card team-card--link">
+                <img src="../images/team-tair.jpg" alt="Dr. Tair Ben-Porat">
+                <div class="team-card-info">
+                    <h3>Dr. Tair Ben-Porat</h3>
+                    <p>Senior Lecturer, Director of the International MPH Program</p>
+                    <p>Head of the Nutrition, Health Behavior and Obesity Research Lab</p>
+                    <p>University of Haifa</p>
+                </div>
+            </a>
+            <a href="https://www.drcarlaprado.com/" target="_blank" rel="noopener" class="team-card team-card--link">
+                <img src="../images/team-prado.jfif" alt="Prof. Carla Prado">
+                <div class="team-card-info">
+                    <h3>Prof. Carla Prado</h3>
+                    <p>Distinguished University Professor, Department of Agricultural, Food &amp; Nutritional Science, University of Alberta, Canada</p>
+                </div>
+            </a>
+            <div class="team-card">
+                <img src="../images/team-shiran.jpg" alt="Shiran Bendler">
+                <div class="team-card-info">
+                    <h3>Shiran Bendler</h3>
+                    <p>PhD Candidate, Ariel University</p>
+                    <p>Researcher, Assuta Ramat HaHayal</p>
+                </div>
+            </div>
+            <div class="team-card">
+                <img src="../images/team-amir.jpg" alt="Amir Rubin">
+                <div class="team-card-info">
+                    <h3>Amir Rubin</h3>
+                    <p>PhD Candidate, Ariel University</p>
+                    <p>Researcher, Tel Aviv Sourasky Medical Center (Ichilov)</p>
+                </div>
+            </div>
+            <div class="team-card">
+                <img src="../images/team-merav.jpg" alt="Merav David-Zagdon">
+                <div class="team-card-info">
+                    <h3>Merav David-Zagdon</h3>
+                    <p>MSc Student, University of Haifa</p>
+                </div>
+            </div>
+            <div class="team-card">
+                <img src="../images/team-eliana.jpeg" alt="Eliana Hadad">
+                <div class="team-card-info">
+                    <h3>Eliana Hadad</h3>
+                    <p>MSc Student, Ariel University</p>
+                </div>
+            </div>
+            <div class="team-card">
+                <img src="../images/team-hila.jpg" alt="Hila Ben-Zvi">
+                <div class="team-card-info">
+                    <h3>Hila Ben-Zvi</h3>
+                    <p>MSc Student, Ariel University</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Approvals -->
+<section class="approvals-section">
+    <div class="container">
+        <div class="section-header">
+            <h2>Approvals and Registration</h2>
+            <p>The study was approved by the institutional Helsinki Committees (IRBs) and is listed in international trial registries</p>
+        </div>
+        <div class="approvals-list">
+            <a class="approval-item approval-item--link" href="https://clinicaltrials.gov/study/NCT06950684?cond=NCT06950684&viewType=Card&rank=1" target="_blank" rel="noopener">
+                <div class="label">ClinicalTrials.gov</div>
+                <div class="value">NCT06950684 ↗</div>
+            </a>
+            <div class="approval-item">
+                <div class="label">Helsinki Committee: Ichilov</div>
+                <div class="value">TLV-0168-25</div>
+            </div>
+            <div class="approval-item">
+                <div class="label">Helsinki Committee: Assuta</div>
+                <div class="value">ASMC-0035-25</div>
+            </div>
+            <a class="approval-item approval-item--link" href="https://clinicaltrial.health.gov.il/clinicaltrials/?MOHResearchId=MOH_2025-05-19_014002" target="_blank" rel="noopener">
+                <div class="label">Israel Ministry of Health Registry</div>
+                <div class="value">MOH_2025-05-19_014002 ↗</div>
+            </a>
+        </div>
+        <p style="text-align:center; margin-top:24px; color:var(--text-muted); font-size:14px;">
+            The study is funded by a grant from the Israel Ministry of Innovation, Science and Technology
+            &bull; In collaboration with Prof. Carla Prado, University of Alberta, Canada
+        </p>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+    <p>&copy; 2026 PRIME Study &bull; All rights reserved</p>
+</footer>
+
+<script>
+    // Navbar scroll effect
+    window.addEventListener('scroll', () => {
+        document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 20);
+    });
+
+    // Mobile menu toggle
+    document.getElementById('mobileToggle').addEventListener('click', () => {
+        document.getElementById('navLinks').classList.toggle('open');
+    });
+
+    // Close mobile menu on link click
+    document.querySelectorAll('.nav-links a').forEach(link => {
+        link.addEventListener('click', () => {
+            document.getElementById('navLinks').classList.remove('open');
+        });
+    });
+
+    // Simple fade-in on scroll
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.why-card, .team-card, .stat-item, .group-card, .approval-item, .measure-card, .criteria-box').forEach(el => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(20px)';
+        el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        observer.observe(el);
+    });
+</script>
+
+</body>
+</html>

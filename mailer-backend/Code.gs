@@ -6,7 +6,7 @@
  * היא יוצרת את תיקיית הקבצים, מתקינה את טריגר התזמון, ומדפיסה את הקישור לתיקייה.
  */
 
-const CODE_VERSION = 'v21-group-table';
+const CODE_VERSION = 'v22-hold';
 const SECRET = 'lgGnSJZnAsfIs4W822y0k7F6';
 const SENDER_NAME = 'מחקר PRIME';
 const FOLDER_NAME = 'PRIME Mailer Files';
@@ -986,6 +986,11 @@ function genderFromEvent_(desc) {
   return 'f';
 }
 
+/* מפתח: שם כפי שהוא ביומן (בלי גרשיים/מקפים), ערך: עד מתי לא לשלוח תזכורת אוטומטית. */
+var AUTO_HOLD = {
+  'מיכל לב ארי': '2026-10-01T09:00'
+};
+
 function autoReminders_() {
   const cal = primeCalendar_(); if (!cal) return;
   const now = new Date();
@@ -1022,6 +1027,11 @@ function autoReminders_() {
     var desc = ev.getDescription() || '', title = ev.getTitle() || '', loc = ev.getLocation() || '';
     var name = nameFromEvent_(title, desc);
     if (!name || name.length < 2) continue;
+    /* השהיה ידנית לנחקר/ת מסוים/ת (אמיר, 30.9): "יש סיכוי שהיא תזיז את הפגישה, תדחה למחר".
+       עד המועד שכאן לא נשלחת לה תזכורת אוטומטית; אחרי המועד - הכול כרגיל, לפי היומן באותו רגע.
+       אם הפגישה הוזזה או נמחקה בינתיים, התזכורת יוצאת למועד החדש או לא יוצאת בכלל. */
+    var holdUntil = AUTO_HOLD[normN(name)];
+    if (holdUntil && now < new Date(holdUntil)) continue;
     var phase = phaseFromText_(loc + ' ' + title + ' ' + desc);
     /* המפתח כולל את מועד האירוע: הפגישה זזה ביומן ⇒ מפתח חדש ⇒ תזכורת מעודכנת */
     var key = 'auto_' + ev.getId() + '_' + Utilities.formatDate(start, Session.getScriptTimeZone(), 'yyyyMMddHHmm');

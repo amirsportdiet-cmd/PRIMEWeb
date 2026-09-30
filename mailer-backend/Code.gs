@@ -6,7 +6,7 @@
  * היא יוצרת את תיקיית הקבצים, מתקינה את טריגר התזמון, ומדפיסה את הקישור לתיקייה.
  */
 
-const CODE_VERSION = 'v20-calendar-sync';
+const CODE_VERSION = 'v21-group-table';
 const SECRET = 'lgGnSJZnAsfIs4W822y0k7F6';
 const SENDER_NAME = 'מחקר PRIME';
 const FOLDER_NAME = 'PRIME Mailer Files';
@@ -900,23 +900,61 @@ function sexFromRoster_(name) {
   return '';
 }
 
-/* קבוצות מחקר מ-REDCap (ייצוא 17.8.2026) — גיבוי כשהתשובה חסרה באירוע היומן.
+/* קבוצות מחקר מ-REDCap (ייצוא 17.8.2026, עודכן מהייצוא של 29.9.2026) — גיבוי כשהתשובה חסרה באירוע היומן.
+   🔴 30.9: עד עכשיו הטבלה הייתה שבורה - מרכאות מעורבבות הפכו כל שורה למפתח אחד ארוך, ורק
+   הנחקר הראשון בכל שורה נמצא. מיכל לב ארי (אמצע שורה) לא נמצאה, והמייל שלה לא יצא.
    1=ביקורת, 2=התערבות. שמות היומן לעיתים בכתיב שונה (גרשטיין/גרינשטיין) —
    ההתאמה: שם פרטי זהה + שם משפחה זהה/מוכל/דומה. מתעדכן עם כל ייצוא חדש. */
 var GROUP_FALLBACK = {
-  "אביב ברשף': 'intervention', 'אורן גונן': 'control', 'אלה נגרו יוסף": 'intervention',
-  "אלי שוורצר': 'control', 'אלישבע גרינשטיין': 'control', 'אלמוג קובריגרו": 'intervention',
-  "אמנון אגסי': 'intervention', 'אתי כובש': 'control', 'ברטה ניסימוב": 'control',
-  "גיל בן צבי': 'intervention', 'גלית ריכטר': 'control', 'דביר שרעבי": 'control',
-  "דוד בכר': 'intervention', 'דן בוקאי': 'control', 'ורדית עופר": 'intervention',
-  "חיים זאב שהם': 'control', 'חנה הכרמי': 'control', 'טטיאנה חבין": 'control',
-  "טלי כהנא': 'control', 'יעל ברגשטיין': 'control', 'יפית כרפסי": 'control',
-  "כרמלה גוטל': 'control', 'ליטל ניר': 'intervention', 'מיכל לב ארי": 'intervention',
-  "מיכל פרידמן רם': 'intervention', 'מירי רפאלי': 'intervention', 'נחמה שפירא": 'intervention',
-  "סוניה ביטרמן גפנר': 'intervention', 'סמדר דוד': 'control', 'עדנה ברזוזה": 'intervention',
-  "עודד חיימוב': 'control', 'עמית גיא': 'control', 'עמליה דגן": 'intervention',
-  "פליקס שופמן': 'intervention', 'רביב שוורץ': 'intervention', 'רואי ליטרט": 'intervention',
-  "רחל בן יצחק': 'control', 'רינת שלום': 'control', 'שחר ברטל': 'control', 'שירלי אלף": 'intervention'
+  "אביב ברשף": "intervention",
+  "אורן גונן": "control",
+  "איילה ושדי אלדר": "control",
+  "אירית שרון": "control",
+  "איתי שגיא": "intervention",
+  "אלה נגרו יוסף": "intervention",
+  "אלי שוורצר": "control",
+  "אלישבע גרינשטיין": "control",
+  "אלמוג קובריגרו": "intervention",
+  "אמנון אגסי": "intervention",
+  "אשרת הרבסט": "control",
+  "אתי כובש": "control",
+  "ברטה ניסימוב": "control",
+  "גיל בן צבי": "intervention",
+  "גלית ריכטר": "control",
+  "דביר שרעבי": "control",
+  "דוד בכר": "intervention",
+  "דן בוקאי": "control",
+  "ורדית עופר": "intervention",
+  "חיים זאב שהם": "control",
+  "חנה הכרמי": "control",
+  "טטיאנה חבין": "control",
+  "טלי כהנא": "control",
+  "יהודית מזרחי": "intervention",
+  "יעל ברגשטיין": "control",
+  "יפית כרפסי": "control",
+  "ירון יהודה גנד": "control",
+  "כרמלה גוטל": "control",
+  "ליטל ניר": "intervention",
+  "מאיה מרגולין": "intervention",
+  "מגי גל": "intervention",
+  "מיכל לב ארי": "intervention",
+  "מיכל פרידמן רם": "intervention",
+  "מירי רפאלי": "intervention",
+  "נחמה שפירא": "intervention",
+  "סוניה ביטרמן גפנר": "intervention",
+  "סימון בר ציון": "intervention",
+  "סמדר דוד": "control",
+  "עדנה ברזוזה": "intervention",
+  "עודד חיימוב": "control",
+  "עמית גיא": "control",
+  "עמליה דגן": "intervention",
+  "פליקס שופמן": "intervention",
+  "רביב שוורץ": "intervention",
+  "רואי ליטרט": "intervention",
+  "רחל בן יצחק": "control",
+  "רינת שלום": "control",
+  "שחר ברטל": "control",
+  "שירלי אלף": "intervention"
 };
 function groupFromRoster_(name) {
   var norm = function (x) { return String(x || '').replace(/["'׳״\-]/g, ' ').replace(/\s+/g, ' ').trim(); };

@@ -6,7 +6,7 @@
  * היא יוצרת את תיקיית הקבצים, מתקינה את טריגר התזמון, ומדפיסה את הקישור לתיקייה.
  */
 
-const CODE_VERSION = 'v22-hold';
+const CODE_VERSION = 'v23-lock';
 const SECRET = 'lgGnSJZnAsfIs4W822y0k7F6';
 const SENDER_NAME = 'מחקר PRIME';
 const FOLDER_NAME = 'PRIME Mailer Files';
@@ -593,7 +593,16 @@ function reschedulePending_(row, sendAt) {
   return { ok: true, sendAt: sendAt };
 }
 
+/* v23 (11.10.2026): טלי כהנא וגיל בן צבי קיבלו את אותה תזכורת פעמיים בהפרש של שתי שניות (7.10) -
+   הטריגר של גוגל והדופק מהענן רצו באותו רגע, ושניהם שלחו. מעכשיו רק ריצה אחת בכל רגע:
+   ריצה שנייה שמגיעה באמצע פשוט יוצאת, והבאה (עוד רבע שעה) ממשיכה כרגיל. */
 function checkScheduled() {
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) return { busy: true };
+  try { return checkScheduledLocked_(); } finally { lock.releaseLock(); }
+}
+
+function checkScheduledLocked_() {
   const sh = queueSheet_();
   const rows = sh.getDataRange().getValues();
   const now = new Date();
@@ -1010,7 +1019,8 @@ function autoReminders_() {
     if (d.autoKey) { if (st.indexOf('sent') === 0) have[d.autoKey] = true; else if (st.indexOf('error') === 0) errKeys[d.autoKey] = true; }
     if ((st === 'pending' || st.indexOf('sent') === 0) && d.name && !d.auto && !d.autoKey) {
       var rMs = d.researchAt ? new Date(d.researchAt).getTime() : 0;
-      manualCover.push({ key: 'np_' + normN(d.name) + '|' + (d.phase || ''), researchMs: rMs });
+      var sMs = 0; try { sMs = new Date(normSendAt_(rows[i][1])).getTime() || 0; } catch (e) {}
+      manualCover.push({ key: 'np_' + normN(d.name) + '|' + (d.phase || ''), researchMs: rMs, sendMs: sMs });
     }
   }
   for (var j = 0; j < evs.length; j++) {
@@ -1039,8 +1049,13 @@ function autoReminders_() {
     /* תזמון ידני קיים מכסה רק כשהמועד שנשמר בו קרוב (עד 36 שעות) למועד ביומן —
        אם הפגישה הוזזה, נשלחת תזכורת מעודכנת */
     var covKey = 'np_' + normN(name) + '|' + phase;
+    /* v23 (11.10.2026): עמית גיא לא קיבל תזכורת ל-16.10 ולא נרשמה שום שגיאה. שורה ידנית בלי מועד
+       מחקר כיסתה "לתמיד" - גם מייל ידני מלפני חודשים חסם את התזכורת של היום. עכשיו שורה כזו מכסה
+       רק אם היא תוזמנה בשלושת השבועות שלפני יום המחקר הזה. */
     var covered = manualCover.some(function (c) {
-      return c.key === covKey && (!c.researchMs || Math.abs(c.researchMs - start.getTime()) < 36 * 3600 * 1000);
+      if (c.key !== covKey) return false;
+      if (c.researchMs) return Math.abs(c.researchMs - start.getTime()) < 36 * 3600 * 1000;
+      return c.sendMs > 0 && c.sendMs <= start.getTime() && (start.getTime() - c.sendMs) < 21 * 24 * 3600 * 1000;
     });
     if (covered) continue;
     var email = emailFromEvent_(desc);

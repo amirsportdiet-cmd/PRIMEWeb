@@ -360,11 +360,17 @@ const WHY_TXT = { '1': 'הפסיק/ה טיפול תרופתי', '2': 'סיבה �
 window.onCsv = (ev) => {
   const file = ev.target.files[0];
   if (!file) return;
-  const err = document.getElementById('csv-err'); err.style.display = 'none';
   const rd = new FileReader();
-  rd.onload = () => {
+  rd.onload = () => loadCsvText(rd.result);
+  rd.readAsText(file, 'utf-8');
+};
+
+/* אותו עיבוד בדיוק לקובץ שנבחר ביד ולקובץ שנמשך מהשרת של המיילר (מתעדכן כל יום ראשון). */
+function loadCsvText(text, auto) {
+  const err = document.getElementById('csv-err'); err.style.display = 'none';
+  {
     try {
-      const rows = parseCSV(rd.result);
+      const rows = parseCSV(text);
       const H = {}; rows[0].forEach((h, i) => H[h.trim()] = i);
       const need = ['record_id', 'redcap_event_name', 'arm_allocation', 'screen_phone', 'cand_fname', 'cand_sex'];
       // withdraw_study הוא הסימון של אמיר ב-REDCap: 1 = יצא מהמחקר
@@ -426,12 +432,28 @@ window.onCsv = (ev) => {
       renderRoster(skipped, noPhone);
       renderAlerts();
       sync();
+      if (auto) document.getElementById('csv-status').textContent += ' · עודכן אוטומטית ' + auto;
     } catch (e) {
+      if (auto) return;                        // משיכה שקטה: כישלון לא מפריע למה שכבר על המסך
       err.textContent = '❌ ' + e.message; err.style.display = 'block';
       document.getElementById('csv-status').textContent = '';
     }
-  };
-  rd.readAsText(file, 'utf-8');
+  }
+}
+
+const LS_ROSTER_SRV = 'prime_alerts_roster_srv';
+window.rosterFromServer = async () => {
+  try {
+    const idToken = await window.__getIdToken();
+    const res = await fetch(BACKEND_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ mode: 'rosterGet', secret: SEND_SECRET, idToken }) });
+    const j = await res.json();
+    if (!j.ok || !j.csv) return;
+    let last = ''; try { last = localStorage.getItem(LS_ROSTER_SRV) || ''; } catch (e) {}
+    if (j.at && j.at === last) return;        // כבר נטען הקובץ הזה
+    loadCsvText(j.csv, j.at ? new Date(j.at).toLocaleDateString('he-IL') : 'מהשרת');
+    try { localStorage.setItem(LS_ROSTER_SRV, j.at || ''); } catch (e) {}
+  } catch (e) { /* בלי רשת או בלי הרשאה - נשארים עם מה שיש */ }
 };
 
 function renderRoster(skipped, noPhone) {
@@ -1260,6 +1282,7 @@ async function enterApp() {
   listen();
   silenceListen();
   // אחרי שהרשימה מהענן הגיעה: משיכה אוטומטית מהמייל, ואז תמונת המצב השבועית
+  setTimeout(() => { if (window.rosterFromServer) window.rosterFromServer(); }, 900);
   setTimeout(() => { if (window.pullInbox) window.pullInbox(true); }, 1200);
   setTimeout(() => { if (window.renderSnapshots) window.renderSnapshots(); }, 2600);
 }

@@ -695,11 +695,12 @@ window.setGroup = (g, src)=>{
 
 /* ===== הקצאת הקבוצות מקובץ ה-REDCap =====
    ביומן אין קבוצה, ולכן המקור היחיד האמין הוא arm_allocation ב-REDCap
-   (1 = התערבות, 2 = ביקורת, אומת מול אמיר רובין). טוענים את הקובץ פעם אחת,
+   (1 = ביקורת, 2 = התערבות - כך במילון הנתונים של REDCap; תוקן 11.10.2026, היה הפוך).
+   הקובץ מתעדכן לבד פעם בשבוע מהשרת של המיילר, ואפשר גם לטעון ידנית,
    שומרים ממנו רק מה שדרוש להתאמה, וההתאמה עצמה היא לפי מייל, ואם אין, לפי שם מלא.
    הרשימה נשמרת מקומית בדפדפן בלבד ואינה נשלחת לשום מקום. */
 const ROSTER_KEY = 'prime_mailer_roster';
-const RC_ARM = { '1': 'intervention', '2': 'control' };
+const RC_ARM = { '1': 'control', '2': 'intervention' };
 let ROSTER = { byEmail:{}, byName:{}, n:0, at:'' };
 
 const normEmail = (v) => String(v||'').trim().toLowerCase();
@@ -930,10 +931,26 @@ window.renderLock = function renderLock(){
   }
 }
 
+/* קובץ הנחקרים העדכני מהשרת (מתעדכן כל יום ראשון מהייצוא האחרון של REDCap). נמשך אחרי
+   ההתחברות; אם אין חדש מאז הפעם הקודמת - לא נוגעים במה שכבר טעון. */
+const ROSTER_SRV_KEY = 'prime_mailer_roster_srv';
+function rosterFromServer(){
+  callApi({ mode:'rosterGet' }).then(res => {
+    if(!res || !res.ok || !res.csv) return;
+    let last = ''; try { last = localStorage.getItem(ROSTER_SRV_KEY) || ''; } catch(e){}
+    if(res.at && res.at === last && ROSTER.n) return;
+    rosterParse(res.csv);
+    try { localStorage.setItem(ROSTER_SRV_KEY, res.at || ''); } catch(e){}
+    const d = res.at ? new Date(res.at).toLocaleDateString('he-IL') : '';
+    if(ROSTER.n) rosterStatus(`✓ נטענו ${ROSTER.n} נחקרים משובצים · עודכן אוטומטית ${d}`);
+  }).catch(() => {});
+}
+
 function initApp(){
   setGender('f');
   setGroup('');
   rosterLoad();
+  rosterFromServer();
   setSite('assuta');   // ברירת מחדל
   loadTemplate();
   render();

@@ -6,7 +6,10 @@
  * היא יוצרת את תיקיית הקבצים, מתקינה את טריגר התזמון, ומדפיסה את הקישור לתיקייה.
  */
 
-const CODE_VERSION = 'v23-lock';
+const CODE_VERSION = 'v24-roster';
+/* מפתח כתיבה לקובץ הנחקרים. ריק כאן בכוונה: הערך האמיתי מוזרק רק לעותק שרץ ב-Apps Script
+   (scripts/prime-roster-sync.py), ולא נשמר במאגר הקוד. ריק = אי אפשר לכתוב. */
+var ROSTER_PUT_KEY = '';
 const SECRET = 'lgGnSJZnAsfIs4W822y0k7F6';
 const SENDER_NAME = 'מחקר PRIME';
 const FOLDER_NAME = 'PRIME Mailer Files';
@@ -84,6 +87,13 @@ function doPost(e) {
     /* דופק חיצוני: מריץ את בדיקת המתוזמנים עכשיו, ומתקין מחדש את הטריגר אם נעלם.
        כך התזמון עובד גם כשהטריגר של גוגל מת בשקט (הסיבה שהמיילים "לא יצאו בפועל").
        מוגן בסוד בלבד — שולח רק מה שכבר תוזמן ואושר, לא מקבל תוכן חדש. */
+    /* v24 (11.10.2026, אמיר: "כשאתה לוקח את הקובץ המעודכן ביותר, זה יעדכן בכל המקומות").
+       העדכון השבועי מהמחשב שומר כאן קובץ מצומצם (שם, טלפון, מייל, קבוצה, מין, יציאה מהמחקר -
+       בלי מדידות), והעמודים מושכים אותו אחרי התחברות. כתיבה - רק עם מפתח נפרד. */
+    if (data.mode === 'rosterPut') {
+      if (!ROSTER_PUT_KEY || data.key !== ROSTER_PUT_KEY) return json({ ok: false, error: 'unauthorized' });
+      return json(rosterPut_(String(data.csv || ''), String(data.name || '')));
+    }
     if (data.mode === 'tick') {
       var fixed = false;
       try {
@@ -141,6 +151,9 @@ function doPost(e) {
     }
     data.sentBy = v.email;
 
+    // --- קובץ הנחקרים העדכני (רק למשתמשים מורשים) ---
+    if (data.mode === 'rosterGet')  return json(rosterGet_());
+
     // --- חיפוש ביומן PRIME ---
     if (data.mode === 'calendar')   return json(lookupCalendar_(data.name));
 
@@ -184,6 +197,29 @@ function doPost(e) {
 }
 
 // ===================== שליחה =====================
+/* קובץ הנחקרים המצומצם נשמר כקובץ אחד ב-Drive של חשבון המחקר (לא בתיקיית הקבצים המצורפים,
+   כדי שלא יופיע ברשימת הצרופות). המזהה שלו נשמר במאפייני הסקריפט. */
+function rosterPut_(csv, name) {
+  if (csv.length < 50 || csv.indexOf('record_id') < 0) return { ok: false, error: 'not a roster csv' };
+  var props = PropertiesService.getScriptProperties();
+  var file = null;
+  try { var id = props.getProperty('ROSTER_FILE_ID'); if (id) { file = DriveApp.getFileById(id); if (file.isTrashed()) file = null; } } catch (e) { file = null; }
+  if (file) file.setContent(csv);
+  else { file = DriveApp.createFile('PRIME_roster_latest.csv', csv, 'text/csv'); props.setProperty('ROSTER_FILE_ID', file.getId()); }
+  var at = new Date().toISOString();
+  props.setProperty('ROSTER_META', JSON.stringify({ name: name, at: at, chars: csv.length }));
+  return { ok: true, at: at, chars: csv.length };
+}
+
+function rosterGet_() {
+  var props = PropertiesService.getScriptProperties();
+  var id = props.getProperty('ROSTER_FILE_ID');
+  if (!id) return { ok: false, error: 'עדיין לא נשמר קובץ נחקרים' };
+  var meta = {}; try { meta = JSON.parse(props.getProperty('ROSTER_META') || '{}'); } catch (e) {}
+  var csv = DriveApp.getFileById(id).getBlob().getDataAsString('UTF-8');
+  return { ok: true, csv: csv, name: meta.name || '', at: meta.at || '' };
+}
+
 function sendMail_(data) {
   GmailApp.sendEmail(data.to.join(','), data.subject, data.body, {
     name: SENDER_NAME,
